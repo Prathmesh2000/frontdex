@@ -11,7 +11,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { loadConfig, scan } from '../src/index.js';
-import { listSourceFiles } from '../src/scanner/files.js';
+import { listProjectFiles } from '../src/scanner/files.js';
 
 const copies = Number(process.argv[2] ?? 20);
 const example = path.resolve(import.meta.dirname, '../examples/next-app');
@@ -22,7 +22,7 @@ for (let i = 0; i < copies; i++) {
 fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'bench', dependencies: { next: '*' } }));
 
 const config = { ...loadConfig(root), history: { enabled: false, limit: 0 } };
-const files = listSourceFiles(config);
+const files = listProjectFiles(config).sources;
 const time = (fn) => {
   const t = performance.now();
   const r = fn();

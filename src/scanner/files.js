@@ -18,23 +18,44 @@ export function globToRegExp(glob) {
   return new RegExp(`^${re}$`);
 }
 
-export function listSourceFiles(config, extensions = SOURCE_EXT) {
+/**
+ * One walk over the include roots, returning source files and stylesheets (absolute paths, sorted).
+ * Uses directory entries instead of a stat per entry, which dominated no-change rescans; only symlinks are stat'ed.
+ */
+export function listProjectFiles(config) {
   const excludes = config.exclude.map(globToRegExp);
   const isExcluded = (rel) => excludes.some((re) => re.test(rel) || re.test(rel + '/'));
-  const files = new Set();
+  const sources = new Set();
+  const styles = new Set();
 
-  const walk = (abs) => {
-    const rel = path.relative(config.root, abs).split(path.sep).join('/');
-    if (rel && isExcluded(rel)) return;
-    const stat = fs.statSync(abs, { throwIfNoEntry: false });
-    if (!stat) return;
-    if (stat.isDirectory()) {
-      for (const entry of fs.readdirSync(abs)) walk(path.join(abs, entry));
-    } else if (extensions.includes(path.extname(abs)) && !isExcluded(rel)) {
-      files.add(abs);
+  const addFile = (abs) => {
+    const ext = path.extname(abs);
+    if (SOURCE_EXT.includes(ext)) sources.add(abs);
+    else if (STYLE_EXT.includes(ext)) styles.add(abs);
+  };
+  const walkDir = (dir, relDir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const abs = path.join(dir, entry.name);
+      const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (isExcluded(rel)) continue;
+      let isDir = entry.isDirectory();
+      if (entry.isSymbolicLink()) {
+        const stat = fs.statSync(abs, { throwIfNoEntry: false });
+        if (!stat) continue;
+        isDir = stat.isDirectory();
+      } else if (!isDir && !entry.isFile()) continue;
+      if (isDir) walkDir(abs, rel);
+      else addFile(abs);
     }
   };
 
-  for (const inc of config.include) walk(path.resolve(config.root, inc));
-  return [...files].sort();
+  for (const inc of config.include) {
+    const abs = path.resolve(config.root, inc);
+    const rel = path.relative(config.root, abs).split(path.sep).join('/');
+    if (rel && isExcluded(rel)) continue;
+    const stat = fs.statSync(abs, { throwIfNoEntry: false });
+    if (stat?.isDirectory()) walkDir(abs, rel);
+    else if (stat) addFile(abs);
+  }
+  return { sources: [...sources].sort(), styles: [...styles].sort() };
 }
