@@ -6,6 +6,7 @@ import YAML from 'yaml';
 import { loadConfig } from './config.js';
 import { diffCatalogues, formatDetail, formatSummary } from './history.js';
 import { scanProject } from './scanner/graph.js';
+import { assembleShards, readCatalogue, shardDir } from './spec.js';
 
 /*
  * Pull-request reports: what a change does to the frontend, between two git refs.
@@ -33,8 +34,15 @@ export function catalogueAtRef(config, ref, { scan = false } = {}) {
   const projectRel = path.relative(gitRoot, config.root);
   if (!scan) {
     const yamlRel = path.join(projectRel, config.output).split(path.sep).join('/');
+    const show = (rel) => YAML.parse(git(gitRoot, ['show', `${sha}:${rel}`]));
     try {
-      return { catalogue: YAML.parse(git(gitRoot, ['show', `${sha}:${yamlRel}`])), source: `${config.output} at ${ref}` };
+      return { catalogue: show(yamlRel), source: `${config.output} at ${ref}` };
+    } catch {
+      // Not committed at that ref, or committed sharded: try the folder, then fall through to a scan.
+    }
+    try {
+      const dir = shardDir(yamlRel);
+      return { catalogue: assembleShards(show(`${dir}/index.yaml`), (s) => show(`${dir}/${s}`)), source: `${dir}/ at ${ref}` };
     } catch {
       // Not committed at that ref: fall through to a scan.
     }
@@ -43,7 +51,9 @@ export function catalogueAtRef(config, ref, { scan = false } = {}) {
   try {
     git(gitRoot, ['worktree', 'add', '--detach', '--force', tmp, sha]);
     const refConfig = loadConfig(path.join(tmp, projectRel));
-    return { catalogue: scanProject(refConfig).catalogue, source: `scan of ${ref}` };
+    // The catalogue committed at that ref (if any) keeps IDs as they were recorded, so the diff matches by stable ID.
+    const previous = readCatalogue(path.resolve(refConfig.root, refConfig.output));
+    return { catalogue: scanProject(refConfig, { previous }).catalogue, source: `scan of ${ref}` };
   } finally {
     try {
       git(gitRoot, ['worktree', 'remove', '--force', tmp]);
@@ -81,18 +91,21 @@ export function buildReport(base, head, { baseLabel = 'base', headLabel = 'head'
       // Removed components are traced in the base catalogue: those pages lost something.
       const { pages, dependents } = reach(c.change === 'removed' ? base : head, c.key);
       pages.forEach((p) => affectedPages.add(p));
-      return { id: c.key, change: c.change, details: (c.details ?? []).map(formatDetail), pages, dependents, file: (head.components[c.key] ?? base.components[c.key])?.file };
+      return { id: c.key, ...(c.from && { from: c.from }), change: c.change, details: (c.details ?? []).map(formatDetail), pages, dependents, file: (head.components[c.key] ?? base.components[c.key])?.file };
     });
   for (const c of changes) if (c.kind === 'pages') affectedPages.add(c.key);
 
+  // A component whose ID changed (file moved) brings its issues along; they are neither new nor fixed.
+  const movedFrom = new Map(changes.filter((c) => c.change === 'renamed').map((c) => [c.key, c.from]));
+  const movedTo = new Map([...movedFrom].map(([to, from]) => [from, to]));
   const newIssues = [];
   for (const [id, comp] of Object.entries(head.components)) {
-    const before = new Set((base.components[id]?.issues ?? []).map(issueKey));
+    const before = new Set(((base.components[id] ?? base.components[movedFrom.get(id)])?.issues ?? []).map(issueKey));
     for (const i of comp.issues ?? []) if (!before.has(issueKey(i))) newIssues.push({ component: id, file: comp.file, ...i });
   }
   newIssues.sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity));
   const fixedIssues = Object.entries(base.components).reduce((n, [id, comp]) => {
-    const after = new Set((head.components[id]?.issues ?? []).map(issueKey));
+    const after = new Set(((head.components[id] ?? head.components[movedTo.get(id)])?.issues ?? []).map(issueKey));
     return n + (comp.issues ?? []).filter((i) => !after.has(issueKey(i))).length;
   }, 0);
   const pairKey = (d) => d.components.join(' ~ ');
@@ -119,7 +132,7 @@ export function buildReport(base, head, { baseLabel = 'base', headLabel = 'head'
 export function formatText(report) {
   const lines = [`frontdex diff ${report.base} → ${report.head}: ${formatSummary(report.summary)}`];
   for (const c of report.components) {
-    lines.push(`  ${{ added: '+', removed: '−', changed: '~' }[c.change]} ${c.id}${c.details.length ? `  ${c.details.join(' · ')}` : ''}`);
+    lines.push(`  ${{ added: '+', removed: '−', changed: '~', renamed: '→' }[c.change]} ${c.from ? `${c.from} → ` : ''}${c.id}${c.details.length ? `  ${c.details.join(' · ')}` : ''}`);
     if (c.pages.length) lines.push(`      pages: ${c.pages.join(', ')}${c.dependents.length ? ` · dependents: ${c.dependents.length}` : ''}`);
   }
   for (const p of report.pages) lines.push(`  ${{ added: '+', removed: '−', changed: '~' }[p.change]} page ${p.route}${p.details.length ? `  ${p.details.join(' · ')}` : ''}`);
@@ -138,7 +151,7 @@ const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 export function formatMarkdown(report, { maxRows = 30 } = {}) {
   const high = report.newIssues.filter((i) => i.severity === 'high').length;
-  const icon = { added: '🆕', removed: '🗑️', changed: '✏️' };
+  const icon = { added: '🆕', removed: '🗑️', changed: '✏️', renamed: '🚚' };
   const out = [
     COMMENT_MARKER,
     '### frontdex: frontend impact of this PR',

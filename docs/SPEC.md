@@ -29,12 +29,16 @@ The machine-readable definition is [`spec/catalogue.schema.json`](../spec/catalo
 | `duplicates` | array | no | Pairs of components that look alike: `components` [a, b], `score` 0–1, `reasons`. The less-used one also gets a `possible-duplicate` issue. |
 | `hooks` | map<HookId, { file, line, reads, calls, usedBy }> | no | Custom hooks: the contexts/stores they read, hooks they call, components using them. HookId is the name, or `name@file` when names collide. |
 | `health` | [Health](#health) | no | Issue totals and dead code. |
+| `aliases` | map<OldId, CurrentId> | no | Former Component/Hook IDs that changed, so old references keep resolving. Chains are collapsed; an alias is dropped when its old ID is live again or its target is gone. |
+
+**Sharded layout.** Large projects (`"shard": "auto"` above 500 components, or `"shard": true` in `frontdex.config.json`) store the same document as a folder named after the output file: `frontdex/index.yaml` holds every root field except `components`, plus `shards`, the list of component files; each `frontdex/components/<dir>.yaml` holds `components:` for one source folder (path cut at 4 segments, `/` written as `__`, root files in `_root.yaml`). `readCatalogue()` reassembles it. Once sharded, `auto` stays sharded; `"shard": false` returns to one file.
 
 Keys starting with `x-` are allowed on the root, `info`, every Component, Prop and Page. They are never touched by the generator (same convention as OpenAPI extensions).
 
 ## Identifiers
 
-- **ComponentId**: the component's name (`Button`). If two components share a name, both become `Name@relative/file/path.tsx`.
+- **ComponentId**: the component's name (`Button`), or `Name@relative/file/path.tsx` when the name was shared at the time the component was first recorded. IDs are stable: a rescan keeps every ID the previous document holds (matched by name and file), so adding a second `Button` elsewhere gives only the newcomer a qualified ID. A cold scan with no previous document qualifies every holder of a shared name. HookIds follow the same rules.
+- **Aliases**: when an ID does change (a component's file moved and its ID embedded the old path), `aliases` maps the old ID to the new one. A file move with a bare ID keeps the ID and needs no alias.
 - **Route**: the URL pattern as the router sees it. Next.js keeps its bracket syntax (`/blog/[slug]`, `/docs/[...path]`); React Router keeps its colon syntax (`/users/:id`). Route groups `(group)` and parallel slots `@slot` are stripped.
 
 ## Info

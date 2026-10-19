@@ -208,9 +208,19 @@
     },
     "health": {
       "$ref": "#/definitions/Health"
+    },
+    "aliases": {
+      "$ref": "#/definitions/Aliases"
     }
   },
   "definitions": {
+    "Aliases": {
+      "type": "object",
+      "description": "Former ComponentIds / HookIds that changed (e.g. the file moved) → the current ID, so old references keep resolving. Chains are collapsed; an alias is dropped once its old ID is live again or its target is gone.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
     "StringList": {
       "type": "array",
       "items": {

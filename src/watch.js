@@ -3,6 +3,7 @@ import path from 'node:path';
 import { formatSummary } from './history.js';
 import { flushSession, scan } from './index.js';
 import { globToRegExp, SOURCE_EXT, STYLE_EXT } from './scanner/files.js';
+import { shardDir } from './spec.js';
 
 const DEBOUNCE_MS = 250;
 // catalogue.yaml and the parse cache are written once edits pause, not after every save (YAML output is the slow part).
@@ -14,6 +15,7 @@ const FLUSH_MS = 1000;
  */
 export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () => {} } = {}) {
   const output = path.resolve(config.root, config.output);
+  const shards = shardDir(output);
   const kbDir = path.resolve(config.root, config.knowledgeDir);
   const excludes = config.exclude.map(globToRegExp);
   let timer;
@@ -70,7 +72,7 @@ export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () =
   const onEvent = (filename) => {
     if (!filename) return;
     const abs = path.resolve(config.root, filename);
-    if (abs === output) {
+    if (abs === output || abs.startsWith(shards + path.sep)) {
       if (Date.now() - lastWrite > 1000) {
         // A hand edit to the catalogue: drop the in-memory copy so the next scan merges the edited fields.
         session.catalogue = null;

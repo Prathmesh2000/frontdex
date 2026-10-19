@@ -34,8 +34,9 @@ const deserialize = (data, file) => ({ ...data, components: structuredClone(data
  * `known = { files, changed, resolver }` is the watcher fast path: `files` and `resolver` come from the previous result
  * and `changed` lists the absolute paths reported since, so unchanged files skip the directory walk and the stat.
  * The reused resolver does not see tsconfig edits; the watcher ignores .json files, so restart it after changing paths.
+ * `previous` is the last catalogue: components and hooks keep the IDs they had in it (see assignIds).
  */
-export function scanProject(config, { cache, known } = {}) {
+export function scanProject(config, { cache, known, previous } = {}) {
   const root = config.root;
   const rel = (f) => path.relative(root, f).split(path.sep).join('/');
   const modules = new Map();
@@ -99,11 +100,11 @@ export function scanProject(config, { cache, known } = {}) {
 
   lap('load');
   const entries = [...modules.values()].flatMap((mod) => mod.components.map((c) => ({ mod, c })));
-  const nameCount = new Map();
-  entries.forEach(({ c }) => nameCount.set(c.name, (nameCount.get(c.name) ?? 0) + 1));
+  const aliases = { ...previous?.aliases };
+  const componentIds = assignIds(entries.map(({ mod, c }) => ({ name: c.name, file: rel(mod.file) })), previous?.components, aliases);
   const localIndex = new Map();
-  for (const { mod, c } of entries) {
-    c.id = nameCount.get(c.name) > 1 ? `${c.name}@${rel(mod.file)}` : c.name;
+  for (const [i, { mod, c }] of entries.entries()) {
+    c.id = componentIds[i];
     if (!localIndex.has(mod.file)) localIndex.set(mod.file, new Map());
     localIndex.get(mod.file).set(c.name, c);
   }
@@ -536,10 +537,10 @@ export function scanProject(config, { cache, known } = {}) {
   heavyImports(entries, components);
 
   // Custom hooks catalogued in their own right: where they live, what they read and call, which components use them.
-  const hookNames = new Map();
-  for (const mod of modules.values()) for (const name of Object.keys(mod.customHooks ?? {})) hookNames.set(name, (hookNames.get(name) ?? 0) + 1);
+  const hookList = [...modules].flatMap(([file, mod]) => Object.keys(mod.customHooks ?? {}).map((name) => ({ name, file: rel(file) })));
+  const hookIds = new Map(assignIds(hookList, previous?.hooks, aliases).map((id, i) => [`${hookList[i].name}@${hookList[i].file}`, id]));
   const hooks = {};
-  const hookId = (file, name) => (hookNames.get(name) > 1 ? `${name}@${rel(file)}` : name);
+  const hookId = (file, name) => hookIds.get(`${name}@${rel(file)}`);
   for (const [file, mod] of modules) {
     for (const [name, facts] of Object.entries(mod.customHooks ?? {})) {
       const reads = [...new Set(facts.reads.map((r) => (r.kind === 'context' ? r.store : r.kind === 'zustand' ? `${r.store}${r.path ? ` ${r.path}` : ''}` : `redux ${r.path}`)))];
@@ -603,6 +604,8 @@ export function scanProject(config, { cache, known } = {}) {
     ...(Object.keys(hooks).length && { hooks: sortKeys(Object.fromEntries(Object.entries(hooks).map(([k, h]) => [k, compact(h)]))) }),
     health,
   };
+  const liveAliases = resolveAliases(aliases, (id) => id in components || id in hooks);
+  if (Object.keys(liveAliases).length) catalogue.aliases = sortKeys(liveAliases);
   return {
     catalogue,
     warnings,
@@ -614,6 +617,59 @@ export function scanProject(config, { cache, known } = {}) {
     cache: { version: CACHE_VERSION, files: nextFiles, styles: styleCache },
     cacheDirty: !cache || cache.version !== CACHE_VERSION || delta.parsed > 0 || delta.removed.length > 0 || styleCacheDirty,
   };
+}
+
+/**
+ * Stable IDs for `items` ({ name, file }), parallel to the input. Rules, in order:
+ *  1. same name and file as an entry of `previous` (the last catalogue): keep that entry's ID;
+ *  2. a name whose single previous holder vanished while a single new one appeared: a move. A bare ID stays bare; a
+ *     `name@file` ID is re-pointed at the new file and the old one recorded in `aliases`;
+ *  3. anything else: the bare name, unless the name is shared in this scan or already held, then `name@file`.
+ * With no previous catalogue this is the 1.x rule (shared name → every holder qualified), so cold scans are unchanged;
+ * with one, adding a same-named component elsewhere qualifies only the newcomer.
+ */
+export function assignIds(items, previous = {}, aliases = {}) {
+  const ids = new Array(items.length);
+  const taken = new Set();
+  const nameOf = (id, entry) => entry.name ?? id.replace(/@.*/, '');
+  const prevByKey = new Map(Object.entries(previous).map(([id, e]) => [`${nameOf(id, e)}\0${e.file}`, id]));
+  items.forEach((it, i) => {
+    const id = prevByKey.get(`${it.name}\0${it.file}`);
+    if (id && !taken.has(id)) taken.add((ids[i] = id));
+  });
+
+  const group = (pairs) => pairs.reduce((m, [k, v]) => m.set(k, [...(m.get(k) ?? []), v]), new Map());
+  const gone = group(Object.entries(previous).filter(([id]) => !taken.has(id)).map(([id, e]) => [nameOf(id, e), id]));
+  const fresh = group(items.map((it, i) => [it.name, i]).filter(([, i]) => !ids[i]));
+  for (const [name, list] of fresh) {
+    const was = gone.get(name);
+    if (list.length !== 1 || was?.length !== 1) continue;
+    const i = list[0];
+    const id = was[0].includes('@') ? `${name}@${items[i].file}` : was[0];
+    if (taken.has(id)) continue;
+    taken.add((ids[i] = id));
+    if (id !== was[0]) aliases[was[0]] = id;
+  }
+
+  const count = new Map();
+  for (const it of items) count.set(it.name, (count.get(it.name) ?? 0) + 1);
+  items.forEach((it, i) => {
+    if (ids[i]) return;
+    ids[i] = count.get(it.name) > 1 || taken.has(it.name) ? `${it.name}@${it.file}` : it.name;
+    taken.add(ids[i]);
+  });
+  return ids;
+}
+
+/** Collapses alias chains (a→b, b→c becomes a→c) and drops aliases that are live IDs again or point at nothing live. */
+function resolveAliases(aliases, isLive) {
+  const out = {};
+  for (const from of Object.keys(aliases)) {
+    let to = aliases[from];
+    for (const seen = new Set([from]); aliases[to] && !seen.has(to); ) seen.add(to), (to = aliases[to]);
+    if (!isLive(from) && isLive(to)) out[from] = to;
+  }
+  return out;
 }
 
 function followAlias(mod, local) {

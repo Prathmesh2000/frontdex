@@ -4,11 +4,11 @@ import path from 'node:path';
 import { writeAgentKnowledge } from './agent-kb.js';
 import { createHistory } from './history.js';
 import { scanProject } from './scanner/graph.js';
-import { mergeManual, readCatalogue, writeCatalogue } from './spec.js';
+import { catalogueStat, isSharded, mergeManual, readCatalogue, shardDir, writeCatalogue } from './spec.js';
 
 export { loadConfig, initConfig } from './config.js';
 export { scanProject } from './scanner/graph.js';
-export { readCatalogue, writeCatalogue, validateCatalogue, mergeManual } from './spec.js';
+export { readCatalogue, writeCatalogue, validateCatalogue, mergeManual, isSharded, shardDir } from './spec.js';
 export { createHistory } from './history.js';
 export { createTools } from './tools.js';
 
@@ -35,7 +35,7 @@ function readJson(file) {
 
 /** Parsing a large YAML file dominates rescans, so reuse the JSON mirror while the YAML is untouched since we wrote it. */
 function readPrevious(file, mirrorFile) {
-  const stat = fs.statSync(file, { throwIfNoEntry: false });
+  const stat = catalogueStat(file);
   if (!stat) return null;
   const mirror = readJson(mirrorFile);
   if (mirror && mirror.mtimeMs === stat.mtimeMs && mirror.size === stat.size) return mirror.catalogue;
@@ -80,7 +80,7 @@ export function scan(config, { full = false, dryRun = false, message, session, c
   const cache = full ? null : warm ? session.cache : readJson(cacheFile);
   const known = warm && !full && changedPaths ? { files: session.files, changed: changedPaths, resolver: session.resolver } : undefined;
   lap('read');
-  const result = scanProject(config, { cache, known });
+  const result = scanProject(config, { cache, known, previous: prev });
   Object.assign(timings, result.timings);
   mark = performance.now();
   const { catalogue, delta } = result;
@@ -96,16 +96,18 @@ export function scan(config, { full = false, dryRun = false, message, session, c
   if (dryRun) return out;
 
   ensureKnowledgeDir(kb);
+  // The `shard` setting (or the component count under "auto") asks for the other layout: rewrite even if nothing changed.
+  const relayout = isSharded(file, catalogue, config.shard) === fs.existsSync(file);
   if (session) {
     // YAML serialisation is the slowest step of a warm rescan, so it waits for flushSession() with the cache.
-    session.dirty = (warm && session.dirty) || result.cacheDirty || changed;
-    session.yamlDirty = (warm && session.yamlDirty) || changed;
+    session.dirty = (warm && session.dirty) || result.cacheDirty || changed || relayout;
+    session.yamlDirty = (warm && session.yamlDirty) || changed || relayout;
     Object.assign(session, { cache: result.cache, files: result.files, resolver: result.resolver, catalogue });
     if (!warm) flushSession(config, session);
   } else {
-    if (changed) writeCatalogue(file, catalogue);
+    if (changed || relayout) writeCatalogue(file, catalogue, { shard: config.shard });
     if (result.cacheDirty) writeCache(cacheFile, result.cache);
-    if (changed || !fs.existsSync(mirrorFile)) writeMirror(mirrorFile, file, catalogue);
+    if (changed || relayout || !fs.existsSync(mirrorFile)) writeMirror(mirrorFile, file, catalogue);
   }
   lap('write');
   // A warm session leaves the agent cards to flushSession() as well; a burst of saves then regenerates them once.
@@ -129,7 +131,8 @@ export function flushSession(config, session) {
   const kb = knowledgeDir(config);
   const file = path.resolve(config.root, config.output);
   const wroteYaml = !!session.yamlDirty;
-  if (wroteYaml) writeCatalogue(file, session.catalogue);
+  // The memo lets a sharded catalogue rewrite only the shards this burst of edits touched.
+  if (wroteYaml) session.written = writeCatalogue(file, session.catalogue, { shard: config.shard, memo: (session.shardMemo ??= new Map()) });
   writeCache(path.join(kb, 'cache', 'files.json'), session.cache);
   writeMirror(path.join(kb, 'cache', 'catalogue.json'), file, session.catalogue);
   if (session.agentDirty) refreshAgentKnowledge(config, session.catalogue, true, session.agentFiles);
@@ -156,8 +159,22 @@ function writeCache(cacheFile, cache) {
 }
 
 function writeMirror(mirrorFile, file, catalogue) {
-  const stat = fs.statSync(file, { throwIfNoEntry: false });
+  const stat = catalogueStat(file);
   if (stat) fs.writeFileSync(mirrorFile, JSON.stringify({ mtimeMs: stat.mtimeMs, size: stat.size, catalogue }));
+}
+
+/**
+ * The catalogue half of `frontdex upgrade`. A full rescan against the 1.x document keeps every ID it holds (they become
+ * the stable baseline), records aliases for IDs that did change (files moved since the last scan) and applies the
+ * `shard` layout. History is keyed by the same IDs, so it stays readable as is. Returns null when there is no catalogue.
+ */
+export function upgradeCatalogue(config) {
+  const file = path.resolve(config.root, config.output);
+  const before = readCatalogue(file);
+  if (!before) return null;
+  const { catalogue, commit } = scan(config, { full: true, message: 'frontdex upgrade' });
+  const aliases = Object.fromEntries(Object.entries(catalogue.aliases ?? {}).filter(([from]) => before.aliases?.[from] === undefined));
+  return { aliases, sharded: !fs.existsSync(file), shardDir: shardDir(file), commit };
 }
 
 /** @deprecated use scan(); kept for the 0.1 API. */

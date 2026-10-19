@@ -32,6 +32,8 @@ const DEFAULTS = {
     '**/*.d.ts',
   ],
   output: 'frontdex.yaml',
+  // true | false | "auto": write a frontdex/ folder (index + component shards) instead of one YAML; auto above 500 components.
+  shard: 'auto',
   port: 4400,
   autoUpdate: false,
   knowledgeDir: '.frontdex',

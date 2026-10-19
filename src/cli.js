@@ -9,7 +9,7 @@ import { diagnose, formatDiagnosis } from './doctor.js';
 import { applyFixes, planFixes } from './fix.js';
 import { formatDetail, formatSummary } from './history.js';
 import { upgradeProject } from './config.js';
-import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
+import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, upgradeCatalogue, validateCatalogue } from './index.js';
 import { buildSite, startServer } from './server.js';
 import { startWatcher } from './watch.js';
 
@@ -20,7 +20,8 @@ Usage: frontdex <command> [options]   (aliases: fdx, rcat)
 Setup
   init [--auto-update]     Create frontdex.config.json
   doctor                   What was detected (frameworks, workspaces, routers, compilers, agents) and what is missing
-  upgrade                  Move a react-catalogue project to frontdex file names (config, YAML, knowledge folder)
+  upgrade                  Move a react-catalogue project to frontdex file names (config, YAML, knowledge folder),
+                           then migrate the catalogue: stable IDs, aliases for changed IDs, sharding ("shard" option)
   agents [--targets a,b]   Wire coding agents (rules, MCP, hooks). Targets: ${TARGETS.join(', ')}
          [--no-hooks] [--no-mcp] [--remove]
 
@@ -154,9 +155,15 @@ export async function main(argv) {
     }
     case 'upgrade': {
       const moves = upgradeProject(root);
-      if (!moves.length) return void console.log('✔ already using frontdex file names');
       moves.forEach(([from, to]) => console.log(`✔ ${from} → ${to}`));
-      console.log('  next: "frontdex agents" to refresh agent rules, MCP entries and hooks under the new name');
+      const migrated = upgradeCatalogue(loadConfig(root));
+      if (migrated) {
+        const aliases = Object.entries(migrated.aliases);
+        console.log(`✔ catalogue: stable IDs${aliases.length ? `, ${aliases.length} alias(es) for changed IDs` : ''} · ${migrated.sharded ? `sharded into ${rel(migrated.shardDir)}/` : 'single file'}`);
+        aliases.forEach(([from, to]) => console.log(`  ${from} → ${to}`));
+      }
+      if (moves.length) console.log('  next: "frontdex agents" to refresh agent rules, MCP entries and hooks under the new name');
+      else if (!migrated) console.log('✔ already using frontdex file names');
       return;
     }
     case 'init': {
@@ -344,8 +351,8 @@ export async function main(argv) {
 
 function printChanges(changes, max) {
   for (const c of changes.slice(0, max)) {
-    const sign = { added: '+', removed: '−', changed: '~' }[c.change];
-    console.log(`  ${sign} ${c.kind === 'pages' ? 'page ' : ''}${c.key}${c.details ? `  ${c.details.map(formatDetail).join(' · ')}` : ''}`);
+    const sign = { added: '+', removed: '−', changed: '~', renamed: '→' }[c.change];
+    console.log(`  ${sign} ${c.kind === 'pages' ? 'page ' : ''}${c.from ? `${c.from} → ` : ''}${c.key}${c.details ? `  ${c.details.map(formatDetail).join(' · ')}` : ''}`);
   }
   if (changes.length > max) console.log(`  … ${changes.length - max} more (frontdex history <id>)`);
 }
