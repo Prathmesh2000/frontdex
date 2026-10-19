@@ -129,9 +129,10 @@ test('Gatsby, SolidStart and Qwik City file routes', () => {
     'src/routes/index.tsx': page('Home'),
     'src/routes/users.tsx': page('UsersLayout', '<div>{props.children}</div>'),
     'src/routes/users/index.tsx': page('UsersList'),
-    'src/routes/users/[id].tsx': page('User'),
+    'src/routes/users/[id].tsx': "import { createSignal } from 'solid-js';\nexport default function User() { const [tab, setTab] = createSignal('profile'); return <main>{tab()}</main>; }\n",
     'src/routes/(marketing)/pricing.tsx': page('Pricing'),
   });
+  assert.deepEqual(solid.components.User.state.tab, { source: 'signal', initial: "'profile'", setter: 'setTab' });
   assert.deepEqual(summary(solid), {
     '/pricing': 'solid-start Pricing App',
     '/': 'solid-start Home App',

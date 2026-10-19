@@ -327,8 +327,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] Package-manager and workspace detection; linker for tsconfig `extends`, `exports`, workspace packages, PnP (nothing resolves through node_modules). Not done: tsconfig project `references`.
 - [x] New monorepo example (pnpm workspace: `apps/web` Next + `apps/admin` Vite + `packages/ui`) with cross-package usage.
 - [x] Routers: RR v7/Remix, TanStack, Gatsby, SolidStart, Qwik City, plus Next RSC rendering/server actions/route handlers/middleware/metadata (`endpoints`, `rendering`, `client-code-in-server-component`). Not done: Solid `createSignal`/Qwik `useSignal` as state, middleware `matcher`.
-- [ ] Adapters + routers: Vue/Nuxt, Svelte/SvelteKit, Astro, Angular, Lit, HTML (+ Alpine/htmx/Stimulus).
-- [ ] One fixture project per framework under `test/fixtures/`, each asserting its pages, components, state and API calls.
+- [x] Adapters + routers: Vue/Nuxt, Svelte/SvelteKit, Astro, Angular, Lit/Web Components, HTML (+ Alpine/htmx/Stimulus). Not done: Pinia/Svelte stores, Nuxt auto-imported components, NgRx.
+- [x] One fixture per framework (in-test fixtures in `test/routers.test.js` and `test/adapters.test.js`), each asserting pages, components, state and API calls.
 - [ ] Styles: lightningcss, Tailwind, CSS-in-JS.
 
 **Insight**

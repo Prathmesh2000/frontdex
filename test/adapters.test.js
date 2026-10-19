@@ -263,3 +263,56 @@ test('Plain HTML site with Lit and vanilla custom elements, Alpine, htmx and Sti
   assert.equal(cat.pages['/'].router, 'html');
   assert.ok(cat.pages['/'].components.includes('LikeCounter'), 'nested custom elements are part of the page tree');
 });
+
+test('Angular: @Component selectors, decorator and signal inputs, signals, HttpClient, templateUrl, routes', () => {
+  const cat = scanFixture({ '@angular/core': '19', '@angular/router': '19' }, {
+    'src/app/user-card.component.ts': [
+      "import { Component, Input, Output, EventEmitter, input, signal, computed } from '@angular/core';",
+      '@Component({',
+      "  selector: 'app-user-card',",
+      '  standalone: true,',
+      "  template: `<div class=\"card\"><app-avatar [src]=\"photo()\"></app-avatar>{{ name }}</div>`,",
+      '})',
+      'export class UserCardComponent {',
+      "  @Input({ required: true }) name!: string;",
+      '  @Output() selected = new EventEmitter<string>();',
+      "  photo = input<string>('');",
+      '  expanded = signal(false);',
+      '  label = computed(() => this.name.toUpperCase());',
+      '  ngOnInit() {}',
+      '  ngOnDestroy() {}',
+      '}',
+    ].join('\n'),
+    'src/app/avatar.component.ts': "import { Component, input } from '@angular/core';\n@Component({ selector: 'app-avatar', template: '<img [src]=\"src()\">' })\nexport class AvatarComponent { src = input.required<string>(); }\n",
+    'src/app/users.component.ts': [
+      "import { Component, inject } from '@angular/core';",
+      "import { HttpClient } from '@angular/common/http';",
+      "@Component({ selector: 'app-users', templateUrl: './users.component.html' })",
+      'export class UsersComponent {',
+      '  private http = inject(HttpClient);',
+      "  load() { return this.http.get('/api/users'); }",
+      '}',
+    ].join('\n'),
+    'src/app/users.component.html': '<ul class="users">\n  <app-user-card name="Ada" (selected)="open($event)"></app-user-card>\n</ul>\n',
+    'src/app/app.routes.ts': [
+      "import { Routes } from '@angular/router';",
+      "import { UsersComponent } from './users.component';",
+      'export const routes: Routes = [',
+      "  { path: 'users', component: UsersComponent },",
+      "  { path: 'users/:id', loadComponent: () => import('./user-card.component').then((m) => m.UserCardComponent) },",
+      "  { path: '', redirectTo: 'users', pathMatch: 'full' },",
+      '];',
+    ].join('\n'),
+  });
+  const C = cat.components;
+  assert.equal(C.UserCardComponent.tag, 'app-user-card');
+  assert.deepEqual(C.UserCardComponent.props, { name: { type: 'string', required: true }, selected: { type: 'output', required: false }, photo: { type: 'string', required: false, default: "''" } });
+  assert.deepEqual(Object.fromEntries(Object.entries(C.UserCardComponent.state).map(([k, v]) => [k, v.source])), { expanded: 'signal', label: 'computed' });
+  assert.deepEqual(C.UserCardComponent.lifecycle.map((e) => e.phases[0]), ['mount', 'unmount']);
+  assert.deepEqual(C.UserCardComponent.renders, ['AvatarComponent']);
+  assert.deepEqual(C.AvatarComponent.props.src, { type: 'string', required: true });
+  assert.deepEqual(C.UsersComponent.renders, ['UserCardComponent']);
+  assert.equal(C.UsersComponent.apiCalls[0].target, '/api/users');
+  assert.equal(cat.pages['/users'].router, 'angular-router');
+  assert.equal(cat.pages['/users/:id'].component, 'UserCardComponent');
+});

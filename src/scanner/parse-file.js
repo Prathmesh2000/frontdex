@@ -4,6 +4,7 @@ import { parse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { extractClassComponent, extractFunctionComponent, isReactClass, memberText, readJSDoc } from './component.js';
 import { analyzeComponent, analyzeModule } from './insights.js';
+import { extractAngularComponent, isAngularComponent } from './angular.js';
 import { definedTags, extractCustomElement, isElementClass } from './webcomponents.js';
 
 const traverse = _traverse.default ?? _traverse;
@@ -310,6 +311,10 @@ function scanComponents(programPath, mod) {
       const name = target.node.id?.name ?? deriveName(mod.file);
       if (isDefault) mod.exports.set('default', name);
       add(target, name, 'class', docNode, undefined, true);
+    } else if ((target.isClassDeclaration() || target.isClassExpression()) && isAngularComponent(target.node)) {
+      const name = target.node.id?.name ?? deriveName(mod.file);
+      if (isDefault) mod.exports.set('default', name);
+      mod.components.push(extractAngularComponent(target, { name, line: target.node.loc?.start.line, file: mod.file, code: mod.code }));
     } else if ((target.isClassDeclaration() || target.isClassExpression()) && isElementClass(target.node.superClass)) {
       const name = target.node.id?.name ?? deriveName(mod.file);
       if (isDefault) mod.exports.set('default', name);
@@ -448,10 +453,17 @@ function lowerComponent(value, mod) {
   if (!value || typeof value !== 'object') return undefined;
   if (value.type === 'Identifier') return value.name;
   const body = (value.type === 'ArrowFunctionExpression' || value.type === 'FunctionExpression') && value.body;
-  const call = body?.type === 'CallExpression' ? body : null;
+  let call = body?.type === 'CallExpression' ? body : null;
+  // Angular loadComponent: () => import('./x').then((m) => m.XComponent)
+  let imported = 'default';
+  if (call?.callee.type === 'MemberExpression' && call.callee.property.name === 'then' && call.callee.object.type === 'CallExpression') {
+    const pick = call.arguments[0];
+    if (pick?.body?.type === 'MemberExpression' && pick.body.property.type === 'Identifier') imported = pick.body.property.name;
+    call = call.callee.object;
+  }
   if (call?.callee.type === 'Import' && call.arguments[0]?.type === 'StringLiteral') {
     const local = `__lazyRoute${value.start}`;
-    mod.imports.set(local, { source: call.arguments[0].value, imported: 'default', lazy: true });
+    mod.imports.set(local, { source: call.arguments[0].value, imported, lazy: true });
     return local;
   }
   return undefined;
@@ -461,7 +473,7 @@ function objectRoute(p, mod) {
   const own = objectProps(p.node);
   if (typeof own.path !== 'string' && own.index !== true) return;
   if ('children' in own) return;
-  const component = componentOf(own.element) ?? componentOf(own.Component) ?? lowerComponent(own.component, mod);
+  const component = componentOf(own.element) ?? componentOf(own.Component) ?? lowerComponent(own.component, mod) ?? lowerComponent(own.loadComponent, mod);
   if (!component) return;
   const paths = [];
   const layouts = [];
@@ -471,7 +483,7 @@ function objectRoute(p, mod) {
     const outer = objectProps(a.node);
     if (!('children' in outer)) continue;
     paths.unshift(typeof outer.path === 'string' ? outer.path : null);
-    const layout = componentOf(outer.element) ?? componentOf(outer.Component) ?? lowerComponent(outer.component, mod);
+    const layout = componentOf(outer.element) ?? componentOf(outer.Component) ?? lowerComponent(outer.component, mod) ?? lowerComponent(outer.loadComponent, mod);
     if (layout) layouts.unshift(layout);
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);

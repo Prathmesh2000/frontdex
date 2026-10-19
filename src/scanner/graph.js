@@ -352,7 +352,7 @@ export function scanProject(config, { cache, known } = {}) {
   for (const mod of modules.values()) {
     for (const r of mod.routes) {
       addPage(r.path, {
-        router: depsFor(mod.file)?.['vue-router'] ? 'vue-router' : 'react-router',
+        router: depsFor(mod.file)?.['vue-router'] ? 'vue-router' : depsFor(mod.file)?.['@angular/router'] ? 'angular-router' : 'react-router',
         file: rel(mod.file),
         component: idOf(resolveLocal(mod.file, r.component)),
         params: [...r.path.matchAll(/:(\w+)/g)].map((m) => m[1]),

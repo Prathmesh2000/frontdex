@@ -16,8 +16,8 @@ import { lineIndex } from './common.js';
 const RAW_TEXT = /^(script|style|textarea|title)$/i;
 const HTMX = { 'hx-get': 'GET', 'hx-post': 'POST', 'hx-put': 'PUT', 'hx-patch': 'PATCH', 'hx-delete': 'DELETE' };
 
-/** Start tags with attributes, in document order: [{ tag, attrs: Map, offset }]. */
-function startTags(code) {
+/** Start tags with attributes, in document order: [{ tag, attrs: Map, offset }]. Also used for Angular templates. */
+export function startTags(code) {
   const tags = [];
   const re = /<!--[\s\S]*?-->|<([a-zA-Z][\w:-]*)((?:\s+[^\s=>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>/g;
   let m;

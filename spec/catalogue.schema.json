@@ -126,7 +126,8 @@
               "vue-router",
               "sveltekit",
               "astro",
-              "html"
+              "html",
+              "angular-router"
             ]
           }
         },
@@ -360,7 +361,8 @@
             "$state",
             "let",
             "field",
-            "x-data"
+            "x-data",
+            "signal"
           ]
         },
         "initial": {
@@ -470,7 +472,8 @@
             "vue-router",
             "sveltekit",
             "astro",
-            "html"
+            "html",
+            "angular-router"
           ]
         },
         "file": {
