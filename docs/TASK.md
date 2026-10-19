@@ -1,10 +1,10 @@
-# Task: frontend-catalogue 1.0
+# Task: UI Atlas 1.0
 
 One task, delivered in one go. Ordering inside it is dependency order, not release phases: nothing ships until every acceptance criterion at the end passes.
 
 ## Goal
 
-Turn `react-catalogue` into **frontend-catalogue**: a devDependency installed inside the user's app that reads the source of any mainstream frontend (React family, Vue, Svelte, Astro, Angular, plain HTML), keeps a living, never-stale knowledge base of components, pages, state, APIs, styles, tokens and health, and serves it to developers (CLI, UI, CI) and to coding agents (rules, hooks, and a separately-packaged MCP server).
+Turn `react-catalogue` into **UI Atlas** (`uiatlas`): a devDependency installed inside the user's app that reads the source of any mainstream frontend (React family, Vue, Svelte, Astro, Angular, plain HTML), keeps a living, never-stale knowledge base of components, pages, state, APIs, styles, tokens and health, and serves it to developers (CLI, UI, CI) and to coding agents (rules, hooks, and a separately-packaged MCP server).
 
 Positioning: *Storybook needs you to write stories. We read your code.*
 
@@ -15,12 +15,13 @@ Decisions marked **default** were left open in discussion. They are applied here
 | Decision | Value |
 |---|---|
 | Distribution | In-app devDependency. Not a standalone app, not a SaaS. Nothing leaves the machine. |
-| Repos | Two repos: `frontend-catalog` (the package) and `frontend-catalog-mcp` (the MCP server). |
-| Package names | **default** `frontend-catalogue` (bin `fcat`, alias `rcat`) and `frontend-catalogue-mcp`. Old name `react-catalogue` gets a final release that re-exports the new package and prints a rename notice. |
+| Name | Product **UI Atlas**. Chosen over frontdex, frontmap, storyless and uilens: framework-neutral, describes the output (a set of maps of the UI), free on npm and nearly unused on GitHub (checked 2026-10-19). |
+| Repos | Two repos: `uiatlas` (the package; the existing `frontend-catalog` GitHub repo is renamed, GitHub keeps a redirect) and `uiatlas-mcp` (new). |
+| Package names | `uiatlas` (bin `uiatlas`, aliases `uia` and `rcat` for migration) and `uiatlas-mcp`. Config `uiatlas.config.json`, knowledge dir `.uiatlas/`, output `uiatlas.yaml`. MCP tool names keep the `catalogue_` prefix so existing agent rules keep working. Old name `react-catalogue` gets a final release that re-exports the new package and prints a rename notice. |
 | Language | TypeScript, ESM, Node ≥ 22.13 (first line with unflagged `node:sqlite`; verify at start). Also runs on Bun. |
 | JS/TS parser | `oxc-parser` (Rust, prebuilt per-platform binaries). Replaces `@babel/parser` + `@babel/traverse`. |
 | Framework parsers | Official compilers, as optional peer deps loaded only when detected: `@vue/compiler-sfc`, `svelte/compiler`, `@astrojs/compiler`, `@angular/compiler`. HTML via `parse5`, CSS via `lightningcss`. |
-| Index | `node:sqlite` with FTS5, at `.catalogue/index.db` (git-ignored). |
+| Index | `node:sqlite` with FTS5, at `.uiatlas/index.db` (git-ignored). |
 | UI | React + Vite + TanStack Router + TanStack Virtual, **pre-built at publish time** and shipped as static assets, so the user's own React version is never touched. |
 | Licence / hosting | **default** MIT, open source, local only. No hosted hub. |
 | GitHub owner of repo 2 | **Unresolved**: existing repo is under `Prathmesh2000`, local `gh` is logged in as `prathmesh_altpath`. Confirm before the push step. |
@@ -36,7 +37,7 @@ These come from the research done for this task (sources at the end). Every one 
 | C3 | Next.js integration must not use webpack plugins. | Turbopack does not run webpack plugins. |
 | C4 | Zero bytes in the user's production bundle. Any runtime overlay is imported only behind `NODE_ENV === 'development'`. | The package lives in the app repo. |
 | C5 | Workspaces and monorepos are first-class from the start. | Most real codebases are monorepos; Knip and Omlet both treat this as table stakes. |
-| C6 | Zero-config by default. `npx fcat init` detects package manager, workspaces and frameworks; config only overrides. | Ladle and Knip win on this; Storybook loses on setup and upgrade pain. |
+| C6 | Zero-config by default. `npx uiatlas init` detects package manager, workspaces and frameworks; config only overrides. | Ladle and Knip win on this; Storybook loses on setup and upgrade pain. |
 | C7 | React/Next output stays at least as rich as today. Golden-file tests on both examples guard it. | No regressions while rewriting. |
 
 ## Target architecture
@@ -61,14 +62,14 @@ flowchart TB
   SV --> UI[Web UI]
   DB --> CI[check · diff · pr-comment]
   DB --> HIS[(History snapshots)]
-  DB -.public API.-> MCP[frontend-catalogue-mcp<br/>separate repo]
+  DB -.public API.-> MCP[uiatlas-mcp<br/>separate repo]
 ```
 
 Incremental by design: a file change re-parses that file only, re-links only the modules whose resolved imports touch it, and re-runs only the analyzers whose inputs changed.
 
-## Repo 1: `frontend-catalog` (the package)
+## Repo 1: `uiatlas` (the package)
 
-Converted to a pnpm workspace internally so code stays organised, but published as **one** npm package (`frontend-catalogue`) with subpath exports. Internal packages are bundled at build time, not published separately.
+Converted to a pnpm workspace internally so code stays organised, but published as **one** npm package (`uiatlas`) with subpath exports. Internal packages are bundled at build time, not published separately.
 
 ```
 packages/
@@ -77,7 +78,7 @@ packages/
   adapters/      jsx/ vue/ svelte/ astro/ angular/ html/ css/
   routers/       one file per router
   analyzers/     health/ a11y/ tokens/ dupes/ adoption/ perf/ tests/ owners/ i18n/
-  cli/           `fcat`
+  cli/           `uiatlas`
   server/        HTTP + SSE
   ui/            React app, built to static files
   integrations/  next.cjs, vite.ts, webpack.ts, rspack.ts, github-action/
@@ -143,23 +144,23 @@ Plain CSS, CSS modules, SCSS/Less (through lightningcss, nesting included), Tail
 
 - Read existing `*.stories.*` (CSF) and `*.fixture.*` (React Cosmos) as variants. Remove `**/*.stories.*` from the default exclude list; stories are indexed as examples, not as components.
 - Read a Storybook components manifest when present.
-- Isolated preview served **through the user's own dev server** so their providers and CSS apply: Vite plugin adds a virtual route `/__catalogue/preview/:id`; Next integration generates a git-ignored dev-only route file under `app/__catalogue/` (no webpack plugin, C3). Providers come from an optional `catalogue.preview.tsx` decorators file.
+- Isolated preview served **through the user's own dev server** so their providers and CSS apply: Vite plugin adds a virtual route `/__uiatlas/preview/:id`; Next integration generates a git-ignored dev-only route file under `app/__uiatlas/` (no webpack plugin, C3). Providers come from an optional `uiatlas.preview.tsx` decorators file.
 - Props playground on top of the preview, controls generated from prop types.
-- `fcat screenshot` with Playwright as an optional peer dependency; screenshots are stored in history so snapshots can be diffed visually.
+- `uiatlas screenshot` with Playwright as an optional peer dependency; screenshots are stored in history so snapshots can be diffed visually.
 
 ### Storage and output
 
 - `node:sqlite` index is the source of truth for queries. UI, CLI and MCP never load the whole catalogue into memory.
-- Human output: `catalogue.yaml` becomes a small root index plus shards `catalogue/<workspace>/<dir>.yaml`, so two PRs touching different folders never conflict. `"output": { "shard": false }` keeps the single-file mode.
+- Human output: `uiatlas.yaml` becomes a small root index plus shards `uiatlas/<workspace>/<dir>.yaml`, so two PRs touching different folders never conflict. `"output": { "shard": false }` keeps the single-file mode.
 - Stable component IDs: `<relative/file/path>#<ExportName>`; the display name is a separate field. Renaming a sibling never changes another component's ID.
-- Agent output (`.catalogue/agent/`) is kept, sharded the same way.
+- Agent output (`.uiatlas/agent/`) is kept, sharded the same way.
 - History is kept as is (content-addressed, packed), now keyed by stable IDs.
 
 ### CatalogueSpec 2.0
 
-Breaking bump because of stable IDs. Adds `info.frameworks[]`, `info.packageManager`, `info.workspaces[]`, a `workspace` field on components and pages, `hooks` (custom hooks catalogued in their own right), `tokens`, `stories`, `owners`, `adoption`, `a11y`, and new router and component-kind enum values. `fcat upgrade` migrates 1.x documents and keeps all hand-written fields (`description`, `tags`, `owner`, `x-*`). Update `docs/SPEC.md` and the JSON Schema.
+Breaking bump because of stable IDs. Adds `info.frameworks[]`, `info.packageManager`, `info.workspaces[]`, a `workspace` field on components and pages, `hooks` (custom hooks catalogued in their own right), `tokens`, `stories`, `owners`, `adoption`, `a11y`, and new router and component-kind enum values. `uiatlas upgrade` migrates 1.x documents and keeps all hand-written fields (`description`, `tags`, `owner`, `x-*`). Update `docs/SPEC.md` and the JSON Schema.
 
-### Configuration (`catalogue.config.json`, every key optional)
+### Configuration (`uiatlas.config.json`, every key optional)
 
 ```jsonc
 {
@@ -168,11 +169,11 @@ Breaking bump because of stable IDs. Adds `info.frameworks[]`, `info.packageMana
   "exclude": ["**/node_modules/**", "**/dist/**"],
   "workspaces": "auto",                 // or an explicit list
   "frameworks": "auto",                 // or ["next", "vue", ...]
-  "output": { "file": "catalogue.yaml", "shard": true },
+  "output": { "file": "uiatlas.yaml", "shard": true },
   "port": 4400,
   "preview": "http://localhost:3000",
   "autoUpdate": true,
-  "knowledgeDir": ".catalogue",
+  "knowledgeDir": ".uiatlas",
   "history": { "enabled": true, "limit": 500 },
   "agents": { "enabled": true },
   "analyzers": { "a11y": true, "i18n": "auto", "perf": true, "tokens": { "sources": "auto" } },
@@ -180,7 +181,7 @@ Breaking bump because of stable IDs. Adds `info.frameworks[]`, `info.packageMana
 }
 ```
 
-### CLI (`fcat`, alias `rcat`)
+### CLI (`uiatlas`, aliases `uia`, `rcat`)
 
 Global flags on every command: `-C <dir>`, `--json`, `--workspace <name>`, `--production` (ignore test/story/dev-only files).
 
@@ -195,7 +196,7 @@ Global flags on every command: `-C <dir>`, `--json`, `--workspace <name>`, `--pr
 | Visual | `preview <C>`, `screenshot [route]` |
 | Output | `serve`, `build [-o dir]`, `export --format yaml\|json\|md\|html` |
 
-`fcat mcp` stays as a shim: runs `frontend-catalogue-mcp` if installed, otherwise prints the install command for the detected package manager.
+`uiatlas mcp` stays as a shim: runs `uiatlas-mcp` if installed, otherwise prints the install command for the detected package manager.
 
 Query language: keep every existing filter and add `fw:vue`, `ws:@acme/ui`, `token:color-primary`, `dupe:Button`, `owner:@team`, `has:story`, `is:duplicate`, `a11y:alt`.
 
@@ -224,31 +225,31 @@ Query language: keep every existing filter and add `fw:vue`, `ws:@acme/ui`, `tok
 - Every existing view keeps its features: the page-first tree, component tabs (Data flow, Family, Internals, Lifecycle, API & state, Styles, Health, Source, History), the Ctrl K search, the live Rescan.
 - Overview: framework mix, counts per workspace, health trend, adoption trend, "what to do next".
 - All lists are virtualized and paged from the HTTP API (`/api/components?cursor=`, `/api/search?q=`, …). No `window.__CATALOGUE__` blob.
-- `fcat build` produces the same UI as a static site (the index is exported as JSON shards loaded on demand).
+- `uiatlas build` produces the same UI as a static site (the index is exported as JSON shards loaded on demand).
 - Light and dark themes; keyboard navigation; passes its own a11y analyzer.
 
 ### Agent integration (stays in repo 1)
 
 - Rules for Claude Code, Cursor, OpenCode, Hermes, Copilot and `AGENTS.md`, as today, plus a new rule: **run the duplicate check before creating a component**.
 - `PostToolUse` / `SessionStart` hooks as today, now also reporting new duplicates and token drift introduced by the edit.
-- `fcat agents` writes the MCP entry as `npx frontend-catalogue-mcp` (or the pnpm/yarn/bun equivalent) and warns when the MCP package is not installed.
+- `uiatlas agents` writes the MCP entry as `npx uiatlas-mcp` (or the pnpm/yarn/bun equivalent) and warns when the MCP package is not installed.
 
 ### CI
 
-- `fcat check` and `fcat health --strict` as today.
-- `fcat diff` between two git refs: changed components, props, pages, new issues, adoption deltas.
-- `fcat pr-comment`: posts or updates one PR comment ("this PR changes `ProductCard` props; 5 pages affected; 2 new high-severity issues").
+- `uiatlas check` and `uiatlas health --strict` as today.
+- `uiatlas diff` between two git refs: changed components, props, pages, new issues, adoption deltas.
+- `uiatlas pr-comment`: posts or updates one PR comment ("this PR changes `ProductCard` props; 5 pages affected; 2 new high-severity issues").
 - A GitHub Action wrapping both, in `integrations/github-action/`, with a cache keyed by commit so CI only re-parses changed files.
 
 ### Optional dev-only overlay
 
-`frontend-catalogue/overlay`: hover any element in the running app to see its component, file:line, props and render count, with a jump into the catalogue UI. Imported only under `NODE_ENV === 'development'` (C4); the Next and Vite integrations inject it automatically when `"overlay": true`.
+`uiatlas/overlay`: hover any element in the running app to see its component, file:line, props and render count, with a jump into the catalogue UI. Imported only under `NODE_ENV === 'development'` (C4); the Next and Vite integrations inject it automatically when `"overlay": true`.
 
-## Repo 2: `frontend-catalog-mcp`
+## Repo 2: `uiatlas-mcp`
 
 ```
-package.json      name frontend-catalogue-mcp, bin frontend-catalogue-mcp,
-                  peerDependencies { "frontend-catalogue": "^1.0.0" }, no other runtime deps
+package.json      name uiatlas-mcp, bin uiatlas-mcp,
+                  peerDependencies { "uiatlas": "^1.0.0" }, no other runtime deps
 bin/              entry: loadConfig(cwd or -C) → start stdio server
 src/server.ts     protocol: stateless 2026-07-28 revision + older initialize-handshake revisions (as today)
 src/tools/        one file per tool
@@ -279,14 +280,15 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] `npm install`, `npm test` green on today's code.
 - [ ] Record golden outputs: `catalogue.json`, agent cards and MCP responses for both examples.
 - [ ] Verify at start: `oxc-parser` API stability and platform coverage, `node:sqlite` unflagged Node version, current Next/Turbopack plugin surface. Record findings at the top of this file.
+- [ ] **Confirm with the user**, then reserve the names before any other public step: publish `0.0.0` placeholders of `uiatlas` and `uiatlas-mcp` to npm, rename the GitHub repo `frontend-catalog` → `uiatlas`, update the local `origin` remote. If either npm name has been taken since 2026-10-19, stop and ask.
 
 **Foundation**
 - [ ] Convert repo 1 to a TypeScript pnpm workspace with the layout above; build to one published package.
-- [ ] `packages/spec`: types + Schema 2.0; `fcat validate` passes on 1.x and 2.0 documents.
+- [ ] `packages/spec`: types + Schema 2.0; `uiatlas validate` passes on 1.x and 2.0 documents.
 - [ ] Port the JSX scanner from Babel to oxc; worker pool; parse cache keeps today's "keep last good parse on broken file" behaviour.
 - [ ] Golden files for both examples match (allowed differences: ID format, new fields).
 - [ ] SQLite index + FTS5; `query`, `show`, `impact`, `dataflow` read from it.
-- [ ] Stable IDs; sharded YAML; history keyed by stable IDs; `fcat upgrade` migrates the examples' 1.x files.
+- [ ] Stable IDs; sharded YAML; history keyed by stable IDs; `uiatlas upgrade` migrates the examples' 1.x files.
 
 **Reach**
 - [ ] Package-manager and workspace detection; linker for tsconfig `extends`/references, `exports`, workspace packages, PnP.
@@ -303,7 +305,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 
 **Surfaces**
 - [ ] CLI: every command in the table, `--json` on all, help text, `doctor`.
-- [ ] HTTP API (paged) + new UI; `fcat build` static export.
+- [ ] HTTP API (paged) + new UI; `uiatlas build` static export.
 - [ ] Preview through the user's dev server (Vite virtual route, Next generated dev-only route), props playground, `screenshot`.
 - [ ] Dev-only overlay.
 - [ ] Integrations: Next (no webpack plugin), Vite, webpack, Rspack.
@@ -311,8 +313,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] CI: `diff`, `pr-comment`, GitHub Action with commit-keyed cache.
 
 **MCP split**
-- [ ] Remove `src/mcp.js` and its test from repo 1; `fcat mcp` shim; `fcat agents` writes the new MCP entry.
-- [ ] Create `C:\frontend-catalog-mcp` with the layout above; port the 12 tools onto the public API; add the 6 new tools.
+- [ ] Remove `src/mcp.js` and its test from repo 1; `uiatlas mcp` shim; `uiatlas agents` writes the new MCP entry.
+- [ ] Create `C:\uiatlas-mcp` with the layout above; port the 12 tools onto the public API; add the 6 new tools.
 - [ ] MCP golden responses match the baseline for the 12 existing tools.
 - [ ] **Confirm GitHub owner and visibility with the user**, then create the repo and push. Repo 1 work goes on a branch, not `main`.
 
@@ -326,11 +328,11 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 | # | Check | How |
 |---|---|---|
 | A1 | No lifecycle scripts in either published package (C1). | `npm pack` both, inspect `package.json`. |
-| A2 | Clean install and `fcat scan` work under npm, pnpm 10, yarn classic, yarn berry PnP, bun, on Windows, macOS, Linux (C2). | CI matrix on the monorepo example. |
+| A2 | Clean install and `uiatlas scan` work under npm, pnpm 10, yarn classic, yarn berry PnP, bun, on Windows, macOS, Linux (C2). | CI matrix on the monorepo example. |
 | A3 | Next example runs `next dev` with Turbopack and the integration active; preview route renders (C3). | Manual + Playwright smoke test. |
 | A4 | Production build of each example contains no catalogue code (C4). | Grep the built bundles for the package name and overlay markers. |
 | A5 | Monorepo example: `packages/ui` components show usage from `apps/web` (C5). | Fixture test. |
-| A6 | `npx fcat init && npx fcat scan` works with no hand-written config on every example and fixture (C6). | Fixture tests. |
+| A6 | `npx uiatlas init && npx uiatlas scan` works with no hand-written config on every example and fixture (C6). | Fixture tests. |
 | A7 | React/Next golden files match, MCP golden responses match (C7). | Golden tests. |
 | A8 | Every framework fixture produces its expected pages and components. | Fixture tests. |
 | A9 | Performance targets on the synthetic 20k-file repo (8-core machine): cold scan < 15 s, one-file rescan < 300 ms, UI first paint < 500 ms at 10k components, peak RSS < 1 GB. | Benchmark script committed to the repo. |
