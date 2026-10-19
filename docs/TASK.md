@@ -14,6 +14,8 @@ Measured on this machine (Node 24.21, Windows) with `bench/scan.js` (the Next ex
 | One-file rescan | 2.2 s | < 300 ms |
 | RSS | 439 MB | < 1 GB at 20k |
 
+Same benchmark at 250 copies (21,500 files): cold scan 109.2 s (5.1 ms/file, parse 6%), no-change rescan 11.6 s, one-file rescan 17.7 s, RSS 1,165 MB. Every 20k target is missed, rescans by ~60×.
+
 Parser comparison on the 124 source files in this repo (`oxc-parser` 0.154.0, warm, 20 runs):
 
 | | ms/file |
