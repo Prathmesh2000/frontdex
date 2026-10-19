@@ -35,6 +35,26 @@ export function startTags(code) {
   return tags;
 }
 
+/**
+ * Accessibility issues in HTML-like markup (HTML pages, Angular templates). `lineOf` maps an offset to a line in the
+ * real file. Text of a button/link is whatever sits before its closing tag, minus nested tags; a field inside a
+ * <label>…</label> range counts as labelled.
+ */
+export function markupA11y(code, lineOf) {
+  const lowerCode = code.toLowerCase();
+  const labels = [...lowerCode.matchAll(/<label\b[\s\S]*?<\/label>/g)].map((m) => [m.index, m.index + m[0].length]);
+  const issues = [];
+  for (const { tag, attrs, offset } of startTags(code)) {
+    const lower = tag.toLowerCase();
+    const close = lower === 'button' || lower === 'a' ? lowerCode.indexOf(`</${lower}`, offset) : -1;
+    const inner = close === -1 ? null : code.slice(code.indexOf('>', offset) + 1, close);
+    // {{ interpolation }} (Angular) counts as text; a custom element inside may render it, so that stays unknown.
+    const text = inner === null ? null : /\S/.test(inner.replace(/<[^>]*>/g, '')) ? true : /<[a-z]+-[\w-]*/i.test(inner) ? null : false;
+    issues.push(...a11yIssues({ tag: lower, attrs, text, line: lineOf(offset), inLabel: labels.some(([a, b]) => offset > a && offset < b) }));
+  }
+  return issues;
+}
+
 /** `src`/`href` as an import specifier: relative paths stay relative, `/x` is looked up from the nearest folder holding it. */
 function localRef(file, ref) {
   if (!ref || /^(https?:|\/\/|data:|#|mailto:)/.test(ref)) return null;
@@ -54,16 +74,10 @@ export function parseHtml(file, code) {
   const classes = new Set();
   const hooks = new Map();
 
-  const lowerCode = code.toLowerCase();
-  const labels = [...lowerCode.matchAll(/<label\b[\s\S]*?<\/label>/g)].map((m) => [m.index, m.index + m[0].length]);
-  const issues = [];
+  const issues = markupA11y(code, lineOf);
   for (const { tag, attrs, offset } of startTags(code)) {
     const line = lineOf(offset);
     const lower = tag.toLowerCase();
-    // Visible text of a button/link: whatever sits before its closing tag, minus nested tags.
-    const close = lower === 'button' || lower === 'a' ? lowerCode.indexOf(`</${lower}`, offset) : -1;
-    const text = close === -1 ? null : /\S/.test(code.slice(code.indexOf('>', offset) + 1, close).replace(/<[^>]*>/g, ''));
-    issues.push(...a11yIssues({ tag: lower, attrs, text, line, inLabel: labels.some(([a, b]) => offset > a && offset < b) }));
     if (lower === 'script' && attrs.get('src')) {
       const source = localRef(file, attrs.get('src'));
       if (source) mod.imports.set(`__script${line}`, { source, imported: '*' });

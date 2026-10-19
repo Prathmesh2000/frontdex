@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { lineIndex } from './adapters/common.js';
-import { startTags } from './adapters/html.js';
+import { markupA11y, startTags } from './adapters/html.js';
 import { memberText } from './component.js';
 
 /*
@@ -95,6 +95,9 @@ export function extractAngularComponent(classPath, { name, line, file, code }) {
       for (const c of (attrs.get('class') ?? '').split(/\s+/).filter(Boolean)) classes.add(c);
     }
     if (classes.size) record.styles = { classes: [...classes] };
+    // Issues in a separate templateUrl file point at that file in the message; line numbers belong to the .ts file.
+    const issues = markupA11y(template, (o) => firstLine + lineOf(o) - 1).map(({ line, ...i }) => (inline ? { ...i, line } : { ...i, message: `${i.message} (${url}:${line})` }));
+    if (issues.length) record.issues = issues;
   }
   return record;
 }

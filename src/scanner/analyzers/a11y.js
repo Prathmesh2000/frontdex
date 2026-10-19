@@ -14,8 +14,7 @@ const NAMED = (attrs) => ['aria-label', 'aria-labelledby', 'title', 'ariaLabel']
 const issue = (type, severity, message, line, fix) => ({ type, severity, message, ...(line && { line }), fix });
 
 /** Normalizes framework attribute spellings: onClick / @click / v-on:click / on:click / (click) → 'click handler'. */
-const hasClick = (attrs) => [...attrs.keys()].some((k) => /^(onClick|onclick|@click|v-on:click|on:click|\(click\))$/.test(k));
-const hasKeyboard = (attrs) => [...attrs.keys()].some((k) => /^(onKey(Down|Up|Press)|onkey(down|up|press)|@key(down|up)|v-on:key(down|up)|on:key(down|up)|\(key(down|up)[^)]*\))/.test(k));
+const hasClick = (attrs) => [...attrs.keys()].some((k) => /^(onClick|onclick|@click|v-on:click|on:click|\(click\))$/.test(k));const hasKeyboard = (attrs) => [...attrs.keys()].some((k) => /^(onKey(Down|Up|Press)|onkey(down|up|press)|@key(down|up)|v-on:key(down|up)|on:key(down|up)|\(key(down|up)[^)]*\))/.test(k));
 
 export function a11yIssues({ tag, attrs, text, line, inLabel = false }) {
   const out = [];

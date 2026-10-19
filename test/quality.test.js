@@ -62,3 +62,18 @@ test('i18n: hard-coded text is reported only when the project uses an i18n libra
   const [issue] = intl.components.Banner.issues.filter((i) => i.type === 'i18n-hardcoded-text');
   assert.match(issue.message, /^3 piece\(s\) of hard-coded text, e\.g\. "Welcome back"/);
 });
+
+test('a11y in Svelte, Astro and Angular templates', () => {
+  const svelte = scanFixture({ svelte: '5' }, { 'src/Bad.svelte': '<img src="a.png">\n<div on:click={() => {}}>x</div>\n<label>Name <input></label>\n<button onclick={() => {}}></button>\n' });
+  assert.deepEqual(svelte.components.Bad.issues.map((i) => i.type), ['a11y-img-alt', 'a11y-click-handler', 'a11y-control-name']);
+  const astro = scanFixture({ astro: '5' }, { 'src/pages/index.astro': '<html><body><img src="/x.png"><input name="q"><a href="/">{title}</a></body></html>\n' });
+  assert.deepEqual(Object.values(astro.components)[0].issues.map((i) => i.type), ['a11y-html-lang', 'a11y-img-alt', 'a11y-field-label']);
+  const ng = scanFixture({ '@angular/core': '19' }, {
+    'src/app/a.component.ts': "import { Component } from '@angular/core';\n@Component({ selector: 'app-a', templateUrl: './a.component.html' })\nexport class AComponent {}\n",
+    'src/app/a.component.html': '<button (click)="go()"></button>\n<button (click)="go()">{{ label }}</button>\n',
+  });
+  const [issue] = ng.components.AComponent.issues;
+  assert.equal(issue.type, 'a11y-control-name');
+  assert.match(issue.message, /\(\.\/a\.component\.html:1\)$/);
+  assert.equal(ng.components.AComponent.issues.length, 1);
+});

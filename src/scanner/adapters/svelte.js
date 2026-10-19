@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { memberText } from '../component.js';
+import { a11yIssues } from '../analyzers/a11y.js';
 import { deriveName, parseFile } from '../parse-file.js';
 import { apiCall, lineIndex, loadFromProject, mergeScript, snippet } from './common.js';
 
@@ -111,22 +112,37 @@ function scanInstance(code, startLine, record) {
 /** Child components with their props/events, and static classes, from the markup. Handles Svelte 5 and 4 node types. */
 function scanMarkup(fragment, record, lineOf) {
   const classes = new Set();
-  const visit = (node) => {
+  const issues = [];
+  const isComponent = (n) => n?.type === 'Component' || n?.type === 'InlineComponent' || n?.type === 'SvelteComponent';
+  const visit = (node, inLabel = false) => {
     if (!node || typeof node !== 'object') return;
-    if (Array.isArray(node)) return node.forEach(visit);
+    if (Array.isArray(node)) return node.forEach((n) => visit(n, inLabel));
     const type = node.type;
-    if (type === 'Component' || type === 'InlineComponent' || type === 'SvelteComponent') {
+    if (isComponent(node)) {
       if (/^[A-Z]/.test(node.name ?? '')) record.jsx.push({ name: node.name, line: lineOf(node.start), props: (node.attributes ?? []).map(attrProp).filter(Boolean) });
     }
     if (type === 'RegularElement' || type === 'Element') {
       const cls = (node.attributes ?? []).find((a) => a.type === 'Attribute' && a.name === 'class');
       const parts = Array.isArray(cls?.value) ? cls.value : [];
       for (const part of parts) if (part.type === 'Text') part.data.split(/\s+/).filter(Boolean).forEach((c) => classes.add(c));
+      // Static attribute values are kept; expressions, events (on:click / onclick) and bindings are present, value unknown.
+      const attrs = new Map(
+        (node.attributes ?? []).flatMap((a) => {
+          if (a.type === 'Attribute') return [[a.name, Array.isArray(a.value) && a.value.length === 1 && a.value[0].type === 'Text' ? a.value[0].data : true]];
+          if (a.type === 'OnDirective' || a.type === 'EventHandler') return [[`on:${a.name}`, true]];
+          return [];
+        }),
+      );
+      const kids = node.fragment?.nodes ?? node.children ?? [];
+      const text = kids.some((k) => (k.type === 'Text' && k.data.trim()) || k.type === 'ExpressionTag' || k.type === 'MustacheTag') ? true : kids.some(isComponent) ? null : false;
+      issues.push(...a11yIssues({ tag: node.name, attrs, text, line: lineOf(node.start), inLabel }));
     }
-    for (const key of ['fragment', 'nodes', 'children', 'consequent', 'alternate', 'body', 'fallback', 'pending', 'then', 'catch', 'else']) visit(node[key]);
+    const childInLabel = inLabel || ((type === 'RegularElement' || type === 'Element') && node.name === 'label');
+    for (const key of ['fragment', 'nodes', 'children', 'consequent', 'alternate', 'body', 'fallback', 'pending', 'then', 'catch', 'else']) visit(node[key], childInLabel);
   };
   visit(fragment);
   if (classes.size) record.styles = { classes: [...classes] };
+  if (issues.length) record.issues = issues;
 }
 
 function attrProp(a) {

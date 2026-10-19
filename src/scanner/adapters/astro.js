@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { memberText } from '../component.js';
+import { a11yIssues } from '../analyzers/a11y.js';
 import { deriveName, parseFile } from '../parse-file.js';
 import { apiCall, loadFromProject, mergeScript, snippet } from './common.js';
 
@@ -33,7 +34,8 @@ export function parseAstro(file, code) {
     scanFrontmatter(front.value, startLine, record);
   }
   const classes = new Set();
-  const walk = (node) => {
+  const issues = [];
+  const walk = (node, inLabel = false) => {
     if (node.type === 'component' && /^[A-Z]/.test(node.name)) {
       record.jsx.push({
         name: node.name,
@@ -44,11 +46,17 @@ export function parseAstro(file, code) {
     if (node.type === 'element') {
       const cls = (node.attributes ?? []).find((a) => a.name === 'class' && a.kind === 'quoted');
       cls?.value.split(/\s+/).filter(Boolean).forEach((c) => classes.add(c));
+      // Quoted values are kept; {expressions} and bare attributes are present, value unknown.
+      const attrs = new Map((node.attributes ?? []).filter((a) => a.kind !== 'spread').map((a) => [a.name, a.kind === 'quoted' ? a.value : true]));
+      const kids = node.children ?? [];
+      const text = kids.some((k) => (k.type === 'text' && k.value.trim()) || k.type === 'expression') ? true : kids.some((k) => k.type === 'component' || k.type === 'custom-element') ? null : false;
+      if (!(node.attributes ?? []).some((a) => a.kind === 'spread')) issues.push(...a11yIssues({ tag: node.name, attrs, text, line: node.position?.start?.line, inLabel }));
     }
-    for (const child of node.children ?? []) walk(child);
+    for (const child of node.children ?? []) walk(child, inLabel || (node.type === 'element' && node.name === 'label'));
   };
   walk(ast);
   if (classes.size) record.styles = { classes: [...classes] };
+  if (issues.length) record.issues = issues;
   record.hooks = [];
   mod.exports.set('default', record.name);
   mod.components = [record];
