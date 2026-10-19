@@ -7,6 +7,7 @@
 
 Image carousel with arrow-key navigation.
 
+- Owners: @northwind/web
 - Props: `images: string[]`, `alt: string`
 - State: `index` (useState, init `0`, set via `setIndex`); `zoomed` (useState, init `false`, set via `setZoomed`)
 - Hooks: useState×2, useEffect
@@ -24,6 +25,7 @@ Image carousel with arrow-key navigation.
 
 Title, price, stock and the add-to-cart controls.
 
+- Owners: @northwind/web
 - Props: `product: Product`, `showSku?: boolean` = `false`
 - Props from ProductDetailPage: product=product
 - Variables: inStock
@@ -39,6 +41,7 @@ Title, price, stock and the add-to-cart controls.
 
 "You may also like" strip.
 
+- Owners: @northwind/web
 - Props: `category: string`, `excludeId: string`, `limit?: number` = `4`
 - State: `items` (useState, init `[]`, set via `setItems`)
 - Hooks: useState, useEffect
@@ -57,6 +60,7 @@ Title, price, stock and the add-to-cart controls.
 
 Customer reviews, loaded lazily below the fold.
 
+- Owners: @northwind/web
 - Props: `productId: string`
 - State: `reviews` (useState, init `null`, set via `setReviews`); `expanded` (useState, init `false`, set via `setExpanded`)
 - Hooks: useState×2, useEffect
@@ -76,6 +80,7 @@ Customer reviews, loaded lazily below the fold.
 
 Quantity picker + add button for the product page.
 
+- Owners: @northwind/web
 - Props: `product: Product`, `maxQuantity?: number` = `10`
 - State: `quantity` (useState, init `1`, set via `setQuantity`)
 - Hooks: useState, useTransition, useAppSelector, useAppDispatch, useToast
@@ -98,6 +103,7 @@ Quantity picker + add button for the product page.
 
 Tabbed product collections on the homepage (compound Tabs).
 
+- Owners: @northwind/web
 - Props: `defaultTab?: string` = `'new'`
 - Props from HomePage: defaultTab="bestsellers"
 - Renders: TabsRoot(defaultValue), TabsList, TabsTrigger(key, value), TabsPanel(key, value), ProductGrid(category, pageSize)
@@ -110,6 +116,7 @@ Tabbed product collections on the homepage (compound Tabs).
 
 Sidebar filters; applies them to the URL query string.
 
+- Owners: @northwind/web
 - Props: `categories: string[]`
 - State: `filters` (useReducer, init `{ ...EMPTY, category: params.get('category') ?? 'all' }`, set via `dispatch`)
 - Hooks: useSearchParams, useRouter, usePathname, useReducer
@@ -118,6 +125,7 @@ Sidebar filters; applies them to the URL query string.
 - Validation (html): Min price [min, type=number]
 - Validation (html): Max price [min, type=number]
 - CSS classes: filters
+- ⚠ MEDIUM a11y-field-label L31: <select> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - Renders: Input(label, type, min, value, onChange, label, type, min, value, onChange), Button(onClick, variant, onClick)
 - Used by: ProductsPage
 - Pages: /products
@@ -128,6 +136,7 @@ Sidebar filters; applies them to the URL query string.
 
 Responsive grid of products for a category. Column count follows the container width.
 
+- Owners: @northwind/web
 - Props: `category?: string` = `'all'`, `sort?: 'price' | 'rating' | 'newest'` = `'newest'`, `pageSize?: number` = `24`
 - State: `columns` (useState, init `4`, set via `setColumns`)
 - Refs: `containerRef`
@@ -151,6 +160,7 @@ Responsive grid of products for a category. Column count follows the container w
 
 Product tile used in grids, search results and related products.
 
+- Owners: @northwind/web
 - Props: `product: Product`, `onAdd?: (product: Product) => void`, `compact?: boolean` = `false`, `highlight?: string`
 - Props from ProductGrid: key=p.id, product=p, onAdd=handleAdd, highlight=p.rating && p.rating > 4.5 ? 'Top rated' : undefi…
 - Props from RelatedProducts: key=p.id, product=p, compact=true

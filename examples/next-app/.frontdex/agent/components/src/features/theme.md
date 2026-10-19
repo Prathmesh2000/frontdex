@@ -7,6 +7,7 @@
 
 Follows the OS colour scheme until the user picks one.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - State: `theme` (useState, init `'light'`, set via `setTheme`); `userChoice` (useState, init `null`, set via `setUserChoice`)
 - Hooks: useState×2, useEffect, useLayoutEffect

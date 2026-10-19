@@ -7,6 +7,7 @@
 
 Live search: SearchBar reports debounced terms, SearchResults fetches them.
 
+- Owners: @northwind/web
 - State: `term` (useState, init `initial`, set via `setTerm`)
 - Hooks: useSearchParams, useState
 - Variables: initial

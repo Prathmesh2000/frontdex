@@ -7,6 +7,7 @@
 
 Admin shell: role-gated, with sidebar and an error boundary around content.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - CSS classes: flex
 - Renders: ProtectedRoute(role), AdminSidebar, ErrorBoundary(fallbackTitle)
@@ -19,6 +20,7 @@ Admin shell: role-gated, with sidebar and an error boundary around content.
 
 Admin dashboard: KPIs, revenue chart, live visitors and recent orders.
 
+- Owners: @northwind/web
 - CSS classes: grid (app/globals.css:6), gap-6
 - Renders: StatCard(title, metrics), LiveVisitors(channel), SalesPanel(range), RecentOrders(limit)
 - Used by: nothing (unused or entry point)

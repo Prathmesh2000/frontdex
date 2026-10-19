@@ -7,6 +7,7 @@
 
 Landing page: promo hero + tabbed collections.
 
+- Owners: @northwind/web
 - Renders: HeroBanner(headline, endsAt), FeaturedCollections(defaultTab), NewsletterForm
 - Used by: nothing (unused or entry point)
 - Pages: /
@@ -17,6 +18,7 @@ Landing page: promo hero + tabbed collections.
 
 App shell: Redux store, auth, theme and toasts wrap every page.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - CSS classes: container, mx-auto, px-4
 - Renders: StoreProvider, AuthProvider, ThemeProvider, ToastProvider, Header, Footer(links, year), ToastViewport

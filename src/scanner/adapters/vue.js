@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { memberText } from '../component.js';
+import { a11yIssues } from '../analyzers/a11y.js';
 import { deriveName, parseFile } from '../parse-file.js';
 import { apiCall as genericApiCall, loadFromProject, mergeScript, pascal, snippet } from './common.js';
 
@@ -178,9 +179,16 @@ function optionsApi(obj, record, registered, text) {
 /** Components used in <template>, the props/listeners passed to them, and static classes. */
 function scanTemplate(root, record, registered) {
   const classes = new Set();
-  const walk = (node) => {
+  const issues = [];
+  const walk = (node, inLabel = false) => {
     if (node.type === 1) {
       for (const a of node.props) if (a.type === 6 && a.name === 'class' && a.value) a.value.content.split(/\s+/).filter(Boolean).forEach((c) => classes.add(c));
+      if (node.tagType === 0) {
+        // Native element: static attrs keep their value, bound ones (:alt, @click, v-on:keydown) are present with value unknown.
+        const attrs = new Map(node.props.flatMap((a) => (a.type === 6 ? [[a.name, a.value?.content ?? true]] : a.type === 7 && a.arg?.content ? [[a.name === 'on' ? `@${a.arg.content}` : a.arg.content, true]] : [])));
+        const text = node.children.some((c) => (c.type === 2 && c.content.trim()) || c.type === 5) ? true : node.children.some((c) => c.type === 1 && c.tagType !== 0) ? null : false;
+        issues.push(...a11yIssues({ tag: node.tag, attrs, text, line: node.loc.start.line, inLabel }));
+      }
       // tagType 1 = component (PascalCase, kebab-case custom tags, or anything not a native element).
       if (node.tagType === 1) {
         const tag = registered.get(node.tag) ?? registered.get(pascal(node.tag)) ?? (node.tag.includes('.') ? node.tag : pascal(node.tag));
@@ -196,9 +204,11 @@ function scanTemplate(root, record, registered) {
         }
       }
     }
-    for (const child of node.children ?? []) walk(child);
-    for (const b of node.branches ?? []) walk(b);
+    const childInLabel = inLabel || (node.type === 1 && node.tag === 'label');
+    for (const child of node.children ?? []) walk(child, childInLabel);
+    for (const b of node.branches ?? []) walk(b, childInLabel);
   };
   walk(root);
   if (classes.size) record.styles = { classes: [...classes] };
+  if (issues.length) record.issues = issues;
 }

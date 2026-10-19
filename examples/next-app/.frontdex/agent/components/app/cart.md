@@ -7,6 +7,7 @@
 
 Full cart page. Reads lines and coupon from Redux and passes them down as props.
 
+- Owners: @northwind/web
 - Hooks: useAppSelector×2, useAppDispatch
 - Reads redux:cart `cart.items` via useAppSelector
 - Reads redux:cart `cart.coupon` via useAppSelector

@@ -1,0 +1,4 @@
+# demo: ownership for the catalogue (last matching rule wins)
+*                     @northwind/web
+/src/components/ui/   @northwind/design-system
+/src/features/admin/  @northwind/back-office @ana

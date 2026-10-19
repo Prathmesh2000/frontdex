@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -14,6 +15,26 @@ const RESCAN_THROTTLE_MS = 2000;
  * Knowledge queries shared by the CLI (show, impact, query, …) and the frontdex-mcp server.
  * Each tool takes a plain-object argument and returns Markdown text. Part of the public API: frontdex-mcp depends on it.
  */
+/** Last change, recent commit count and top authors of one file, from `git log`; null outside a git checkout. */
+function gitActivity(root, file) {
+  try {
+    const out = execFileSync('git', ['log', '--follow', '--format=%an%x09%aI', '--', file], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const commits = out.trim().split('\n').filter(Boolean).map((l) => l.split('\t'));
+    if (!commits.length) return null;
+    const since = Date.now() - 90 * 864e5;
+    const counts = new Map();
+    for (const [author] of commits) counts.set(author, (counts.get(author) ?? 0) + 1);
+    return {
+      last: commits[0][1].slice(0, 10),
+      lastAuthor: commits[0][0],
+      recent: commits.filter(([, date]) => Date.parse(date) >= since).length,
+      authors: [...counts].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([a, n]) => `${a} (${n})`),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function createTools(config) {
   let state = null;
   let lastScan = 0;
@@ -183,6 +204,32 @@ export function createTools(config) {
         result.commit.changes.slice(0, 30).forEach((c) => lines.push(`- ${c.change} ${c.key}${c.details ? `: ${c.details.map(formatDetail).join('; ')}` : ''}`));
       } else if (!result.changed) lines.push('No catalogue changes.');
       result.warnings.forEach((w) => lines.push(`⚠ ${w}`));
+      return lines.join('\n');
+    },
+    catalogue_adoption({ name, limit = 20 } = {}) {
+      const { idx } = refresh().state;
+      const r = resolve(idx, name);
+      if (r.error) return r.error;
+      const history = createHistory(path.join(knowledgeDir(config), 'history'));
+      const snapshots = history.log().slice(-limit);
+      if (!snapshots.length) return 'No history yet: adoption needs knowledge-base snapshots (history is on by default).';
+      // Usage = components rendering it + pages showing it, per snapshot; a deprecated component should trend to 0.
+      const rows = snapshots.map((s) => {
+        const c = history.checkout(s.id)?.catalogue.components[r.m.id];
+        return { when: s.time.slice(0, 10), git: s.git, usedBy: c?.usedBy?.length ?? 0, pages: c?.pages?.length ?? 0, exists: !!c };
+      });
+      const status = r.m.c.status === 'deprecated' ? ' (deprecated: usage should go down)' : '';
+      return [`# Adoption of ${r.m.name}${status}`, '', '| Snapshot | git | Used by | Pages |', '|---|---|---|---|', ...rows.map((x) => `| ${x.when} | ${x.git ?? '-'} | ${x.exists ? x.usedBy : 'absent'} | ${x.exists ? x.pages : '-'} |`)].join('\n');
+    },
+    catalogue_owners({ name } = {}) {
+      const { idx } = refresh().state;
+      const r = resolve(idx, name);
+      if (r.error) return r.error;
+      const lines = [`# ${r.m.name} \`${r.m.c.file}\``, `- CODEOWNERS: ${r.m.c.codeowners?.join(', ') ?? 'none'}`, `- Tests: ${r.m.c.tests?.join(', ') ?? 'none'} · Stories: ${r.m.c.stories?.join(', ') ?? 'none'}`];
+      // Git activity is read live: it changes with every commit, so it is not stored in the catalogue.
+      const git = gitActivity(config.root, r.m.c.file);
+      if (git) lines.push(`- Last changed ${git.last} by ${git.lastAuthor}; ${git.recent} commit(s) in the last 90 days; top authors: ${git.authors.join(', ')}`);
+      else lines.push('- Git history: unavailable (not a git checkout, or the file is untracked)');
       return lines.join('\n');
     },
     catalogue_history({ name, limit = 10 }) {

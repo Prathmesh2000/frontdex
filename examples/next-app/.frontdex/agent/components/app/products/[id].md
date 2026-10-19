@@ -7,6 +7,7 @@
 
 Product detail: gallery, info, lazy reviews and related items.
 
+- Owners: @northwind/web
 - Props: `params: Promise<{ id: string }>`
 - Variables: id, product
 - CSS classes: grid (app/globals.css:6), md:grid-cols-2, gap-10

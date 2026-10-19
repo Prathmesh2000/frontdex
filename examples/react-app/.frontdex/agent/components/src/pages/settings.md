@@ -50,6 +50,7 @@ Password change + 2FA toggle.
 - API POST `/me/password` via api.post in handler handleSubmit (line 14)
 - Validation (html): input [required, minLength]
 - CSS classes: form-error (src/styles.css:6)
+- ⚠ MEDIUM a11y-field-label L19: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - Used by: nothing (unused or entry point)
 - Pages: /settings/security
 - Impact: changing the props/export affects 0 component(s) and 1 page(s); update every caller listed under "Used by".

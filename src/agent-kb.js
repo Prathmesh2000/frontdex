@@ -25,6 +25,8 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
   const lines = [`${heading} ${c.name}`, `${code(`${c.file}${c.line ? `:${c.line}` : ''}`)} · ${c.kind}${c.rendering ? ` · ${c.rendering} component` : ''} · ${c.export ?? 'none'} export · ${LEVELS[m.level]}${c.status ? ` · ${c.status.toUpperCase()}` : ''}${c.owner ? ` · owner ${c.owner}` : ''}`];
   if (c.description) lines.push('', c.description);
   lines.push('');
+  if (c.codeowners?.length) lines.push(`- Owners: ${c.codeowners.join(', ')}`);
+  if (c.tests?.length || c.stories?.length) lines.push(`- Tests: ${c.tests?.join(', ') ?? 'none'}${c.stories?.length ? ` · Stories: ${c.stories.join(', ')}` : ''}`);
   const props = Object.entries(c.props ?? {});
   if (props.length) lines.push(`- Props: ${props.map(([n, p]) => `${code(`${n}${p.required ? '' : '?'}: ${p.type}`)}${p.default != null ? ` = ${code(p.default)}` : ''}`).join(', ')}`);
   const state = Object.entries(c.state ?? {});

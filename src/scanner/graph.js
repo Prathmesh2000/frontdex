@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
+import { I18N_LIBS } from './analyzers/i18n.js';
+import { cachedLister, codeownersMatcher, testsAndStories } from './analyzers/ownership.js';
 import { collectEndpoints } from './endpoints.js';
 import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
@@ -349,6 +351,25 @@ export function scanProject(config, { cache, known } = {}) {
     const w = workspaceOf(config.workspaces, file);
     return w ? { ...w.pkg.dependencies, ...w.pkg.devDependencies } : config.deps;
   };
+  // Ownership (CODEOWNERS at the repo root) and test/story files next to each component.
+  const owners = codeownersMatcher(root);
+  const listDir = cachedLister();
+  for (const { mod, c } of entries) {
+    const comp = components[c.id];
+    const codeowners = owners?.(comp.file);
+    if (codeowners) comp.codeowners = codeowners;
+    const { tests, stories } = testsAndStories(mod.file, listDir);
+    if (tests.length) comp.tests = tests;
+    if (stories.length) comp.stories = stories;
+  }
+
+  // Literal copy in markup is a missed translation, but only in projects that use an i18n library.
+  for (const { mod, c } of entries) {
+    if (!c.hardcodedText || !I18N_LIBS.some((lib) => depsFor(mod.file)?.[lib])) continue;
+    const { count, sample, line } = c.hardcodedText;
+    (components[c.id].issues ??= []).push({ type: 'i18n-hardcoded-text', severity: 'low', message: `${count} piece(s) of hard-coded text, e.g. "${sample}"`, ...(line && { line }), fix: 'move the copy into translation files and use the i18n helper' });
+  }
+
   for (const mod of modules.values()) {
     for (const r of mod.routes) {
       addPage(r.path, {

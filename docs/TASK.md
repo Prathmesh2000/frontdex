@@ -333,7 +333,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 
 **Insight**
 - [x] Analyzers: duplicates (`find`, `dupes`, `catalogue_find_existing`), design tokens and drift (`tokens`).
-- [ ] Analyzers: adoption, a11y, i18n, perf, tests, owners.
+- [x] Analyzers: a11y (JSX, Vue, HTML), i18n, CODEOWNERS, tests/stories, adoption over history, live git activity.
+- [ ] Analyzers: perf (import cost per component/page); a11y for Svelte/Astro/Angular templates.
 - [ ] CSF / fixture / Storybook-manifest ingestion.
 - [ ] `fix` for the safe automatic cases.
 

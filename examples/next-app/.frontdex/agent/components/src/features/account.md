@@ -7,6 +7,7 @@
 
 Edit name/email with native HTML validation.
 
+- Owners: @northwind/web
 - State: `name` (useState, init `profile?.name ?? ''`, set via `setName`); `email` (useState, init `profile?.email ?? ''`, set via `setEmail`); `lastSaved` (useState, init `null`, set via `setLastSaved`); `saving` (useState, init `false`, set via `setSaving`)
 - Hooks: useSelector, useState×4, useToast, useAppSelector
 - Handler `async handleSubmit(e: React.FormEvent<HTMLFormEl…)` L20 sets saving → e.preventDefault, setSaving, http.patch, notify
@@ -29,6 +30,7 @@ Edit name/email with native HTML validation.
 
 Order status with live polling until the order ships.
 
+- Owners: @northwind/web
 - Props: `orderId: string`
 - State: `order` (useState, init `null`, set via `setOrder`)
 - Hooks: useState, useEffect
@@ -46,6 +48,7 @@ Order status with live polling until the order ships.
 
 Account section tabs; highlights the active route.
 
+- Owners: @northwind/web
 - Hooks: usePathname
 - CSS classes: account-nav, flex, gap-4, tab, tab-active, underline
 - Libraries: next/link#Link

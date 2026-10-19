@@ -62,6 +62,8 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 | `frontdex find <Name> [--props a,b]` | Existing components similar to one you are about to create (base name, name words, props). |
 | `frontdex dupes [Component]` | Components that look like duplicates: same or similar names, shared props, children and classes. |
 | `frontdex tokens [query]` | Design tokens (CSS custom properties, Tailwind theme) and hard-coded values that match them exactly or nearly. |
+| `frontdex owners <Component>` | CODEOWNERS, test and story files, and live git activity (last change, commits in 90 days, top authors). |
+| `frontdex adoption <Component>` | How many components and pages use it in each knowledge-base snapshot, e.g. to watch a deprecated component go away. |
 | `frontdex agents [--targets …] [--no-hooks] [--no-mcp] [--remove]` | Installs or removes agent integration. |
 | `frontdex mcp` | MCP server over stdio (registered automatically by `frontdex agents`). |
 | `frontdex validate [file]` | Validates against the JSON Schema. |
@@ -225,6 +227,9 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | Data & validation | `fetch`, axios-style clients, SWR, React Query, service modules; zod, yup, react-hook-form, HTML constraints, custom validators |
 | Styles | `className` strings, template literals, `clsx`/`cn`, CSS modules, global stylesheets (class → `file:line`) |
 | Diagnostics | memory leaks, render loops, side effects in render, unsafe async updates, missing deps, unused variables/functions/props/state/imports/exports/files/components, deprecated usage, hooks or class components rendered as Server Components |
+| Accessibility | Static checks in JSX, Vue templates and HTML pages: images without `alt`, buttons/links without text or `aria-label`, form fields without a label (wrapping `<label>`, `id`, `aria-label`), click handlers on non-interactive elements without role/keyboard support, positive `tabIndex`, `<html>` without `lang` |
+| Ownership and tests | `CODEOWNERS` owners per component; test (`.test`/`.spec`, `__tests__/`) and story files next to it. Git activity is read live by `frontdex owners` and never stored |
+| i18n | Hard-coded text and copy attributes (`placeholder`, `title`, `alt`, `aria-label`) in JSX, reported only when the project uses an i18n library (react-i18next, next-intl, react-intl, Lingui, vue-i18n, …) |
 | Design system | Near-duplicate components (scored on base name, name words, props, children and classes); design tokens from CSS custom properties, Tailwind v4 `@theme` and Tailwind JS config; hard-coded colors (exact or within a small RGB distance) and sizes that match a token, in stylesheets and Tailwind arbitrary values (`bg-[#3b82f6]`) |
 
 ## Performance

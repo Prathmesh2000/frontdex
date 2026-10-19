@@ -5,6 +5,7 @@
 ## ToastItem
 `src/features/toast/ToastViewport.tsx:6` · function · client component · none export · simple
 
+- Owners: @northwind/web
 - Props: `toast: Toast`, `onDismiss: (id: number) => void`
 - Hooks: useEffect
 - Effect `useEffect` L8: mount+update+unmount (deps [toast.id, onDismiss]) → setTimeout, onDismiss; cleanup → clearTimeout
@@ -21,6 +22,7 @@
 
 Global notification queue (max 5 visible).
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - State: `toasts` (useReducer, init `[]`, set via `dispatch`)
 - Hooks: useReducer, useCallback×2
@@ -35,6 +37,7 @@ Global notification queue (max 5 visible).
 
 Renders queued toasts in the corner of the screen.
 
+- Owners: @northwind/web
 - Hooks: useToast
 - Reads context:ToastContext via useToast
 - CSS classes: toast-viewport, fixed, bottom-4, right-4, z-50

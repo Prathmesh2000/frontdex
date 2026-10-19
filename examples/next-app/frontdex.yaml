@@ -7,7 +7,7 @@ info:
   routers:
     - next-app
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:22:07.748Z
+  generatedAt: 2026-10-19T13:38:45.691Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -26,6 +26,8 @@ components:
     renders:
       - ProtectedRoute
       - AccountNav
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -52,6 +54,8 @@ components:
       - next/link#Link
     usedBy:
       - AccountLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -88,6 +92,8 @@ components:
         - name: onSuccess
           value: () => window.location.assign('/account')
           line: 10
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account
     rendering: client
@@ -289,6 +295,8 @@ components:
           line: 39
     usedBy:
       - AddressStep
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
     rendering: client
@@ -330,6 +338,8 @@ components:
           line: 9
     usedBy:
       - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
     rendering: client
@@ -461,6 +471,8 @@ components:
           line: 30
     usedBy:
       - ProductInfo
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products/[id]
     rendering: client
@@ -501,6 +513,8 @@ components:
         - name: limit
           value: "5"
           line: 13
+    codeowners:
+      - "@northwind/web"
     pages:
       - /admin
     rendering: server
@@ -531,6 +545,8 @@ components:
         - name: fallbackTitle
           value: '"The admin panel crashed"'
           line: 11
+    codeowners:
+      - "@northwind/web"
     pages:
       - /admin/orders
       - /admin
@@ -580,6 +596,8 @@ components:
         - name: onSaved
           value: () => { setSelected(null); setVersion((v) => v + …
           line: 13
+    codeowners:
+      - "@northwind/web"
     pages:
       - /admin/orders
     rendering: client
@@ -612,6 +630,8 @@ components:
         - name: productId
           value: productId
           line: 7
+    codeowners:
+      - "@northwind/web"
     pages:
       - /admin/products/[...slug]
     rendering: server
@@ -673,6 +693,9 @@ components:
       - next/link#Link
     usedBy:
       - AdminLayout
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin/orders
       - /admin
@@ -788,6 +811,8 @@ components:
         fix: keep the unsubscribe function and call it in the effect cleanup
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -828,6 +853,8 @@ components:
       - ProductCard
       - ProductInfo
       - ToastItem
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -875,6 +902,8 @@ components:
         - name: kind
           value: '"primary"'
           line: 18
+    codeowners:
+      - "@northwind/web"
     pages:
       - /blog/[[...slug]]
     rendering: server
@@ -944,6 +973,12 @@ components:
       - PaymentForm
       - AddToCartButton
       - Filters
+    codeowners:
+      - "@northwind/design-system"
+    tests:
+      - Button.test.tsx
+    stories:
+      - Button.stories.tsx
     pages:
       - /account/orders/[orderId]
       - /account
@@ -986,6 +1021,8 @@ components:
       - StatCard
       - OrderSummary
       - ProductCard
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -1037,6 +1074,9 @@ components:
         - name: trend-
     usedBy:
       - StatCard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin
     rendering: server
@@ -1064,6 +1104,8 @@ components:
       - OrderEditor
       - StatCard
       - OrderSummary
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -1101,6 +1143,8 @@ components:
       - OrderEditor
       - StatCard
       - OrderSummary
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -1189,6 +1233,8 @@ components:
           at: app/globals.css:27
     usedBy:
       - Header
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -1309,6 +1355,8 @@ components:
           line: 26
     usedBy:
       - Header
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -1400,6 +1448,8 @@ components:
       - OrderTimeline
       - CartDrawer
       - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -1488,6 +1538,8 @@ components:
           line: 21
     externals:
       - next/link#Link
+    codeowners:
+      - "@northwind/web"
     pages:
       - /cart
     rendering: client
@@ -1511,6 +1563,8 @@ components:
         - name: text-gray-500
     externals:
       - next/link#Link
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
       - /checkout/success
@@ -1539,6 +1593,8 @@ components:
         - name: userEmail
           value: user?.email
           line: 10
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
     rendering: client
@@ -1719,6 +1775,8 @@ components:
           line: 86
     usedBy:
       - CheckoutPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
     rendering: client
@@ -1787,6 +1845,12 @@ components:
     styles:
       classes:
         - name: empty
+    issues:
+      - type: a11y-click-handler
+        severity: low
+        message: click handler on <tr> without a role or keyboard handler; keyboard users cannot trigger it
+        line: 43
+        fix: use a <button>, or add role="button", tabIndex={0} and a key handler
     renders:
       - Spinner
     passes:
@@ -1796,6 +1860,8 @@ components:
           line: 35
     usedBy:
       - RecentOrders
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /admin/orders
       - /admin
@@ -1850,6 +1916,9 @@ components:
           line: 26
     usedBy:
       - AdminLayout
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin/orders
       - /admin
@@ -1901,6 +1970,8 @@ components:
           line: 20
     usedBy:
       - HomePage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /
     rendering: client
@@ -1956,6 +2027,12 @@ components:
     styles:
       classes:
         - name: filters
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <select> has no label (no aria-label, and no id for a <label for>)
+        line: 31
+        fix: wrap it in <label>, link one with id/for, or add aria-label
     renders:
       - Input
       - Button
@@ -2003,6 +2080,8 @@ components:
           line: 38
     usedBy:
       - ProductsPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products
     rendering: client
@@ -2034,6 +2113,8 @@ components:
       - next/link#Link
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -2176,6 +2257,8 @@ components:
       - next/link#Link
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -2280,6 +2363,8 @@ components:
       - next/image#Image
     usedBy:
       - HomePage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /
     rendering: client
@@ -2306,6 +2391,8 @@ components:
         - name: defaultTab
           value: '"bestsellers"'
           line: 12
+    codeowners:
+      - "@northwind/web"
     pages:
       - /
     rendering: server
@@ -2344,6 +2431,8 @@ components:
       - PaymentForm
       - AddToCartButton
       - Filters
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -2396,6 +2485,8 @@ components:
         - name: legacy-btn--
     usedBy:
       - BlogPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /blog/[[...slug]]
     rendering: server
@@ -2477,6 +2568,9 @@ components:
         fix: add 'use client' at the top of its file, or render it from a client component
     usedBy:
       - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin
     rendering: server
@@ -2590,6 +2684,8 @@ components:
           line: 41
     usedBy:
       - AccountPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account
     rendering: client
@@ -2653,6 +2749,12 @@ components:
       classes:
         - name: backdrop
           at: app/globals.css:35
+    issues:
+      - type: a11y-click-handler
+        severity: low
+        message: click handler on <div> without a role or keyboard handler; keyboard users cannot trigger it
+        line: 36
+        fix: use a <button>, or add role="button", tabIndex={0} and a key handler
     renders:
       - Button
     passes:
@@ -2666,6 +2768,8 @@ components:
     usedBy:
       - OrderEditor
       - CartDrawer
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -2698,8 +2802,16 @@ components:
     styles:
       classes:
         - name: newsletter
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 7
+        fix: wrap it in <label>, link one with id/for, or add aria-label
     usedBy:
       - HomePage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /
     rendering: server
@@ -2730,6 +2842,8 @@ components:
     styles:
       classes:
         - name: promo-strip
+    codeowners:
+      - "@northwind/web"
   OrderDetailPage:
     name: OrderDetailPage
     file: app/(account)/account/orders/[orderId]/page.tsx
@@ -2753,6 +2867,8 @@ components:
         - name: orderId
           value: orderId
           line: 5
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
     rendering: server
@@ -2843,6 +2959,11 @@ components:
         message: "`unusedDraftNote` is declared but never used"
         line: 16
         fix: remove it
+      - type: a11y-field-label
+        severity: medium
+        message: <select> has no label (no aria-label, and no id for a <label for>)
+        line: 39
+        fix: wrap it in <label>, link one with id/for, or add aria-label
     renders:
       - Modal
       - Button
@@ -2886,6 +3007,9 @@ components:
           line: 37
     usedBy:
       - AdminOrdersPage
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin/orders
     rendering: client
@@ -3023,6 +3147,8 @@ components:
       - CartPage
       - CartDrawer
       - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -3123,6 +3249,8 @@ components:
           line: 36
     usedBy:
       - OrderDetailPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
     rendering: client
@@ -3307,6 +3435,8 @@ components:
           line: 59
     usedBy:
       - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
     rendering: client
@@ -3392,6 +3522,8 @@ components:
       - ProductGrid
       - RelatedProducts
       - SearchResults
+    codeowners:
+      - "@northwind/web"
     pages:
       - /
       - /products/[id]
@@ -3454,6 +3586,8 @@ components:
         - name: excludeId
           value: product.id
           line: 25
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products/[id]
     rendering: server
@@ -3606,6 +3740,9 @@ components:
           line: 34
     usedBy:
       - AdminProductPage
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin/products/[...slug]
     rendering: client
@@ -3670,6 +3807,8 @@ components:
       - next/image#Image
     usedBy:
       - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products/[id]
     rendering: client
@@ -3793,6 +3932,8 @@ components:
     usedBy:
       - ProductsPage
       - FeaturedCollections
+    codeowners:
+      - "@northwind/web"
     pages:
       - /
       - /products
@@ -3845,6 +3986,8 @@ components:
           line: 14
     usedBy:
       - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products/[id]
     rendering: server
@@ -3889,6 +4032,8 @@ components:
         - name: sort
           value: sort
           line: 12
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products
     rendering: server
@@ -4038,6 +4183,8 @@ components:
           line: 36
     usedBy:
       - AccountPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account
     rendering: client
@@ -4102,6 +4249,8 @@ components:
       - AccountLayout
       - AdminLayout
       - CheckoutPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -4184,6 +4333,9 @@ components:
     usedBy:
       - AdminOrdersPage
       - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin/orders
       - /admin
@@ -4266,6 +4418,8 @@ components:
           line: 22
     usedBy:
       - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products/[id]
     rendering: client
@@ -4337,6 +4491,8 @@ components:
           line: 19
     usedBy:
       - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /products/[id]
     rendering: client
@@ -4374,6 +4530,8 @@ components:
         - name: year
           value: new Date().getFullYear()
           line: 29
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -4513,6 +4671,9 @@ components:
         - name: chart
     usedBy:
       - SalesPanel
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin
     rendering: client
@@ -4581,6 +4742,9 @@ components:
           line: 17
     usedBy:
       - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin
     rendering: client
@@ -4702,9 +4866,17 @@ components:
         - name: relative
         - name: suggestions
         - name: absolute
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 44
+        fix: wrap it in <label>, link one with id/for, or add aria-label
     usedBy:
       - SearchPage
       - Header
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -4761,6 +4933,8 @@ components:
         - name: term
           value: term
           line: 14
+    codeowners:
+      - "@northwind/web"
     pages:
       - /search
     rendering: client
@@ -4819,6 +4993,8 @@ components:
           line: 18
     usedBy:
       - SearchPage
+    codeowners:
+      - "@northwind/web"
     pages:
       - /search
     rendering: client
@@ -4851,6 +5027,8 @@ components:
       - ProductGrid
       - Reviews
       - SearchResults
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -4909,6 +5087,9 @@ components:
           line: 10
     usedBy:
       - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
     pages:
       - /admin
     rendering: server
@@ -4936,6 +5117,8 @@ components:
         - name: done
     usedBy:
       - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout
     rendering: client
@@ -4959,6 +5142,8 @@ components:
       - react-redux#Provider
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -5014,6 +5199,8 @@ components:
         - name: py-20
     externals:
       - next/link#Link
+    codeowners:
+      - "@northwind/web"
     pages:
       - /checkout/success
     rendering: client
@@ -5029,6 +5216,8 @@ components:
         required: true
     usedBy:
       - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /
     rendering: client
@@ -5057,6 +5246,8 @@ components:
       writes: []
     usedBy:
       - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /
     rendering: client
@@ -5086,6 +5277,8 @@ components:
         - name: tabs
     usedBy:
       - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /
     rendering: client
@@ -5114,6 +5307,8 @@ components:
       writes: []
     usedBy:
       - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /
     rendering: client
@@ -5192,6 +5387,8 @@ components:
         cleared: true
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -5258,6 +5455,8 @@ components:
           line: 15
     usedBy:
       - ToastViewport
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -5322,6 +5521,8 @@ components:
         memoized: true
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -5376,6 +5577,8 @@ components:
           line: 25
     usedBy:
       - RootLayout
+    codeowners:
+      - "@northwind/web"
     pages:
       - /account/orders/[orderId]
       - /account
@@ -5437,6 +5640,8 @@ components:
         line: 10
     usedBy:
       - ProductCard
+    codeowners:
+      - "@northwind/design-system"
     pages:
       - /
       - /products/[id]
@@ -6166,17 +6371,19 @@ duplicates:
 health:
   issues:
     high: 8
-    medium: 2
-    low: 9
+    medium: 6
+    low: 11
     info: 1
   byType:
     deprecated-usage: 1
     memory-leak: 5
     client-code-in-server-component: 2
     possible-duplicate: 2
+    a11y-click-handler: 2
     state-never-updated: 1
     unused-variable: 2
     render-loop: 1
+    a11y-field-label: 4
     unused-prop: 3
     missing-dependency: 1
     unsafe-async-update: 1

@@ -7,6 +7,7 @@
 
 Redirects to the login page when there is no session; optionally requires a role.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`, `role?: 'admin' | 'customer'`
 - Hooks: useAuth, useRouter, usePathname, useEffect
 - Effect `useEffect` L14: mount+update (deps [loading, allowed, router, pathname]) → router.replace, encodeURIComponent
@@ -23,6 +24,7 @@ Redirects to the login page when there is no session; optionally requires a role
 
 Email + password sign-in, validated with react-hook-form.
 
+- Owners: @northwind/web
 - Props: `onSuccess?: () => void`
 - State: `serverError` (useState, init `null`, set via `setServerError`)
 - Hooks: useAuth, useState, useForm
@@ -44,6 +46,7 @@ Email + password sign-in, validated with react-hook-form.
 
 Loads the session once and mirrors auth changes into Redux (user.profile).
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - State: `user` (useState, init `null`, set via `setUser`); `loading` (useState, init `true`, set via `setLoading`)
 - Hooks: useState×2, useAppDispatch, useEffect×2

@@ -309,6 +309,27 @@
         "owner": {
           "type": "string"
         },
+        "codeowners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Owners from the CODEOWNERS file (last matching rule)."
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Test files for the component, relative to its folder."
+        },
+        "stories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Story files (Storybook/Ladle CSF) for the component, relative to its folder."
+        },
         "props": {
           "type": "object",
           "additionalProperties": {

@@ -5,6 +5,7 @@
 ## OrderDetailPage
 `app/(account)/account/orders/[orderId]/page.tsx:3` · function · server component · default export · trivial
 
+- Owners: @northwind/web
 - Props: `params: Promise<{ orderId: string }>`
 - Variables: orderId
 - Renders: OrderTimeline(orderId)

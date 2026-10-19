@@ -40,6 +40,8 @@ Explore
   find <Name> [--props a,b] Existing components like one you plan to create (run before creating)
   dupes [Component]        Components that look like duplicates of each other
   tokens [query]           Design tokens and hard-coded values that should use them
+  owners <Component>       CODEOWNERS, tests/stories and live git activity for a component
+  adoption <Component>     Usage of a component across knowledge-base snapshots
 
 Agents
   mcp                      Run the MCP server over stdio (needs the frontdex-mcp package; registered by "frontdex agents")
@@ -200,6 +202,13 @@ export async function main(argv) {
         if (values.strict && (scan(config, { dryRun: true }).catalogue.health?.issues?.high ?? 0) > 0) process.exitCode = 1;
       } else if (command === 'state') console.log(tools.catalogue_state({ store: arg }));
       else console.log(tools.catalogue_api({ endpoint: arg }));
+      return;
+    }
+    case 'owners':
+    case 'adoption': {
+      if (!arg) throw new Error(`Usage: frontdex ${command} <Component>`);
+      const { tools } = createTools(config);
+      console.log(command === 'owners' ? tools.catalogue_owners({ name: arg }) : tools.catalogue_adoption({ name: arg }));
       return;
     }
     case 'find':

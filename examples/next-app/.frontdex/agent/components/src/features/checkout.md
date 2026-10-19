@@ -7,6 +7,7 @@
 
 Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo).
 
+- Owners: @northwind/web
 - Props: `draft: Partial<Address>`, `onNext: (a: Address) => void`, `onBack?: () => void`
 - Props from CheckoutWizard: draft=state.address, onNext=(address) => dispatchWizard({ type: 'address', ad…
 - ⚠ LOW unused-prop L5: prop `onBack` is destructured but never used. Fix: remove it from the props or use it
@@ -20,6 +21,7 @@ Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo)
 
 "1 — 2 — 3" progress header for the checkout wizard.
 
+- Owners: @northwind/web
 - Props: `current: number`, `completed: number[]`
 - Props from CheckoutWizard: current=state.step, completed=state.completed
 - CSS classes: steps, flex, gap-4, step, active, done
@@ -32,6 +34,7 @@ Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo)
 
 Shipping address fields validated with the zod addressSchema.
 
+- Owners: @northwind/web
 - Props: `initial: Partial<Address>`, `onSubmit: (address: Address) => void`, `submitLabel?: string` = `'Continue'`
 - State: `values` (useState, init `initial`, set via `setValues`); `errors` (useState, init `{}`, set via `setErrors`)
 - Hooks: useState×2
@@ -55,6 +58,7 @@ Shipping address fields validated with the zod addressSchema.
 
 Card entry. Class component because it wraps the imperative payments SDK.
 
+- Owners: @northwind/web
 - Props: `amount: number`, `onPaid: (token: string) => void`, `onBack: () => void`
 - State: `card` (class, init `''`, set via `this.setState`); `expiry` (class, init `''`, set via `this.setState`); `error` (class, init `null`, set via `this.setState`); `sdkReady` (class, init `false`, set via `this.setState`); `secondsLeft` (class, init `600`, set via `this.setState`)
 - Effect `componentDidMount` L25: mount → document.createElement, this.setState, document.body.appendChild, setInterval
@@ -80,6 +84,7 @@ Card entry. Class component because it wraps the imperative payments SDK.
 
 Three-step checkout state machine: address → payment → review. Persists a draft in sessionStorage.
 
+- Owners: @northwind/web
 - Props: `userEmail?: string`
 - State: `state` (useReducer, init `{ step: 0, address: {}, paymentToken: null, completed: [] }`, set via `dispatchWizard`)
 - Hooks: useReducer, useAppSelector×3, useAppDispatch, useRouter, useToast, useEffect×2, useCallback

@@ -7,6 +7,7 @@
 
 Slide-over cart opened from the header. Visibility lives in Redux (ui.drawerOpen).
 
+- Owners: @northwind/web
 - Hooks: useAppSelector×3, useAppDispatch, useRouter
 - Function `close()` L17 → dispatch, toggleDrawer
 - Function `goToCheckout()` L18 → close
@@ -25,6 +26,7 @@ Slide-over cart opened from the header. Visibility lives in Redux (ui.drawerOpen
 
 One cart line with quantity stepper and remove button.
 
+- Owners: @northwind/web
 - Props: `line: CartLine`, `readOnly?: boolean` = `false`
 - Hooks: useAppDispatch
 - Props from CartPage: key=line.product.id, line=line
@@ -47,6 +49,7 @@ One cart line with quantity stepper and remove button.
 
 Totals, shipping and coupon entry.
 
+- Owners: @northwind/web
 - Props: `lines: CartLine[]`, `coupon: string | null`, `readOnly?: boolean` = `false`
 - State: `code` (useState, init `''`, set via `setCode`); `codeError` (useState, init `null`, set via `setCodeError`)
 - Hooks: useAppDispatch, useState×2, useMemo

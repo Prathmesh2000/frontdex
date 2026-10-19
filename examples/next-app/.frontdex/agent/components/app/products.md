@@ -7,6 +7,7 @@
 
 Catalogue listing with sidebar filters. Filters and grid are siblings.
 
+- Owners: @northwind/web
 - Props: `searchParams: Promise<{ category?: string; sort?: 'price' | 'rating' | 'newest' }>`
 - Variables: category, sort
 - CSS classes: flex, gap-8

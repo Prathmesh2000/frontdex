@@ -5,6 +5,7 @@
 ## CardHeader
 `src/components/ui/Card.tsx:1` · function · client component · none export · trivial
 
+- Owners: @northwind/design-system
 - Props: `title: string`, `action?: React.ReactNode`
 - Props from OrderTimeline: title=`Order ${order.id}`, action=<Badge tone={TONE[order.status]}>{order.status}</…
 - Props from OrderEditor: title=formatPrice(order.total), action=<Badge>{order.status}</Badge>
@@ -20,6 +21,7 @@
 
 Inline loading indicator.
 
+- Owners: @northwind/design-system
 - Props: `size?: number` = `16`, `label?: string` = `'Loading'`
 - Props from Button: size=14
 - Props from DataTable: label="Loading rows"
@@ -36,6 +38,7 @@ Inline loading indicator.
 ## Badge
 `src/components/ui/Badge.tsx:3` · function · client component · named export · trivial
 
+- Owners: @northwind/design-system
 - Props: `tone?: Tone` = `'neutral'`, `children: React.ReactNode`
 - Props from OrderTimeline: tone=TONE[order.status]
 - Props from ProductCard: tone="success", tone="warning"
@@ -49,6 +52,7 @@ Inline loading indicator.
 ## Tooltip
 `src/components/ui/Tooltip.tsx:4` · function · client component · named export · moderate
 
+- Owners: @northwind/design-system
 - Props: `text: string`, `children: React.ReactElement`
 - State: `visible` (useState, init `false`, set via `setVisible`); `position` (useState, init `{ top: 0, left: 0 }`, set via `setPosition`)
 - Refs: `anchorRef`
@@ -62,6 +66,7 @@ Inline loading indicator.
 ## CardBody
 `src/components/ui/Card.tsx:5` · function · client component · none export · trivial
 
+- Owners: @northwind/design-system
 - Props: `children: React.ReactNode`
 - CSS classes: card-body (app/globals.css:20)
 - Used by: OrderTimeline, OrderEditor, StatCard, OrderSummary
@@ -73,6 +78,7 @@ Inline loading indicator.
 
 Surface container. Compose with <Card.Header> and <Card.Body>.
 
+- Owners: @northwind/design-system
 - Props: `children: React.ReactNode`, `elevated?: boolean` = `false`
 - Props from StatCard: elevated=true
 - Props from ProductCard: elevated=!compact
@@ -84,6 +90,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 ## Input
 `src/components/ui/Input.tsx:10` · forwardRef · client component · named export · simple
 
+- Owners: @northwind/design-system
 - Props: `label: string`, `error?: string`, `hint?: string`
 - Hooks: useId
 - Props from ProfileForm: label="Name", required=true, minLength=2, maxLength=80, value=name, onChange=(e) => setName(e.target.value), label="Email", type="email", required=true, value=email, onChange=(e) => setEmail(e.target.value)
@@ -102,6 +109,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 ## TabsRoot
 `src/components/ui/Tabs.tsx:11` · function · client component · named export · simple
 
+- Owners: @northwind/design-system
 - Props: `defaultValue: string`, `children: React.ReactNode`
 - State: `active` (useState, init `defaultValue`, set via `setActive`)
 - Hooks: useState
@@ -116,6 +124,8 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 
 Design-system button. Use instead of raw <button> everywhere.
 
+- Owners: @northwind/design-system
+- Tests: Button.test.tsx · Stories: Button.stories.tsx
 - Props: `variant?: 'primary' | 'secondary' | 'ghost' | 'danger'` = `'primary'`, `size?: 'sm' | 'md' | 'lg'` = `'md'`, `loading?: boolean` = `false`, `icon?: React.ReactNode`, `children?: unknown`, `disabled?: unknown`
 - Props from CartPage: variant="ghost", onClick=() => dispatch(clearCart())
 - Props from Header: variant="ghost", size="sm", onClick=toggleTheme, aria-label="Toggle theme", variant="ghost", size="sm", onClick=signOut, variant="secondary", size="sm", onClick=onToggleCart, icon=<CartBadge />
@@ -145,6 +155,7 @@ Design-system button. Use instead of raw <button> everywhere.
 
 Accessible dialog rendered into document.body. Locks page scroll and closes on Escape.
 
+- Owners: @northwind/design-system
 - Props: `open: boolean`, `title: string`, `onClose: () => void`, `children: React.ReactNode`, `footer?: React.ReactNode`
 - Refs: `dialogRef`, `previousFocus`
 - Hooks: useRef×2, useEffect
@@ -153,6 +164,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 - Props from CartDrawer: open=open, title=`Your cart (${items.length})`, onClose=close, footer=<Button onClick={goToCheckout} disabled={!items.l…
 - Timer `document.addEventListener`('keydown') in useEffect L20 (line 24): released
 - CSS classes: backdrop (app/globals.css:35)
+- ⚠ LOW a11y-click-handler L36: click handler on <div> without a role or keyboard handler; keyboard users cannot trigger it. Fix: use a <button>, or add role="button", tabIndex={0} and a key handler
 - Renders: Button(variant, onClick)
 - Used by: OrderEditor, CartDrawer
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
@@ -161,6 +173,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 ## TabsList
 `src/components/ui/Tabs.tsx:16` · function · client component · none export · trivial
 
+- Owners: @northwind/design-system
 - Props: `children: React.ReactNode`
 - Used by: FeaturedCollections
 - Pages: /
@@ -169,6 +182,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 ## TabsTrigger
 `src/components/ui/Tabs.tsx:20` · function · client component · none export · trivial
 
+- Owners: @northwind/design-system
 - Props: `value: string`, `children: React.ReactNode`
 - Hooks: useTabs
 - Props from FeaturedCollections: key=c.value, value=c.value
@@ -182,12 +196,14 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 
 Generic sortable, paginated table used by every admin list.
 
+- Owners: @northwind/design-system
 - Props: `rows: T[]`, `columns: Column<T>[]`, `onRowClick?: (row: T) => void`, `loading?: boolean` = `false`, `emptyText?: string` = `'Nothing here yet'`, `pageSize?: number` = `20`
 - State: `sortKey` (useState, init `null`, set via `setSortKey`); `direction` (useState, init `'asc'`, set via `setDirection`); `page` (useState, init `0`, set via `setPage`)
 - Hooks: useState×3, useMemo
 - Props from RecentOrders: rows=orders, columns=COLUMNS, loading=loading, onRowClick=onSelect, emptyText="No orders yet"
 - Variables: sorted, visible
 - CSS classes: empty
+- ⚠ LOW a11y-click-handler L43: click handler on <tr> without a role or keyboard handler; keyboard users cannot trigger it. Fix: use a <button>, or add role="button", tabIndex={0} and a key handler
 - Renders: Spinner(label)
 - Used by: RecentOrders
 - Pages: /admin/orders, /admin
@@ -196,6 +212,7 @@ Generic sortable, paginated table used by every admin list.
 ## TabsPanel
 `src/components/ui/Tabs.tsx:25` · function · client component · none export · trivial
 
+- Owners: @northwind/design-system
 - Props: `value: string`, `children: React.ReactNode`
 - Hooks: useTabs
 - Props from FeaturedCollections: key=c.value, value=c.value

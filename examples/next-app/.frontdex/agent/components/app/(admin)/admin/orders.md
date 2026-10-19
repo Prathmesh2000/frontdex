@@ -5,6 +5,7 @@
 ## AdminOrdersPage
 `app/(admin)/admin/orders/page.tsx:7` · function · client component · default export · simple
 
+- Owners: @northwind/web
 - State: `selected` (useState, init `null`, set via `setSelected`); `version` (useState, init `0`, set via `setVersion`)
 - Hooks: useState×2
 - Renders: RecentOrders(key, limit, onSelect), OrderEditor(order, onClose, onSaved)

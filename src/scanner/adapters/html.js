@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { deriveName } from '../parse-file.js';
+import { a11yIssues } from '../analyzers/a11y.js';
 import { lineIndex } from './common.js';
 
 /*
@@ -53,9 +54,16 @@ export function parseHtml(file, code) {
   const classes = new Set();
   const hooks = new Map();
 
+  const lowerCode = code.toLowerCase();
+  const labels = [...lowerCode.matchAll(/<label\b[\s\S]*?<\/label>/g)].map((m) => [m.index, m.index + m[0].length]);
+  const issues = [];
   for (const { tag, attrs, offset } of startTags(code)) {
     const line = lineOf(offset);
     const lower = tag.toLowerCase();
+    // Visible text of a button/link: whatever sits before its closing tag, minus nested tags.
+    const close = lower === 'button' || lower === 'a' ? lowerCode.indexOf(`</${lower}`, offset) : -1;
+    const text = close === -1 ? null : /\S/.test(code.slice(code.indexOf('>', offset) + 1, close).replace(/<[^>]*>/g, ''));
+    issues.push(...a11yIssues({ tag: lower, attrs, text, line, inLabel: labels.some(([a, b]) => offset > a && offset < b) }));
     if (lower === 'script' && attrs.get('src')) {
       const source = localRef(file, attrs.get('src'));
       if (source) mod.imports.set(`__script${line}`, { source, imported: '*' });
@@ -79,6 +87,7 @@ export function parseHtml(file, code) {
   }
   record.hooks = [...hooks].map(([name, count]) => ({ name, category: 'custom', ...(count > 1 && { count }) }));
   if (classes.size) record.styles = { classes: [...classes] };
+  if (issues.length) record.issues = issues;
   mod.exports.set('default', record.name);
   mod.components = [record];
   return mod;

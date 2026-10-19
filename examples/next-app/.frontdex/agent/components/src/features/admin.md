@@ -7,6 +7,7 @@
 
 Admin-only metric card (different from the design-system Card).
 
+- Owners: @northwind/back-office, @ana
 - Props: `label: string`, `value: string`, `delta?: number`
 - Props from StatCard: key=m.label, ...m=spread
 - Variables: trend
@@ -21,6 +22,7 @@ Admin-only metric card (different from the design-system Card).
 
 Live visitor counter fed by a server-sent events stream.
 
+- Owners: @northwind/back-office, @ana
 - Props: `channel: string`
 - State: `count` (class, init `0`, set via `this.setState`); `online` (class, init `navigator.onLine`, set via `this.setState`)
 - Effect `componentDidMount` L8: mount → this.setState, Number, window.addEventListener
@@ -41,6 +43,7 @@ Live visitor counter fed by a server-sent events stream.
 
 Dashboard KPI tile: design-system Card shell around the admin metric card.
 
+- Owners: @northwind/back-office, @ana
 - Props: `title: string`, `metrics: { label: string; value: string; delta?: number }[]`
 - Props from AdminDashboard: title="Today", metrics=[{ label: 'Revenue', value: '$12,480', delta: 8 }…
 - CSS classes: grid (app/globals.css:6), grid-cols-3, gap-2
@@ -54,6 +57,7 @@ Dashboard KPI tile: design-system Card shell around the admin metric card.
 
 Create or edit a product. `productId` undefined means "new".
 
+- Owners: @northwind/back-office, @ana
 - Props: `productId?: string`
 - State: `product` (useState, init `{ name: '', price: 0, stock: 0, category: '' }`, set via `setProduct`); `loading` (useState, init `!!productId`, set via `setLoading`)
 - Hooks: useState×2, useEffect
@@ -76,6 +80,7 @@ Create or edit a product. `productId` undefined means "new".
 
 Canvas revenue chart. Class component with the full lifecycle for imperative drawing.
 
+- Owners: @northwind/back-office, @ana
 - Props: `data: Point[]`, `width: number`, `height?: number` = `240`, `currency?: string` = `'USD'`
 - State: `max` (class, init `0`, set via `this.setState`); `hovered` (class, init `null`, set via `this.setState`); `prevData` (class, init `[]`, set via `this.setState`)
 - Refs: `canvasRef`
@@ -101,6 +106,7 @@ Canvas revenue chart. Class component with the full lifecycle for imperative dra
 
 Sizes the chart to the window and loads the revenue series.
 
+- Owners: @northwind/back-office, @ana
 - Props: `range?: '7d' | '30d' | '90d'` = `'30d'`
 - State: `width` (useState, init `800`, set via `setWidth`)
 - Hooks: useSWR, useState, useEffect
@@ -119,6 +125,7 @@ Sizes the chart to the window and loads the revenue series.
 
 Catches render errors in the admin area and reports them.
 
+- Owners: @northwind/back-office, @ana
 - Props: `children: React.ReactNode`, `fallbackTitle?: string`
 - State: `error` (class, init `null`, set via `this.setState`)
 - Effect `getDerivedStateFromError` L12: error
@@ -136,6 +143,7 @@ Catches render errors in the admin area and reports them.
 
 Modal to change an order's status or delete it.
 
+- Owners: @northwind/back-office, @ana
 - Props: `order: Order | null`, `onClose: () => void`, `onSaved: () => void`
 - State: `status` (useState, init `order?.status ?? 'pending'`, set via `setStatus`); `busy` (useState, init `false`, set via `setBusy`)
 - Hooks: useState×2, useToast
@@ -147,6 +155,7 @@ Modal to change an order's status or delete it.
 - API DELETE `/orders/${order.id}` via http.delete in handler handleDelete (line 29)
 - Reads context:ToastContext via useToast
 - ⚠ LOW unused-variable L16: `unusedDraftNote` is declared but never used. Fix: remove it
+- ⚠ MEDIUM a11y-field-label L39: <select> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - Renders: Modal(open, title, onClose, footer), Button(variant, onClick, loading, onClick), Card, CardHeader(title, action), Badge, CardBody
 - Used by: AdminOrdersPage
 - Pages: /admin/orders
@@ -157,6 +166,7 @@ Modal to change an order's status or delete it.
 
 Left navigation for the admin area.
 
+- Owners: @northwind/back-office, @ana
 - Props: `collapsed?: boolean` = `false`
 - State: `renders` (useState, init `0`, set via `setRenders`)
 - Hooks: usePathname, useAuth, useState, useEffect
@@ -174,6 +184,7 @@ Left navigation for the admin area.
 
 Latest orders table on the dashboard; also reused by the orders page.
 
+- Owners: @northwind/back-office, @ana
 - Props: `limit?: number` = `10`, `onSelect?: (order: Order) => void`
 - State: `orders` (useState, init `[]`, set via `setOrders`); `loading` (useState, init `true`, set via `setLoading`)
 - Hooks: useState×2, useEffect

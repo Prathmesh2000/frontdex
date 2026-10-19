@@ -7,6 +7,7 @@
 
 Site footer with legal links. Plain JS component kept from the v1 codebase.
 
+- Owners: @northwind/web
 - Props: `year?: number` = `2026`, `links: arrayOf(PropTypes.shape({ href: PropTypes.string, label: PropTypes.string }))`, `compact?: bool` = `false`
 - Props from RootLayout: links=FOOTER_LINKS, year=new Date().getFullYear()
 - CSS classes: footer, compact (app/globals.css:5)
@@ -20,6 +21,7 @@ Site footer with legal links. Plain JS component kept from the v1 codebase.
 
 Button from the old design system.
 
+- Owners: @northwind/web
 - Props: `kind?: unknown` = `'default'`, `onPress?: unknown` = `() => {}`, `children?: unknown`
 - Props from BlogPage: kind="primary"
 - Handler `handleClick(event)` L10 → event.preventDefault, this.props.onPress
@@ -35,6 +37,7 @@ Button from the old design system.
 
 Promo strip from the 2024 redesign.
 
+- Owners: @northwind/web
 - Props: `message: string`, `dismissible?: boolean` = `true`
 - State: `hidden` (useState, init `false`, set via `setHidden`)
 - Hooks: useState
@@ -46,6 +49,7 @@ Promo strip from the 2024 redesign.
 
 Legacy class component wired to Redux with connect(). Pulses when the count changes.
 
+- Owners: @northwind/web
 - Props: `count: number`, `onClear: () => void`, `max?: number` = `99`
 - State: `pulse` (class, init `false`, set via `this.setState`)
 - Effect `componentDidUpdate` L19: update → this.setState, setTimeout
@@ -64,6 +68,7 @@ Legacy class component wired to Redux with connect(). Pulses when the count chan
 
 Homepage hero with a live promo countdown.
 
+- Owners: @northwind/web
 - Props: `headline: string`, `endsAt: string`, `ctaHref?: string` = `'/products'`
 - State: `remaining` (useState, init `() => Date.parse(endsAt) - Date.now()`, set via `setRemaining`)
 - Hooks: useState, useEffect
@@ -84,6 +89,7 @@ Homepage hero with a live promo countdown.
 
 Sticky top navigation: search, account, theme toggle and the cart drawer trigger.
 
+- Owners: @northwind/web
 - State: `scrolled` (useState, init `false`, set via `setScrolled`)
 - Hooks: useAuth, useTheme, useAppDispatch, useState, useEffect
 - Effect `useEffect` L27: mount+unmount (once) → setScrolled, window.addEventListener; cleanup → window.removeEventListener

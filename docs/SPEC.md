@@ -65,6 +65,9 @@ Keys starting with `x-` are allowed on the root, `info`, every Component, Prop a
 | `status` | `experimental` \| `stable` \| `deprecated` | both | `@deprecated` in JSDoc sets `deprecated`. |
 | `tags` | string[] | manual | Free-form grouping. |
 | `owner` | string | manual | Team or person. |
+| `codeowners` | string[] | gen | Owners from `CODEOWNERS` at the project root (last matching rule). |
+| `tests` | string[] | gen | Test files for the component (`X.test.*`, `X.spec.*`, `__tests__/X.*`), relative to its folder. |
+| `stories` | string[] | gen | Story files (`X.stories.*`), relative to its folder. |
 | `props` | map<string, [Prop](#prop)> | gen | |
 | `state` | map<string, [State](#state)> | gen | Local state only. |
 | `context` | string[] | gen | Contexts read via `useContext` / `static contextType`. |

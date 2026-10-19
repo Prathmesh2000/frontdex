@@ -5,6 +5,8 @@ import _traverse from '@babel/traverse';
 import { extractClassComponent, extractFunctionComponent, isReactClass, memberText, readJSDoc } from './component.js';
 import { analyzeComponent, analyzeModule } from './insights.js';
 import { extractAngularComponent, isAngularComponent } from './angular.js';
+import { jsxA11y } from './analyzers/a11y.js';
+import { jsxText } from './analyzers/i18n.js';
 import { definedTags, extractCustomElement, isElementClass } from './webcomponents.js';
 
 const traverse = _traverse.default ?? _traverse;
@@ -284,6 +286,11 @@ function scanComponents(programPath, mod) {
     const ctx = { mod, name, kind, line, typeHint };
     const record = isClass ? extractClassComponent(fnPath, ctx) : extractFunctionComponent(fnPath, ctx);
     analyzeComponent(fnPath, record, mod, { isClass });
+    const a11y = jsxA11y(fnPath);
+    if (a11y.length) record.issues = [...(record.issues ?? []), ...a11y];
+    // Kept on the parse record only; graph.js turns it into an issue when the project uses an i18n library.
+    const text = jsxText(fnPath);
+    if (text) record.hardcodedText = text;
     const doc = readJSDoc(docNode);
     if (doc.description) record.description = doc.description;
     if (doc.deprecated) record.status = 'deprecated';

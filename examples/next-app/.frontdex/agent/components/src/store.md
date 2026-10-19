@@ -7,6 +7,7 @@
 
 Creates the Redux store once per request/tab and provides it to client components.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - Refs: `storeRef`
 - Hooks: useRef

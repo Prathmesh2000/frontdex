@@ -7,6 +7,7 @@
 
 Distraction-free checkout chrome.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - CSS classes: checkout-shell, max-w-5xl, mx-auto, text-xs, text-gray-500
 - Libraries: next/link#Link
@@ -17,6 +18,7 @@ Distraction-free checkout chrome.
 ## CheckoutPage
 `app/checkout/page.tsx:6` · function · client component · default export · trivial
 
+- Owners: @northwind/web
 - Hooks: useAuth
 - Reads context:AuthContext via useAuth
 - Renders: ProtectedRoute, CheckoutWizard(userEmail)

@@ -7,6 +7,7 @@
 
 Signed-in area wrapper.
 
+- Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - CSS classes: account-body
 - Renders: ProtectedRoute, AccountNav
@@ -17,6 +18,7 @@ Signed-in area wrapper.
 ## AccountPage
 `app/(account)/account/page.tsx:7` · function · client component · default export · trivial
 
+- Owners: @northwind/web
 - Hooks: useAuth, useSearchParams
 - Variables: wantsLogin
 - Reads context:AuthContext via useAuth

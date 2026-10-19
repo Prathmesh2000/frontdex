@@ -45,6 +45,8 @@ User list with search and multi-select.
 - Writes redux:users: `setQuery` via dispatch in inline callback
 - Writes redux:users: `toggleSelected` via dispatch in inline callback
 - CSS classes: table (src/styles.css:4)
+- ⚠ MEDIUM a11y-field-label L18: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
+- ⚠ MEDIUM a11y-field-label L24: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - Libraries: react-router-dom#Link
 - Used by: nothing (unused or entry point)
 - Pages: /users

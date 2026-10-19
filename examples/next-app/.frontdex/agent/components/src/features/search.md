@@ -7,6 +7,7 @@
 
 Results list for a search term; re-fetches as the term changes.
 
+- Owners: @northwind/web
 - Props: `term: string`, `limit?: number` = `30`
 - Hooks: useSWR
 - Props from SearchPage: term=term
@@ -23,6 +24,7 @@ Results list for a search term; re-fetches as the term changes.
 
 Debounced search input with recent-term suggestions.
 
+- Owners: @northwind/web
 - Props: `placeholder?: string` = `'Search'`, `onSearch?: (term: string) => void`, `autoFocus?: boolean` = `false`
 - State: `term` (useState, init `''`, set via `setTerm`); `open` (useState, init `false`, set via `setOpen`)
 - Refs: `inputRef`
@@ -38,6 +40,7 @@ Debounced search input with recent-term suggestions.
 - Reads zustand:useSearchStore `addRecent` via useSearchStore
 - Validation (html): input [required, minLength]
 - CSS classes: search-bar, relative, suggestions, absolute
+- ⚠ MEDIUM a11y-field-label L44: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - Used by: SearchPage, Header
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 3 component(s) and 13 page(s); update every caller listed under "Used by".

@@ -48,7 +48,7 @@ test('memory leaks: uncleared resources are flagged, cleaned ones are not', () =
   assert.deepEqual(C.Modal.timers.map((t) => t.cleared), [true]);
   assert.deepEqual(C.PaymentForm.timers.map((t) => [t.type, t.cleared]), [['interval', true]]);
   assert.equal(C.ProductGrid.timers[0].type, 'observer');
-  assert.equal(issuesOf('Modal').length, 0);
+  assert.equal(issuesOf('Modal', 'memory-leak').length, 0);
 });
 
 test('render loops, unsafe async updates and stale dependencies', () => {

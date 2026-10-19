@@ -7,7 +7,7 @@ info:
   routers:
     - react-router
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T12:27:19.566Z
+  generatedAt: 2026-10-19T13:38:46.730Z
 components:
   AppShell:
     name: AppShell
@@ -422,6 +422,12 @@ components:
       classes:
         - name: form-error
           at: src/styles.css:6
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 19
+        fix: wrap it in <label>, link one with id/for, or add aria-label
     pages:
       - /settings/security
   SelectionBar:
@@ -753,6 +759,17 @@ components:
       classes:
         - name: table
           at: src/styles.css:4
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 18
+        fix: wrap it in <label>, link one with id/for, or add aria-label
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 24
+        fix: wrap it in <label>, link one with id/for, or add aria-label
     externals:
       - react-router-dom#Link
     pages:
@@ -901,11 +918,12 @@ styles:
 health:
   issues:
     high: 1
-    medium: 0
+    medium: 3
     low: 0
     info: 0
   byType:
     memory-leak: 1
+    a11y-field-label: 3
   unusedComponents:
     - LegacyStats
   unusedFiles:
