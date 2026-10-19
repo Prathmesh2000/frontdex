@@ -320,8 +320,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] Memory: < 1 GB at 20k files (stop cloning every cached module per scan; avoid double JSON serialisation of the catalogue).
 - [ ] Re-measure at 20k files; the one-file rescan target applies to watch mode.
 - [ ] Golden files for both examples match (allowed differences: ID format, new fields).
-- [ ] SQLite index + FTS5; `query`, `show`, `impact`, `dataflow` read from it.
-- [ ] Stable IDs; sharded YAML; history keyed by stable IDs; `frontdex upgrade` migrates the examples' 1.x files.
+- [x] ~~SQLite index + FTS5~~ rejected after measuring (2026-10-20): on 15.6k components SQLite queries were 3–15× slower than the in-memory index (`uses:Button` 95 ms vs 6 ms; no-op open 188 ms vs 0.14 ms), because callers still load the catalogue and the matcher still runs. Revisit only if the CLI/MCP must answer without loading the catalogue. Prototype kept on local branch `worktree-agent-abdb0603d87841735`.
+- [x] Stable IDs; sharded YAML; history keyed by stable IDs; `frontdex upgrade` migrates the examples' 1.x files. Old ids resolve through `aliases` (query `find`, `/api/component`).
 
 **Reach**
 - [x] Package-manager and workspace detection; linker for tsconfig `extends`, `exports`, workspace packages, PnP (nothing resolves through node_modules). Not done: tsconfig project `references`.

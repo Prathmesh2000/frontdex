@@ -178,8 +178,10 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       return json(res, { path: dir, dirs: [...dirs.values()].sort((a, b) => a.name.localeCompare(b.name)), items });
     }
     if (url.pathname === '/api/component') {
-      const id = url.searchParams.get('id');
-      const c = id && catalogue.components[id];
+      // Links and agents may still hold an old id; the catalogue's aliases map it to where the component lives now.
+      const asked = url.searchParams.get('id');
+      const id = asked && !Object.hasOwn(catalogue.components, asked) && Object.hasOwn(catalogue.aliases ?? {}, asked) ? catalogue.aliases[asked] : asked;
+      const c = id && Object.hasOwn(catalogue.components, id) && catalogue.components[id];
       return c ? json(res, { id, ...c }) : json(res, { error: `No component "${id}"` }, 404);
     }
     if (url.pathname === '/api/pages') return json(res, catalogue.pages);

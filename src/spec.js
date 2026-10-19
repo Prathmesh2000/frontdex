@@ -29,6 +29,11 @@ const readText = (file) => {
     return null;
   }
 };
+// The index's `shards` list is read from disk (or a commit) and may be edited by hand or by a hostile PR: only names in the
+// form shardOf() generates (one file directly in components/; no separator in the name, so no way out of the folder;
+// dots are fine, Next folders like [...slug] produce them) are ever turned into paths.
+const SHARD_NAME = /^components\/[^/\\]+\.yaml$/;
+const validShards = (list) => (Array.isArray(list) ? list.filter((s) => typeof s === 'string' && SHARD_NAME.test(s)) : []);
 const listShards = (dir) => (fs.existsSync(path.join(dir, 'components')) ? fs.readdirSync(path.join(dir, 'components')).filter((f) => f.endsWith('.yaml')) : []);
 
 /** Reads either layout: the single file, or (when that is absent) the sharded folder beside it. */
@@ -42,8 +47,8 @@ export function readCatalogue(file) {
 
 /** Rebuilds one document from a shard index; `readShard(relPath)` returns a parsed shard (ci.js passes one that reads a commit). */
 export function assembleShards(index, readShard) {
-  const { shards = [], catalogue, info, ...rest } = index;
-  const components = shards.flatMap((s) => Object.entries(readShard(s)?.components ?? {}));
+  const { shards, catalogue, info, ...rest } = index;
+  const components = validShards(shards).flatMap((s) => Object.entries(readShard(s)?.components ?? {}));
   components.sort(([a], [b]) => a.localeCompare(b));
   return { catalogue, info, components: Object.fromEntries(components), ...rest };
 }
@@ -105,7 +110,7 @@ export function writeCatalogue(file, catalogue, { shard = false, memo } = {}) {
 function removeShards(dir) {
   const text = readText(path.join(dir, 'index.yaml'));
   if (text == null) return;
-  for (const s of YAML.parse(text)?.shards ?? []) fs.rmSync(path.join(dir, s), { force: true });
+  for (const s of validShards(YAML.parse(text)?.shards)) fs.rmSync(path.join(dir, s), { force: true });
   fs.rmSync(path.join(dir, 'index.yaml'));
   for (const d of [path.join(dir, 'components'), dir]) {
     try {

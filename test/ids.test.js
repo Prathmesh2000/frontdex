@@ -141,3 +141,23 @@ test('upgrade migrates a 1.x catalogue: IDs kept, aliases for moved files, shard
   assert.ok(history.checkout(first.commit.id).catalogue.components[`Button@${OTHER}`], 'old commits still check out');
   assert.equal(upgradeCatalogue(config).commit, null, 'a second upgrade changes nothing');
 });
+
+test('a tampered shard index cannot make frontdex read or delete files outside the shard folder', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shards-'));
+  const victim = path.join(dir, 'keep.txt');
+  fs.writeFileSync(victim, 'do not delete');
+  fs.mkdirSync(path.join(dir, 'frontdex'));
+  fs.writeFileSync(path.join(dir, 'frontdex/index.yaml'), 'catalogue: "1.1"\nshards:\n  - ../keep.txt\n  - components/../../keep.txt\n');
+  const file = path.join(dir, 'frontdex.yaml');
+  assert.deepEqual(readCatalogue(file).components, {});
+  // Switching to the single-file layout removes the sharded one, touching only listed shards that are valid.
+  writeCatalogue(file, { catalogue: '1.1', info: { title: 't' }, components: {} }, { shard: false });
+  assert.equal(fs.readFileSync(victim, 'utf8'), 'do not delete');
+});
+
+test('lookups by an old id resolve through catalogue aliases', async () => {
+  const { createIndex } = (await import('node:module')).createRequire(import.meta.url)('../src/query.cjs');
+  const cat = { components: { 'Button@src/ui/Button.tsx': { name: 'Button', file: 'src/ui/Button.tsx' } }, pages: {}, aliases: { 'Button@src/Button.tsx': 'Button@src/ui/Button.tsx' } };
+  assert.deepEqual(createIndex(cat).find('Button@src/Button.tsx').map((m) => m.id), ['Button@src/ui/Button.tsx']);
+  assert.deepEqual(createIndex(cat).find('toString'), [], 'prototype keys are not aliases');
+});

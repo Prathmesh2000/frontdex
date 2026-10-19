@@ -183,9 +183,14 @@
       return out.map((x) => x[1]);
     }
 
-    /** Resolves a component by id, exact name, or case-insensitive name; returns all candidates when a name is ambiguous. */
+    /**
+     * Resolves a component by id, old id (catalogue `aliases`, kept when a component moved), exact name, or
+     * case-insensitive name; returns all candidates when a name is ambiguous.
+     */
     function find(nameOrId) {
       if (byId.has(nameOrId)) return [byId.get(nameOrId)];
+      const aliased = cat && cat.aliases && Object.prototype.hasOwnProperty.call(cat.aliases, nameOrId) && byId.get(cat.aliases[nameOrId]);
+      if (aliased) return [aliased];
       const exact = comps.filter((m) => m.name === nameOrId);
       if (exact.length) return exact;
       const lower = String(nameOrId).toLowerCase();

@@ -5,3 +5,4 @@ catalogue-site/
 *.log
 ui-react/dist/
 dist-pack/
+.claude/
