@@ -157,6 +157,43 @@
         }
       }
     },
+    "hooks": {
+      "type": "object",
+      "description": "Custom hooks: where they are defined, the stores/contexts they read, the hooks they call, and the components using them.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "reads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "calls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "health": {
       "$ref": "#/definitions/Health"
     }

@@ -69,6 +69,8 @@ export function isLegacyProject(root) {
 }
 
 export function loadConfig(root, overrides = {}) {
+  // Path comparisons in the resolver assume an absolute root; a relative one silently disabled tsconfig paths.
+  root = path.resolve(root);
   const legacy = isLegacyProject(root);
   const file = path.join(root, legacy ? LEGACY.configFile : CONFIG_FILE);
   const fromFile = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};

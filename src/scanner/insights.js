@@ -693,7 +693,7 @@ function hookFacts(fnPath) {
       } else calls.add(hook);
     },
   });
-  return { reads, calls: [...calls] };
+  return { reads, calls: [...calls], line: fnPath.node.loc?.start.line };
 }
 
 function findDeclaration(programPath, name) {

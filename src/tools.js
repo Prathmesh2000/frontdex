@@ -233,6 +233,12 @@ export function createTools(config) {
       else lines.push('- Git history: unavailable (not a git checkout, or the file is untracked)');
       return lines.join('\n');
     },
+    catalogue_hooks({ name } = {}) {
+      const { cat } = refresh().state;
+      const list = Object.entries(cat.hooks ?? {}).filter(([id]) => !name || id === name || id.startsWith(`${name}@`));
+      if (!list.length) return name ? `No custom hook named ${name}.` : 'No custom hooks found.';
+      return list.map(([id, h]) => `- ${id} \`${h.file}${h.line ? `:${h.line}` : ''}\`${h.reads?.length ? ` reads ${h.reads.join(', ')}` : ''}${h.calls?.length ? ` · calls ${h.calls.join(', ')}` : ''} · used by ${h.usedBy?.join(', ') || 'nothing'}`).join('\n');
+    },
     catalogue_diff({ base = 'HEAD', head } = {}) {
       // Working tree vs a git ref (default: the last commit): what the current change does to the frontend.
       try {

@@ -7,7 +7,7 @@ info:
   routers:
     - next-app
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:38:45.691Z
+  generatedAt: 2026-10-19T13:47:50.897Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -6368,6 +6368,54 @@ duplicates:
     reasons:
       - same base name "Button"
       - 1/8 props shared
+hooks:
+  useAuth:
+    file: src/features/auth/AuthContext.tsx
+    line: 57
+    reads:
+      - AuthContext
+    usedBy:
+      - AccountPage
+      - CheckoutPage
+      - Header
+      - AdminSidebar
+      - LoginForm
+      - ProtectedRoute
+  useDebounce:
+    file: src/features/search/useDebounce.ts
+    line: 4
+    calls:
+      - useState
+      - useEffect
+    usedBy:
+      - SearchBar
+  useTabs:
+    file: src/components/ui/Tabs.tsx
+    line: 5
+    reads:
+      - TabsContext
+    usedBy:
+      - TabsTrigger
+      - TabsPanel
+  useTheme:
+    file: src/features/theme/ThemeContext.tsx
+    line: 32
+    reads:
+      - ThemeContext
+    usedBy:
+      - Header
+  useToast:
+    file: src/features/toast/ToastContext.tsx
+    line: 26
+    reads:
+      - ToastContext
+    usedBy:
+      - ProfileForm
+      - OrderEditor
+      - CheckoutWizard
+      - AddToCartButton
+      - ProductGrid
+      - ToastViewport
 health:
   issues:
     high: 8

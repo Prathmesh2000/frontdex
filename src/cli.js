@@ -41,6 +41,7 @@ Explore
   find <Name> [--props a,b] Existing components like one you plan to create (run before creating)
   dupes [Component]        Components that look like duplicates of each other
   tokens [query]           Design tokens and hard-coded values that should use them
+  hooks [name]             Custom hooks: file, what they read and call, which components use them
   owners <Component>       CODEOWNERS, tests/stories and live git activity for a component
   adoption <Component>     Usage of a component across knowledge-base snapshots
 
@@ -232,6 +233,8 @@ export async function main(argv) {
       }
       return;
     }
+    case 'hooks':
+      return void console.log(createTools(config).tools.catalogue_hooks({ name: arg }));
     case 'owners':
     case 'adoption': {
       if (!arg) throw new Error(`Usage: frontdex ${command} <Component>`);

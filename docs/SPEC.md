@@ -27,6 +27,7 @@ The machine-readable definition is [`spec/catalogue.schema.json`](../spec/catalo
 | `endpoints` | map<key, Endpoint> | no | Server entry points the frontend defines. Key: the URL for route handlers, API routes and resource routes; `middleware`; `action:<name>` for server actions. Endpoint: `kind` (`route-handler` \| `api-route` \| `resource-route` \| `middleware` \| `server-action`), `file`, `methods`, `workspace`, `importedBy` (server actions). |
 | `tokens` | object | no | `definitions`: map<token, { value, at, source: css \| tailwind }> from CSS custom properties and the Tailwind theme. `drift`: hard-coded values matching a token, each with `value`, `at` (where used), `property`, `token`, `defined` (where the token is), `match` (exact \| near) and `use` (what to write instead). |
 | `duplicates` | array | no | Pairs of components that look alike: `components` [a, b], `score` 0–1, `reasons`. The less-used one also gets a `possible-duplicate` issue. |
+| `hooks` | map<HookId, { file, line, reads, calls, usedBy }> | no | Custom hooks: the contexts/stores they read, hooks they call, components using them. HookId is the name, or `name@file` when names collide. |
 | `health` | [Health](#health) | no | Issue totals and dead code. |
 
 Keys starting with `x-` are allowed on the root, `info`, every Component, Prop and Page. They are never touched by the generator (same convention as OpenAPI extensions).

@@ -435,6 +435,26 @@ export function scanProject(config, { cache, known } = {}) {
     }
   }
 
+  // Custom hooks catalogued in their own right: where they live, what they read and call, which components use them.
+  const hookNames = new Map();
+  for (const mod of modules.values()) for (const name of Object.keys(mod.customHooks ?? {})) hookNames.set(name, (hookNames.get(name) ?? 0) + 1);
+  const hooks = {};
+  const hookId = (file, name) => (hookNames.get(name) > 1 ? `${name}@${rel(file)}` : name);
+  for (const [file, mod] of modules) {
+    for (const [name, facts] of Object.entries(mod.customHooks ?? {})) {
+      const reads = [...new Set(facts.reads.map((r) => (r.kind === 'context' ? r.store : r.kind === 'zustand' ? `${r.store}${r.path ? ` ${r.path}` : ''}` : `redux ${r.path}`)))];
+      hooks[hookId(file, name)] = { file: rel(file), line: facts.line, reads, calls: facts.calls.filter((c) => c !== name), usedBy: [] };
+    }
+  }
+  for (const { mod, c } of entries) {
+    for (const h of c.hooks ?? []) {
+      if (h.category !== 'custom') continue;
+      const found = findHook(mod.file, h.name);
+      const hook = found && hooks[hookId(found.file, h.name)];
+      if (hook && !hook.usedBy.includes(c.id)) hook.usedBy.push(c.id);
+    }
+  }
+
   const workspaceName = (file) => workspaceOf(config.workspaces, file)?.name;
   const svelteKitRoots = appRoots.filter((a) => a.deps?.['@sveltejs/kit']).map((a) => a.dir);
   const astroRoots = appRoots.filter((a) => a.deps?.astro).map((a) => a.dir);
@@ -480,6 +500,7 @@ export function scanProject(config, { cache, known } = {}) {
     styles: sortKeys(styles),
     ...(Object.keys(tokens.definitions).length && { tokens: { definitions: sortKeys(tokens.definitions), ...(tokens.drift.length && { drift: tokens.drift }) } }),
     ...(duplicates.length && { duplicates }),
+    ...(Object.keys(hooks).length && { hooks: sortKeys(Object.fromEntries(Object.entries(hooks).map(([k, h]) => [k, compact(h)]))) }),
     health,
   };
   return {

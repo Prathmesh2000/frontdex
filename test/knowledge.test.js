@@ -91,6 +91,8 @@ test('createTools answers the queries the CLI and frontdex-mcp rely on', () => {
   assert.match(tools.catalogue_state({ store: 'redux:cart' }), /written by: .*CartBadge/);
   assert.match(tools.catalogue_find_existing({ name: 'PrimaryButton', props: ['onClick', 'variant'] }), /^Existing components similar[\s\S]*- Button `src\/components\/ui\/Button\.tsx`/);
   assert.match(tools.catalogue_duplicates({ name: 'Button' }), /Button ~ LegacyButton/);
+  // Custom hooks resolve through tsconfig aliases (@/features/...) as well as relative imports.
+  assert.match(tools.catalogue_hooks({ name: 'useToast' }), /- useToast `src\/features\/toast\/ToastContext\.tsx:\d+` reads ToastContext · used by ProfileForm, .*ToastViewport/);
   assert.match(tools.catalogue_owners({ name: 'Button' }), /CODEOWNERS: @northwind\/design-system[\s\S]*Tests: Button\.test\.tsx · Stories: Button\.stories\.tsx/);
   assert.match(tools.catalogue_adoption({ name: 'Button' }), /\| \d{4}-\d\d-\d\d \| .* \| 1\d \| 1\d \|/);
   assert.match(tools.catalogue_tokens({ query: 'danger' }), /#dc2727 at `src\/features\/products\/ProductCard\.module\.css:7` ≈ --danger/);

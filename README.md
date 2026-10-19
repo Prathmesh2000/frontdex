@@ -63,6 +63,7 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 | `frontdex find <Name> [--props a,b]` | Existing components similar to one you are about to create (base name, name words, props). |
 | `frontdex dupes [Component]` | Components that look like duplicates: same or similar names, shared props, children and classes. |
 | `frontdex tokens [query]` | Design tokens (CSS custom properties, Tailwind theme) and hard-coded values that match them exactly or nearly. |
+| `frontdex hooks [name]` | Custom hooks: where each is defined, what it reads and calls, which components use it. |
 | `frontdex owners <Component>` | CODEOWNERS, test and story files, and live git activity (last change, commits in 90 days, top authors). |
 | `frontdex adoption <Component>` | How many components and pages use it in each knowledge-base snapshot, e.g. to watch a deprecated component go away. |
 | `frontdex agents [--targets …] [--no-hooks] [--no-mcp] [--remove]` | Installs or removes agent integration. |
@@ -301,4 +302,4 @@ node bin/frontdex.js serve -C examples/next-app -w
 
 ## Limits
 
-Static analysis only: components produced by factories and routes built from runtime data are not followed. Custom hooks are recorded on their callers but not catalogued on their own yet. Vue: Nuxt auto-imported components (used without an import) and Pinia stores are not linked yet. Svelte stores (`$store`) are not linked yet. Leak/render-loop diagnostics are React-only.
+Static analysis only: components produced by factories and routes built from runtime data are not followed. Vue: Nuxt auto-imported components (used without an import) and Pinia stores are not linked yet. Svelte stores (`$store`) are not linked yet. Leak/render-loop diagnostics are React-only.
