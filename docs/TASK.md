@@ -24,7 +24,7 @@ Decisions marked **default** were left open in discussion. They are applied here
 | Index | `node:sqlite` with FTS5, at `.uiatlas/index.db` (git-ignored). |
 | UI | React + Vite + TanStack Router + TanStack Virtual, **pre-built at publish time** and shipped as static assets, so the user's own React version is never touched. |
 | Licence / hosting | **default** MIT, open source, local only. No hosted hub. |
-| GitHub owner of repo 2 | **Unresolved**: existing repo is under `Prathmesh2000`, local `gh` is logged in as `prathmesh_altpath`. Confirm before the push step. |
+| GitHub owner | `Prathmesh2000`, both repos **public**. Requires `gh auth login` as `Prathmesh2000` (the default `gh` account `prathmesh_altpath` has no admin rights on it). |
 
 ## Hard constraints
 
