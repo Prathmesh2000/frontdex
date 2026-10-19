@@ -57,6 +57,7 @@
     "url": "git+https://github.com/Prathmesh2000/frontdex.git"
   },
   "devDependencies": {
+    "@astrojs/compiler": "^4.0.0",
     "svelte": "^5.57.2",
     "vue": "^3.5.44"
   }

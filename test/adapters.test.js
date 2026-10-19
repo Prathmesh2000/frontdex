@@ -172,3 +172,36 @@ test('Svelte 5 runes and Svelte 4 components, SvelteKit routes, layouts and endp
   assert.deepEqual(cat.endpoints['/api/items'].methods, ['GET', 'POST']);
   assert.equal(cat.endpoints['action:/login'].kind, 'server-action');
 });
+
+test('Astro: frontmatter props and fetches, child components and framework islands, pages and endpoints', () => {
+  const cat = scanFixture({ astro: '5', react: '19' }, {
+    'src/layouts/Base.astro': '---\ninterface Props { title: string }\nconst { title } = Astro.props;\n---\n<html><head><title>{title}</title></head><body class="site"><slot /></body></html>\n',
+    'src/components/Card.astro': '---\ninterface Props { post: { title: string }; featured?: boolean }\nconst { post, featured = false } = Astro.props;\n---\n<article class="card">{post.title}</article>\n',
+    'src/components/Counter.tsx': "import { useState } from 'react';\nexport default function Counter({ start }: { start: number }) { const [n, setN] = useState(start); return <button onClick={() => setN(n + 1)}>{n}</button>; }\n",
+    'src/pages/index.astro': [
+      '---',
+      "import Base from '../layouts/Base.astro';",
+      "import Card from '../components/Card.astro';",
+      "import Counter from '../components/Counter.tsx';",
+      "const posts = await fetch('https://api.example.com/posts').then((r) => r.json());",
+      '---',
+      '<Base title="Home">',
+      '  {posts.map((p) => <Card post={p} featured />)}',
+      '  <Counter client:load start={1} />',
+      '</Base>',
+    ].join('\n'),
+    'src/pages/blog/[slug].astro': '<h1>Post</h1>\n',
+    'src/pages/_draft.astro': '<p>hidden</p>\n',
+    'src/pages/api/search.ts': 'export function GET() { return new Response("[]"); }\n',
+  });
+  const C = cat.components;
+  assert.deepEqual(C.Card.props, { post: { type: '{ title: string }', required: true }, featured: { type: 'boolean', required: false, default: 'false' } });
+  assert.deepEqual(C.BaseLayout.props, { title: { type: 'string', required: true } });
+  assert.deepEqual(C.HomePage.renders.sort(), ['BaseLayout', 'Card', 'Counter']);
+  assert.deepEqual(C.HomePage.passes.Counter.map((p) => p.name), ['client:load', 'start']);
+  assert.equal(C.HomePage.apiCalls[0].target, 'https://api.example.com/posts');
+  assert.ok(C.Counter.state.n, 'the React island is scanned by the JSX scanner as usual');
+  assert.deepEqual(Object.keys(cat.pages).sort(), ['/', '/blog/[slug]']);
+  assert.equal(cat.pages['/'].router, 'astro');
+  assert.deepEqual(cat.endpoints['/api/search'].methods, ['GET']);
+});

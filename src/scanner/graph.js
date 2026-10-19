@@ -413,7 +413,8 @@ export function scanProject(config, { cache, known } = {}) {
 
   const workspaceName = (file) => workspaceOf(config.workspaces, file)?.name;
   const svelteKitRoots = appRoots.filter((a) => a.deps?.['@sveltejs/kit']).map((a) => a.dir);
-  const endpoints = collectEndpoints({ nextRoots, svelteKitRoots, modules, rel, resolveImport, workspaceName });
+  const astroRoots = appRoots.filter((a) => a.deps?.astro).map((a) => a.dir);
+  const endpoints = collectEndpoints({ nextRoots, svelteKitRoots, astroRoots, modules, rel, resolveImport, workspaceName });
   for (const [route, entry] of resourceRoutes) {
     const workspace = workspaceName(entry.file);
     endpoints[endpoints[route] ? `${route} (${workspace ?? entry.kind})` : route] = compact({ ...entry, file: rel(entry.file), workspace });

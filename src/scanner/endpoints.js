@@ -12,7 +12,7 @@ import path from 'node:path';
 export const HTTP_VERBS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const SOURCE = /\.(tsx|jsx|ts|js|mjs)$/;
 
-export function collectEndpoints({ nextRoots, svelteKitRoots = [], modules, rel, resolveImport, workspaceName }) {
+export function collectEndpoints({ nextRoots, svelteKitRoots = [], astroRoots = [], modules, rel, resolveImport, workspaceName }) {
   const endpoints = {};
   const add = (key, entry) => {
     const workspace = workspaceName(entry.file);
@@ -53,6 +53,18 @@ export function collectEndpoints({ nextRoots, svelteKitRoots = [], modules, rel,
       const route = '/' + path.relative(routesDir, path.dirname(file)).split(path.sep).filter((s) => s && !/^\(.*\)$/.test(s)).join('/');
       if (/^\+server\.(ts|js)$/.test(base)) add(route, { kind: 'route-handler', file, methods: exportsOf(file).filter((e) => HTTP_VERBS.includes(e) || e === 'fallback') });
       else if (/^\+page\.server\.(ts|js)$/.test(base) && exportsOf(file).includes('actions')) add(`action:${route}`, { kind: 'server-action', file });
+    }
+  }
+
+  // Astro endpoints: .ts/.js files in src/pages exporting GET/POST/… (or ALL).
+  for (const root of astroRoots) {
+    const pagesDir = path.join(root, 'src', 'pages');
+    for (const file of files) {
+      if (!file.startsWith(pagesDir + path.sep) || !/\.(ts|js|mjs)$/.test(file)) continue;
+      const methods = exportsOf(file).filter((e) => HTTP_VERBS.includes(e) || e === 'ALL');
+      if (!methods.length) continue;
+      const segs = path.relative(pagesDir, file).replace(SOURCE, '').split(path.sep).filter((s) => s !== 'index');
+      add('/' + segs.join('/'), { kind: 'route-handler', file, methods });
     }
   }
 

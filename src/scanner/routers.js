@@ -10,7 +10,7 @@ import path from 'node:path';
  * Gatsby/Solid/Qwik), the same convention Next.js pages follow with `[id]`.
  */
 
-const SOURCE = /\.(tsx|jsx|ts|js|mjs|vue|svelte)$/;
+const SOURCE = /\.(tsx|jsx|ts|js|mjs|vue|svelte|astro)$/;
 const stripExt = (f) => f.replace(SOURCE, '');
 
 /** Splits a flat-route file name on dots, except dots escaped in [brackets] (`sitemap[.]xml`). */
@@ -260,6 +260,23 @@ function svelteKit(app, files) {
   return out;
 }
 
+/**
+ * Astro: every .astro file in src/pages is a page (`index` → folder URL, `[slug]` and `[...path]` params, `_` prefix
+ * ignored). Layouts are ordinary components, so they show up through `renders` rather than `layouts`.
+ */
+function astro(app, files) {
+  const pagesDir = path.join(app.dir, 'src', 'pages');
+  const out = [];
+  for (const file of files) {
+    if (!file.startsWith(pagesDir + path.sep) || !file.endsWith('.astro')) continue;
+    const segs = stripExt(path.relative(pagesDir, file)).split(path.sep);
+    if (segs.some((s) => s.startsWith('_'))) continue;
+    if (segs[segs.length - 1] === 'index') segs.pop();
+    out.push({ route: routeOf(segs), router: 'astro', file, params: params(segs), page: { file, export: 'default' }, layouts: [] });
+  }
+  return out;
+}
+
 /** Runs every router whose package is a dependency of the app root. `app = { dir, deps }`. */
 export function fileSystemRoutes(app, files, modules) {
   const has = (...names) => names.some((n) => app.deps?.[n]);
@@ -272,5 +289,6 @@ export function fileSystemRoutes(app, files, modules) {
   if (has('@builder.io/qwik-city')) out.push(...qwikCity(app, files));
   if (has('nuxt')) out.push(...nuxt(app, files));
   if (has('@sveltejs/kit')) out.push(...svelteKit(app, files));
+  if (has('astro')) out.push(...astro(app, files));
   return out;
 }

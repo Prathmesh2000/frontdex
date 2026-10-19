@@ -124,7 +124,8 @@
               "qwik-city",
               "nuxt",
               "vue-router",
-              "sveltekit"
+              "sveltekit",
+              "astro"
             ]
           }
         },
@@ -460,7 +461,8 @@
             "qwik-city",
             "nuxt",
             "vue-router",
-            "sveltekit"
+            "sveltekit",
+            "astro"
           ]
         },
         "file": {

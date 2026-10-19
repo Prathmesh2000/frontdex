@@ -1,17 +1,23 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
+import path from 'node:path';
 import { MessageChannel, receiveMessageOnPort, Worker } from 'node:worker_threads';
+import { parseAstro } from './adapters/astro.js';
 import { parseSvelte } from './adapters/svelte.js';
 import { parseVue } from './adapters/vue.js';
 import { parseFile } from './parse-file.js';
+
+// Non-JS file types and their adapters; everything else is parsed by Babel in parseFile().
+const ADAPTERS = { '.vue': parseVue, '.svelte': parseSvelte, '.astro': parseAstro };
 
 // Parsed modules hold Maps; the cache (JSON) and worker messages carry them as entry arrays.
 export const MAP_FIELDS = ['imports', 'exports', 'aliases'];
 
 /** Parses one file into its cacheable (Map-free) form. */
 export function parseOne(file, code) {
-  const mod = file.endsWith('.vue') ? parseVue(file, code) : file.endsWith('.svelte') ? parseSvelte(file, code) : parseFile(file, code);
+  const adapter = ADAPTERS[path.extname(file)] ?? parseFile;
+  const mod = adapter(file, code);
   delete mod.file;
   return { ...mod, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, [...mod[k]]])) };
 }
