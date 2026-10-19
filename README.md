@@ -185,13 +185,15 @@ Site map ─ URL map (route → layouts → page component, API/state/issue coun
          ├─ API & state endpoints, Redux/context/zustand reads & writes, validation rules
          ├─ Styles      class → defining file:line, CSS modules, stylesheets
          └─ Health · Source · History
-Global state · Health (leaks, loops, dead code, API map) · Components explorer · Graph · History
+Global state · Health (all issues, dead code, API map + server endpoints) · Design (tokens, drift, duplicates) · Hooks · Changes (diff vs a git ref) · Components explorer · Graph · History
 ```
 
 - **Sidebar:** the same page-first tree. Expand a route into its layouts and components, and expand a component into its State / Props / Functions / Effects / Timers / API / Store / Issues.
 - **Source:** every `file:line` opens the source in a side panel, and there's a VS Code button.
 - **Rescan:** the top bar has a Rescan button, and auto-update keeps the open tab live.
 - **Search:** `Ctrl K` searches pages, components, stores, endpoints, folders and hooks.
+- **Component header:** kind, client/server rendering, custom-element tag or styled element, CODEOWNERS, tests; the overview starts with usage examples from stories.
+- **HTTP API** (while `frontdex serve` runs): `/api/components?q=&offset=&limit=` (paged, query language), `/api/component?id=`, `/api/pages`, `/api/diff?base=&head=`, `/api/catalogue`, `/api/history`.
 
 Query language (combine freely, prefix `-` to negate):
 

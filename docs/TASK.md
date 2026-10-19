@@ -341,7 +341,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 
 **Surfaces**
 - [x] CLI: `--json` on query commands, scan, check, history, diff; `doctor`; help text.
-- [ ] HTTP API (paged) + new UI; `frontdex build` static export.
+- [x] UI extended (option A): Design, Hooks and Changes views, server endpoints in the API map, component meta and story examples; paged HTTP API (`/api/components`, `/api/component`, `/api/pages`, `/api/diff`).
+- [ ] New UI (option B: React + Vite, pre-built), loading data page by page from the HTTP API.
 - [ ] Preview through the user's dev server (Vite virtual route, Next generated dev-only route), props playground, `screenshot`.
 - [ ] Dev-only overlay.
 - [ ] Integrations: Next (no webpack plugin), Vite, webpack, Rspack.

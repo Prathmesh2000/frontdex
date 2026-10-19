@@ -70,7 +70,7 @@ const issueKey = (i) => `${i.type}|${i.message}`;
 /** Diff + blast radius + issues introduced by `head` relative to `base`. */
 export function buildReport(base, head, { baseLabel = 'base', headLabel = 'head' } = {}) {
   // Issues are reported on their own (new/fixed); ownership and test files are metadata, not a change to the UI.
-  const { summary, changes } = diffCatalogues(base, head, { ignoreComponentFields: ['issues', 'codeowners', 'tests', 'stories'] });
+  const { summary, changes } = diffCatalogues(base, head, { ignoreComponentFields: ['issues', 'codeowners', 'tests', 'stories', 'examples'] });
   const affectedPages = new Set();
   const components = changes
     .filter((c) => c.kind === 'components')

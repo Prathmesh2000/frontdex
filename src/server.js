@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+import { buildReport, catalogueAtRef } from './ci.js';
 import { createHistory } from './history.js';
 import { knowledgeDir, scan } from './index.js';
 import { SOURCE_EXT } from './scanner/files.js';
@@ -8,6 +10,10 @@ import { readCatalogue } from './spec.js';
 import { startWatcher } from './watch.js';
 
 const UI_DIR = new URL('../ui/', import.meta.url);
+const { createIndex } = createRequire(import.meta.url)('./query.cjs');
+// One query index per catalogue object, rebuilt only after a rescan replaces the catalogue.
+const indexes = new WeakMap();
+const indexFor = (cat) => indexes.get(cat) ?? indexes.set(cat, createIndex(cat)).get(cat);
 const QUERY_FILE = new URL('./query.cjs', import.meta.url);
 const UI_FILES = { '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/styles.css': 'styles.css' };
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
@@ -53,6 +59,32 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       return json(res, { changed: result.changed, delta: result.delta, commit: result.commit, warnings: result.warnings });
     }
     if (url.pathname === '/api/source') return serveSource(config.root, url.searchParams.get('file'), res);
+    if (url.pathname === '/api/diff') {
+      try {
+        const base = url.searchParams.get('base') || 'HEAD';
+        const head = url.searchParams.get('head');
+        const before = catalogueAtRef(config, base).catalogue;
+        const after = head ? catalogueAtRef(config, head).catalogue : catalogue;
+        return json(res, buildReport(before, after, { baseLabel: base, headLabel: head ?? 'working tree' }));
+      } catch (err) {
+        return json(res, { error: `Cannot diff: ${String(err.message).split('\n')[0]}` }, 400);
+      }
+    }
+    // Paged access for large projects and external tools: /api/components?q=uses:Button&offset=0&limit=50
+    if (url.pathname === '/api/components') {
+      const index = indexFor(catalogue);
+      const q = url.searchParams.get('q') ?? '';
+      const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
+      const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit')) || 50));
+      const hits = q ? index.run(q) : index.comps;
+      return json(res, { total: hits.length, offset, limit, items: hits.slice(offset, offset + limit).map((m) => ({ id: m.id, name: m.name, kind: m.c.kind, file: m.c.file, line: m.c.line, usedBy: m.usedBy, pages: m.pages, issues: m.c.issues?.length ?? 0 })) });
+    }
+    if (url.pathname === '/api/component') {
+      const id = url.searchParams.get('id');
+      const c = id && catalogue.components[id];
+      return c ? json(res, { id, ...c }) : json(res, { error: `No component "${id}"` }, 404);
+    }
+    if (url.pathname === '/api/pages') return json(res, catalogue.pages);
     if (url.pathname === '/api/events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
       res.write(': connected\n\n');
@@ -93,8 +125,8 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
   });
 }
 
-function json(res, data) {
-  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+function json(res, data, status = 200) {
+  res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(data));
 }
 
