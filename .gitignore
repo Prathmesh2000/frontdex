@@ -4,3 +4,4 @@ catalogue-site/
 .DS_Store
 *.log
 ui-react/dist/
+dist-pack/
