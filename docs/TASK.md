@@ -311,12 +311,14 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] `npm install`, `npm test` green on today's code.
 - [x] Record golden outputs: `catalogue.json`, agent cards and MCP responses for both examples. Done as `test/golden.test.js` against the committed example output; MCP responses are asserted in frontdex-mcp.
 - [x] Verify at start: `oxc-parser` API stability and platform coverage, `node:sqlite` unflagged Node version, current Next/Turbopack plugin surface. Record findings at the top of this file.
-- [ ] **Confirm with the user**, then reserve the names before any other public step: publish `0.0.0` placeholders of `frontdex` and `frontdex-mcp` to npm, rename the GitHub repo `frontend-catalog` → `frontdex`, update the local `origin` remote. If either npm name has been taken since 2026-10-19, stop and ask.
+- [ ] (GitHub done: repo renamed to `frontdex`, `origin` updated, `frontdex-mcp` created. npm placeholders still blocked on 2FA for the npm account.) **Confirm with the user**, then reserve the names before any other public step: publish `0.0.0` placeholders of `frontdex` and `frontdex-mcp` to npm, rename the GitHub repo `frontend-catalog` → `frontdex`, update the local `origin` remote. If either npm name has been taken since 2026-10-19, stop and ask.
 
 **Foundation**
 - [ ] Convert repo 1 to a TypeScript pnpm workspace with the layout above; build to one published package.
 - [ ] `packages/spec`: types + Schema 2.0; `frontdex validate` passes on 1.x and 2.0 documents.
-- [ ] Port the JSX scanner from Babel to oxc; worker pool; parse cache keeps today's "keep last good parse on broken file" behaviour.
+- [x] ~~Port the JSX scanner from Babel to oxc~~ dropped (see Baseline findings). Done instead: single directory walk, stylesheet cache, watch sessions with deferred YAML, worker-thread parsing; "keep last good parse" kept.
+- [ ] Memory: < 1 GB at 20k files (stop cloning every cached module per scan; avoid double JSON serialisation of the catalogue).
+- [ ] Re-measure at 20k files; the one-file rescan target applies to watch mode.
 - [ ] Golden files for both examples match (allowed differences: ID format, new fields).
 - [ ] SQLite index + FTS5; `query`, `show`, `impact`, `dataflow` read from it.
 - [ ] Stable IDs; sharded YAML; history keyed by stable IDs; `frontdex upgrade` migrates the examples' 1.x files.
@@ -344,10 +346,11 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] CI: `diff`, `pr-comment`, GitHub Action with commit-keyed cache.
 
 **MCP split**
-- [ ] Remove `src/mcp.js` and its test from repo 1; `frontdex mcp` shim; `frontdex agents` writes the new MCP entry.
-- [ ] Create `C:\frontdex-mcp` with the layout above; port the 12 tools onto the public API; add the 6 new tools.
-- [ ] MCP golden responses match the baseline for the 12 existing tools.
-- [ ] **Confirm GitHub owner and visibility with the user**, then create the repo and push. Repo 1 work goes on a branch, not `main`.
+- [x] Remove `src/mcp.js` and its test from repo 1; `rcat mcp` shim (existing `.mcp.json` entries keep working, so `agents` output is unchanged).
+- [x] Create `C:\frontdex-mcp`; port the 12 tools onto the public API (`createTools`).
+- [ ] Add the 6 new MCP tools.
+- [x] MCP golden responses match the baseline for the 12 existing tools.
+- [x] **Confirm GitHub owner and visibility with the user**, then create the repo and push. Repo 1 work goes on a branch, not `main`.
 
 **Release readiness (no publishing in this task)**
 - [ ] `react-catalogue` compatibility release prepared (re-export + rename notice), not published.
