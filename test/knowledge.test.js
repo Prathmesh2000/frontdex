@@ -161,3 +161,20 @@ test('react-catalogue projects keep working and upgrade to frontdex names, agent
   assert.match(agentsMd, /<!-- frontdex:start -->[\s\S]*`\.frontdex\/agent\/`/);
   assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8')).mcpServers).sort(), ['frontdex', 'other']);
 });
+
+test('subgraph walks a bounded neighbourhood and caps oversized graphs', async () => {
+  const { subgraph } = await import('../src/server.js');
+  const C = { A: { name: 'A', file: 'src/a/A.tsx', renders: ['B'], usedBy: [] }, B: { name: 'B', file: 'src/a/B.tsx', renders: ['C'], usedBy: ['A'] }, C: { name: 'C', file: 'src/c/C.tsx', renders: [], usedBy: ['B'] } };
+  const cat = { components: C, pages: { '/': { component: 'A', layouts: [] } } };
+
+  const near = subgraph(cat, { focus: 'c:A', depth: 1 });
+  assert.deepEqual(Object.keys(near.nodes).sort(), ['A', 'B']);
+  assert.deepEqual(Object.keys(near.pages), ['/']);
+  assert.deepEqual(near.nodes.B.renders, [], 'edges to nodes outside the slice are dropped');
+
+  assert.deepEqual(Object.keys(subgraph(cat, { dir: 'src/c' }).nodes), ['C']);
+  const capped = subgraph(cat, { max: 2 });
+  assert.equal(capped.truncated, true);
+  assert.equal(capped.total, 4);
+  assert.equal(subgraph(cat, { max: 2, force: true }).truncated, false);
+});

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { api, type ComponentRow, type Issue } from './api';
 import { Card, CompLink, FileRef, Header, Issues, Loading, Swatch, useApi } from './lib';
 
@@ -24,7 +24,8 @@ export function Overview() {
       <Header title={info.title} sub={[info.version && `v${info.version}`, info.framework, info.routers?.join(', '), info.packageManager, info.workspaces?.length && `${info.workspaces.length} workspaces`].filter(Boolean).join(' · ')} />
       <div className="stats">
         {stat(counts.components, 'components', '/components')}
-        {stat(counts.pages, 'pages')}
+        {stat(counts.pages, 'pages', '/pages')}
+        {stat(counts.stores, 'global stores', '/state')}
         {stat(counts.hooks, 'custom hooks', '/hooks')}
         {stat(counts.tokens, 'design tokens', '/design')}
         {stat(issues.high, 'high-severity issues', '/health')}
@@ -333,6 +334,235 @@ export function Hooks() {
           </tbody>
         </table>
       </Card>
+    </>
+  );
+}
+
+export function Pages() {
+  const { data, error } = useApi(api.pages, []);
+  if (!data) return <Loading error={error} />;
+  const routes = Object.keys(data).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return (
+    <>
+      <Header title="Site map" sub="Every route the routers found, with the component that renders it." />
+      <Card title="Pages" count={routes.length}>
+        <table>
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Component</th>
+              <th>Router</th>
+              <th>Components</th>
+              <th>File</th>
+            </tr>
+          </thead>
+          <tbody>
+            {routes.map((r) => (
+              <tr key={r}>
+                <td>
+                  <Link className="mono" to="/page" search={{ route: r }}>
+                    {r}
+                  </Link>
+                </td>
+                <td>{data[r].component ? <CompLink id={data[r].component} /> : '–'}</td>
+                <td>
+                  <span className="badge">{data[r].router ?? '–'}</span>
+                </td>
+                <td>{data[r].components?.length ?? 0}</td>
+                <td>
+                  <FileRef at={data[r].file} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </>
+  );
+}
+
+export function PageView({ route }: { route: string }) {
+  const { data, error } = useApi(api.pages, []);
+  if (!data) return <Loading error={error} />;
+  const p = data[route];
+  if (!p) return <Loading error={`no page "${route}"`} />;
+  return (
+    <>
+      <Header
+        title={<span className="mono">{route}</span>}
+        badges={
+          <>
+            {p.router && <span className="badge">{p.router}</span>}
+            {p.metadata && <span className="badge">metadata: {p.metadata}</span>}
+          </>
+        }
+        sub={
+          <>
+            <FileRef at={p.file} />{' '}
+            <Link to="/graph" search={{ focus: `p:${route}`, depth: 2 }}>
+              show in graph
+            </Link>
+          </>
+        }
+      />
+      <div className="grid">
+        <Card title="Rendered by" wide={false}>
+          <div className="chips">{p.component ? <CompLink id={p.component} /> : <p className="none">Unknown.</p>}</div>
+        </Card>
+        <Card title="Layouts" count={p.layouts?.length ?? 0} wide={false}>
+          <div className="chips">{p.layouts?.length ? p.layouts.map((x) => <CompLink key={x} id={x} />) : <p className="none">No layouts.</p>}</div>
+        </Card>
+      </div>
+      <Card title="Components on this page" count={p.components?.length ?? 0}>
+        <div className="chips">{p.components?.map((x) => <CompLink key={x} id={x} />)}</div>
+      </Card>
+    </>
+  );
+}
+
+export function State() {
+  const { data, error, loading } = useApi(api.stores, []);
+  if (loading) return <Loading error={error} />;
+  const stores = Object.entries(data ?? {});
+  const chips = (ids?: string[]) => (ids?.length ? <div className="chips">{ids.map((x) => <CompLink key={x} id={x} />)}</div> : '–');
+  return (
+    <>
+      <Header title="Global state" sub="Contexts and stores, who provides them, who reads them and who writes to them." />
+      <Card title="Stores" count={stores.length}>
+        <table>
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>Kind</th>
+              <th>File</th>
+              <th>Providers</th>
+              <th>Readers</th>
+              <th>Writers</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stores.map(([key, s]) => (
+              <tr key={key}>
+                <td>
+                  <code>{s.name}</code>
+                </td>
+                <td>
+                  <span className="badge">{s.kind}</span>
+                </td>
+                <td>
+                  <FileRef at={`${s.file}${s.line ? `:${s.line}` : ''}`} />
+                </td>
+                <td>{chips(s.providers)}</td>
+                <td>{chips(s.readers)}</td>
+                <td>{chips(s.writers)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </>
+  );
+}
+
+const CHANGE_CLS = { added: 'sev-info', removed: 'danger', changed: 'sev-low' } as const;
+
+/** What changed in the UI between two git refs (or a ref and the working tree), the same report as `frontdex diff`. */
+export function Changes({ base, head }: { base: string; head?: string }) {
+  const navigate = useNavigate();
+  const { data: r, error } = useApi(() => api.diff(base, head), [base, head]);
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    navigate({ to: '/changes', search: { base: String(f.get('base') || 'HEAD'), head: String(f.get('head') || '') || undefined } });
+  };
+  return (
+    <>
+      <Header title="Changes" sub="Components, pages and endpoints that changed between two git refs, the pages they reach, and new issues." />
+      <form className="toolbar" style={{ position: 'static' }} onSubmit={submit}>
+        <input name="base" defaultValue={base} placeholder="base (e.g. main)" />
+        <input name="head" defaultValue={head ?? ''} placeholder="head (empty = working tree)" />
+        <button className="btn">Compare</button>
+      </form>
+      {!r ? (
+        <Loading error={error} />
+      ) : (
+        <>
+          <Card title="Components" count={r.components.length} sub={`${r.base} → ${r.head}`}>
+            {r.components.length ? (
+              <table>
+                <tbody>
+                  {r.components.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <span className={`badge ${CHANGE_CLS[c.change]}`}>{c.change}</span>
+                      </td>
+                      <td>{c.change === 'removed' ? <code>{c.id}</code> : <CompLink id={c.id} />}</td>
+                      <td className="small">{c.details.join('; ')}</td>
+                      <td className="muted small">
+                        {c.pages.length} pages · {c.dependents.length} dependents
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="none">No component changes.</p>
+            )}
+          </Card>
+          <Card title="Pages affected" count={r.affectedPages.length}>
+            <div className="chips">
+              {r.affectedPages.map((p) => (
+                <Link key={p} className="chip mono" to="/page" search={{ route: p }}>
+                  {p}
+                </Link>
+              ))}
+            </div>
+          </Card>
+          {r.endpoints.length > 0 && (
+            <Card title="Endpoints" count={r.endpoints.length}>
+              {r.endpoints.map((e) => (
+                <div key={e.key}>
+                  <span className={`badge ${CHANGE_CLS[e.change]}`}>{e.change}</span> <code>{e.key}</code>
+                </div>
+              ))}
+            </Card>
+          )}
+          <Card title="New issues" count={r.newIssues.length} sub={r.fixedIssues ? `${r.fixedIssues} fixed` : undefined}>
+            <Issues items={r.newIssues} />
+          </Card>
+        </>
+      )}
+    </>
+  );
+}
+
+export function History() {
+  const { data, error } = useApi(api.history, []);
+  if (!data) return <Loading error={error} />;
+  const commits = [...data].reverse();
+  return (
+    <>
+      <Header title="History" sub="Every scan that changed the catalogue, newest first." />
+      {!commits.length && <p className="none">No history yet (history is off, or nothing has been scanned twice).</p>}
+      {commits.map((e) => {
+        const shown = e.changes.slice(0, 30);
+        return (
+          <Card key={e.id} title={e.message ?? 'scan'} count={e.changes.length} sub={`${new Date(e.time).toLocaleString()}${e.git ? ` · git ${e.git}` : ''}`}>
+            <div className="chips">
+              {shown.map((c) =>
+                c.kind === 'components' && c.change !== 'removed' ? (
+                  <CompLink key={`${c.kind}:${c.key}`} id={c.key} />
+                ) : (
+                  <span key={`${c.kind}:${c.key}`} className="chip mono" title={`${c.kind} ${c.change}`}>
+                    {c.key}
+                  </span>
+                ),
+              )}
+              {e.changes.length > shown.length && <span className="muted small">+{e.changes.length - shown.length} more</span>}
+            </div>
+          </Card>
+        );
+      })}
     </>
   );
 }

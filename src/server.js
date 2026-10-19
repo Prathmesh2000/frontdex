@@ -25,6 +25,58 @@ export function dataScript(catalogue, { root = null, history = null, live = fals
   return `window.__CATALOGUE__ = ${JSON.stringify(catalogue)};\nwindow.__CATALOGUE_ROOT__ = ${JSON.stringify(root)};\nwindow.__CATALOGUE_HISTORY__ = ${JSON.stringify(history)};\nwindow.__CATALOGUE_LIVE__ = ${live};\nwindow.__CATALOGUE_PREVIEW__ = ${JSON.stringify(preview)};\n`;
 }
 
+/**
+ * The slice of the render graph the v2 graph view draws, so the browser never loads the whole catalogue.
+ * `focus` is "c:<component id>" or "p:<route>" and walks `depth` hops both ways; `dir` takes a folder;
+ * neither takes everything. Past `max` nodes only the counts come back, unless `force` is set.
+ */
+export function subgraph(catalogue, { focus, depth = 2, dir, max = 400, force = false } = {}) {
+  const C = catalogue.components;
+  const P = catalogue.pages ?? {};
+  const roots = (r) => [...(P[r].layouts ?? []), P[r].component].filter(Boolean);
+  let routes;
+  let ids;
+  if (focus) {
+    routes = new Set();
+    ids = new Set();
+    const seen = new Set([focus]);
+    let frontier = [focus];
+    for (let d = 0; d <= depth && frontier.length; d++) {
+      const next = [];
+      for (const key of frontier) {
+        const id = key.slice(2);
+        if (key.startsWith('p:') && P[id]) {
+          routes.add(id);
+          if (d < depth) next.push(...roots(id).map((x) => `c:${x}`));
+        } else if (key.startsWith('c:') && C[id]) {
+          ids.add(id);
+          if (d < depth) {
+            next.push(...(C[id].renders ?? []).map((x) => `c:${x}`), ...(C[id].usedBy ?? []).map((x) => `c:${x}`));
+            for (const r of Object.keys(P)) if (roots(r).includes(id)) next.push(`p:${r}`);
+          }
+        }
+      }
+      frontier = next.filter((k) => !seen.has(k) && seen.add(k));
+    }
+    routes = [...routes];
+    ids = [...ids];
+  } else {
+    ids = Object.keys(C).filter((id) => !dir || C[id].file.startsWith(`${dir}/`));
+    const set = new Set(ids);
+    routes = Object.keys(P).filter((r) => !dir || roots(r).some((x) => set.has(x)));
+  }
+  const total = ids.length + routes.length;
+  if (total > max && !force) return { total, truncated: true, pages: {}, nodes: {} };
+  const set = new Set(ids);
+  const keep = (list) => (list ?? []).filter((x) => set.has(x));
+  return {
+    total,
+    truncated: false,
+    pages: Object.fromEntries(routes.map((r) => [r, { component: set.has(P[r].component) ? P[r].component : undefined, layouts: keep(P[r].layouts) }])),
+    nodes: Object.fromEntries(ids.map((id) => [id, { name: C[id].name, file: C[id].file, renders: keep(C[id].renders), usedBy: keep(C[id].usedBy) }])),
+  };
+}
+
 const historyLog = (config) => (config.history.enabled ? createHistory(path.join(knowledgeDir(config), 'history')).log() : null);
 
 export function buildSite(config, catalogue, outDir) {
@@ -90,6 +142,10 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       return c ? json(res, { id, ...c }) : json(res, { error: `No component "${id}"` }, 404);
     }
     if (url.pathname === '/api/pages') return json(res, catalogue.pages);
+    if (url.pathname === '/api/graph') {
+      const p = url.searchParams;
+      return json(res, subgraph(catalogue, { focus: p.get('focus') || undefined, depth: Math.min(8, Math.max(1, Number(p.get('depth')) || 2)), dir: p.get('dir') || undefined, force: p.get('force') === '1' }));
+    }
     if (url.pathname === '/api/info') {
       const count = (x) => (Array.isArray(x) ? x.length : x ? Object.keys(x).length : 0);
       return json(res, {
