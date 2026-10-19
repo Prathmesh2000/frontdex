@@ -63,8 +63,8 @@ Card entry. Class component because it wraps the imperative payments SDK.
 - Props from CheckoutWizard: amount=amount, onPaid=(token) => dispatchWizard({ type: 'paid', token }), onBack=() => dispatchWizard({ type: 'back' })
 - Variables: sessionTimer
 - Handler `async handleSubmit(e: React.FormEvent)` L41 → e.preventDefault, validateCard, this.setState, validateExpiry, fetch, JSON.stringify
-- Timer `setInterval` in componentDidMount L30: released
-- API POST `/api/payments/tokenize` via fetch in handleSubmit L45
+- Timer `setInterval` in componentDidMount (line 30): released
+- API POST `/api/payments/tokenize` via fetch in handleSubmit (line 45)
 - Validation (custom): validateCard
 - Validation (custom): validateExpiry
 - Validation (html): Card number [required]

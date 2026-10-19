@@ -10,7 +10,7 @@ Edit name/email with native HTML validation.
 - State: `name` (useState, init `profile?.name ?? ''`, set via `setName`); `email` (useState, init `profile?.email ?? ''`, set via `setEmail`); `lastSaved` (useState, init `null`, set via `setLastSaved`); `saving` (useState, init `false`, set via `setSaving`)
 - Hooks: useSelector, useState×4, useToast, useAppSelector
 - Handler `async handleSubmit(e: React.FormEvent<HTMLFormEl…)` L20 sets saving → e.preventDefault, setSaving, http.patch, notify
-- API PATCH `/me` via http.patch in handler handleSubmit L24
+- API PATCH `/me` via http.patch in handler handleSubmit (line 24)
 - Reads redux:user `user.profile` via useSelector
 - Reads redux:user `user.wishlist` via useAppSelector
 - Reads context:ToastContext via useToast
@@ -34,8 +34,8 @@ Order status with live polling until the order ships.
 - Hooks: useState, useEffect
 - Effect `useEffect` L15: mount+update+unmount (deps [orderId]) → fetch, load, setInterval; cleanup → clearInterval, controller.abort
 - Props from OrderDetailPage: orderId=orderId
-- Timer `setInterval` in useEffect L15 L23: released
-- API GET `/api/orders/${orderId}` via fetch in useEffect L15 L18
+- Timer `setInterval` in useEffect L15 (line 23): released
+- API GET `/api/orders/${orderId}` via fetch in useEffect L15 (line 18)
 - Renders: Spinner(label), Card, CardHeader(title, action), Badge(tone), CardBody, CartItem(key, line, readOnly)
 - Used by: OrderDetailPage
 - Pages: /account/orders/[orderId]

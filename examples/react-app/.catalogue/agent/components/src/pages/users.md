@@ -10,7 +10,7 @@ Read-only user profile.
 - State: `user` (useState, init `null`, set via `setUser`)
 - Hooks: useParams, useState, useEffect
 - Effect `useEffect` L10: mount+update+unmount (deps [userId]) → fetchUser, setUser
-- API CALL `fetchUser()` via service in useEffect L10 L12
+- API CALL `fetchUser()` via service in useEffect L10 (line 12)
 - Libraries: react-router-dom#Link
 - Used by: nothing (unused or entry point)
 - Pages: /users/:userId
@@ -25,8 +25,8 @@ Edit page, lazy-loaded by the router.
 - Hooks: useParams, useNavigate, useState, useEffect
 - Effect `useEffect` L12: mount+update+unmount (deps [userId]) → fetchUser; cleanup → controller.abort
 - Handler `async handleSave(values)` L18 → updateUser, navigate
-- API CALL `fetchUser()` via service in useEffect L12 L14
-- API CALL `updateUser()` via service in handler handleSave L19
+- API CALL `fetchUser()` via service in useEffect L12 (line 14)
+- API CALL `updateUser()` via service in handler handleSave (line 19)
 - Renders: UserForm(initial, onSubmit, submitLabel)
 - Used by: nothing (unused or entry point)
 - Pages: /users/:userId/edit
@@ -39,7 +39,7 @@ User list with search and multi-select.
 
 - Hooks: useSelector, useDispatch, useEffect
 - Effect `useEffect` L11: mount+update+unmount (deps [dispatch, query]) → setTimeout, dispatch, loadUsers; cleanup → clearTimeout
-- Timer `setTimeout` in useEffect L11 L12: released
+- Timer `setTimeout` in useEffect L11 (line 12): released
 - Reads redux:users `users` via useSelector
 - Writes redux:users: `loadUsers` via dispatch in useEffect L11
 - Writes redux:users: `setQuery` via dispatch in inline callback

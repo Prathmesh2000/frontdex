@@ -51,7 +51,7 @@ Loads the session once and mirrors auth changes into Redux (user.profile).
 - Effect `useEffect` L36: mount+update (deps [dispatch]) → authClient.onAuthStateChanged, setUser, dispatch, setProfile
 - Function `async signIn(email: string, password: string)` L44 sets user → authClient.signIn, setUser
 - Function `async signOut()` L48 sets user → authClient.signOut, setUser
-- Timer `authClient.onAuthStateChanged` in useEffect L36 L38: NOT RELEASED
+- Timer `authClient.onAuthStateChanged` in useEffect L36 (line 38): NOT RELEASED
 - Writes redux:user: `setProfile` via dispatch in useEffect L23
 - Writes redux:user: `setProfile` via dispatch in useEffect L36
 - ⚠ HIGH memory-leak L38: authClient.onAuthStateChanged started in useEffect L36 without cleanup. Fix: keep the unsubscribe function and call it in the effect cleanup

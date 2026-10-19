@@ -8,7 +8,7 @@
 - Hooks: useSearchParams, useEffect
 - Effect `useEffect` L9: mount+update (deps [orderId]) → trackEvent
 - Variables: orderId
-- API CALL `trackEvent()` via service in useEffect L9 L10
+- API CALL `trackEvent()` via service in useEffect L9 (line 10)
 - CSS classes: text-center, py-20
 - Libraries: next/link#Link
 - Used by: nothing (unused or entry point)

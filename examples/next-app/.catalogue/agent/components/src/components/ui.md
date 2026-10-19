@@ -151,7 +151,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 - Effect `useEffect` L20: mount+update+unmount (deps [open, onClose]) → onClose, document.addEventListener; cleanup → document.removeEventListener, document.body.style.removeProperty
 - Props from OrderEditor: open=!!order, title=`Edit order ${order?.id ?? ''}`, onClose=onClose, footer=<><Button variant="danger" onClick={handleDelete}…
 - Props from CartDrawer: open=open, title=`Your cart (${items.length})`, onClose=close, footer=<Button onClick={goToCheckout} disabled={!items.l…
-- Timer `document.addEventListener`('keydown') in useEffect L20 L24: released
+- Timer `document.addEventListener`('keydown') in useEffect L20 (line 24): released
 - CSS classes: backdrop (app/globals.css:35)
 - Renders: Button(variant, onClick)
 - Used by: OrderEditor, CartDrawer

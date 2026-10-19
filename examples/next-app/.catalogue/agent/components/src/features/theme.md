@@ -13,7 +13,7 @@ Follows the OS colour scheme until the user picks one.
 - Effect `useEffect` L12: mount+update+unmount (deps [userChoice]) → window.matchMedia, setTheme, onChange, media.addEventListener; cleanup → media.removeEventListener
 - Effect `useLayoutEffect` L20: mount+update (deps [theme])
 - Function `toggleTheme()` L24 sets userChoice, theme → setUserChoice, setTheme
-- Timer `media.addEventListener`('change') in useEffect L12 L16: released
+- Timer `media.addEventListener`('change') in useEffect L12 (line 16): released
 - Used by: RootLayout
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 1 component(s) and 13 page(s); update every caller listed under "Used by".

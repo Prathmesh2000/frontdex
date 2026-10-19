@@ -80,9 +80,9 @@ Class component exercising every lifecycle method.
 - Effect `componentWillUnmount` L43: unmount → clearInterval
 - Props from Dashboard: label="Active users", intervalMs=5000, label="Signups today", intervalMs=30000
 - Function `async load()` L47 → fetchMetrics, this.setState
-- Timer `setInterval` in componentDidMount L23: released
-- Timer `setInterval` in componentDidUpdate L39: released
-- API CALL `fetchMetrics()` via service in load L48
+- Timer `setInterval` in componentDidMount (line 23): released
+- Timer `setInterval` in componentDidUpdate (line 39): released
+- API CALL `fetchMetrics()` via service in load (line 48)
 - CSS classes: ticker, up, down
 - Used by: Dashboard
 - Pages: /

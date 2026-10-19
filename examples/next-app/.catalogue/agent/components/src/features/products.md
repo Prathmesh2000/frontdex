@@ -12,7 +12,7 @@ Image carousel with arrow-key navigation.
 - Hooks: useState×2, useEffect
 - Effect `useEffect` L10: mount+update+unmount (deps [images.length]) → setIndex, window.addEventListener; cleanup → window.removeEventListener
 - Props from ProductDetailPage: images=[product.image], alt=product.name
-- Timer `window.addEventListener`('keydown') in useEffect L10 L15: released
+- Timer `window.addEventListener`('keydown') in useEffect L10 (line 15): released
 - CSS classes: gallery, zoomed, thumbs, flex, gap-2
 - Libraries: next/image#Image
 - Used by: ProductDetailPage
@@ -44,7 +44,7 @@ Title, price, stock and the add-to-cart controls.
 - Hooks: useState, useEffect
 - Effect `useEffect` L11: mount+update+unmount (deps [category, limit]) → getProducts, setItems
 - Props from ProductDetailPage: category=product.category, excludeId=product.id
-- API CALL `getProducts()` via service in useEffect L11 L13
+- API CALL `getProducts()` via service in useEffect L11 (line 13)
 - CSS classes: related, grid (app/globals.css:6), grid-cols-4, gap-4
 - ⚠ LOW missing-dependency L11: useEffect L11 reads excludeId but its dependency array is [category, limit]: stale values possible. Fix: add excludeId to the dependency array
 - Renders: ProductCard(key, product, compact)
@@ -63,7 +63,7 @@ Customer reviews, loaded lazily below the fold.
 - Effect `useEffect` L12: mount+update (deps [productId]) → fetch, setReviews
 - Props from ProductDetailPage: productId=product.id
 - Variables: visible
-- API GET `/api/products/${productId}/reviews` via fetch in useEffect L12 L14
+- API GET `/api/products/${productId}/reviews` via fetch in useEffect L12 (line 14)
 - CSS classes: reviews
 - ⚠ MEDIUM unsafe-async-update L12: useEffect L12 sets state (setReviews) after async work with no cleanup; it can run after unmount or out of order. Fix: use an AbortController or an `ignore` flag set in the cleanup
 - Renders: Spinner(label)
@@ -81,7 +81,7 @@ Quantity picker + add button for the product page.
 - Hooks: useState, useTransition, useAppSelector, useAppDispatch, useToast
 - Props from ProductInfo: product=product, maxQuantity=Math.min(product.stock, 10)
 - Handler `handleAdd()` L18 → startTransition, dispatch, addItem, updateQuantity, trackEvent, notify
-- API CALL `trackEvent()` via service in inline callback L22
+- API CALL `trackEvent()` via service in inline callback (line 22)
 - Reads redux:cart `cart.items` via useAppSelector
 - Reads context:ToastContext via useToast
 - Writes redux:cart: `addItem` via dispatch in inline callback
@@ -136,8 +136,8 @@ Responsive grid of products for a category. Column count follows the container w
 - Props from ProductsPage: category=category, sort=sort
 - Props from FeaturedCollections: category=c.category, pageSize=8
 - Handler `handleAdd(product: Product)` L33 → dispatch, addItem, notify
-- Timer `new ResizeObserver` in useEffect L26 L28: released
-- API GET `/api/products?category=${category}&sort=${sort}&limit=${pageSize}` via useSWR in render L20
+- Timer `new ResizeObserver` in useEffect L26 (line 28): released
+- API GET `/api/products?category=${category}&sort=${sort}&limit=${pageSize}` via useSWR in render (line 20)
 - Reads context:ToastContext via useToast
 - Writes redux:cart: `addItem` via dispatch in handler handleAdd
 - CSS classes: error (app/globals.css:34), grid (app/globals.css:6)

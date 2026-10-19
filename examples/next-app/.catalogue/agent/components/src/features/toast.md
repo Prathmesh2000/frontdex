@@ -9,7 +9,7 @@
 - Hooks: useEffect
 - Effect `useEffect` L8: mount+update+unmount (deps [toast.id, onDismiss]) → setTimeout, onDismiss; cleanup → clearTimeout
 - Props from ToastViewport: key=t.id, toast=t, onDismiss=dismiss
-- Timer `setTimeout` in useEffect L8 L9: released
+- Timer `setTimeout` in useEffect L8 (line 9): released
 - CSS classes: toast (app/globals.css:36), toast-
 - Renders: Badge(tone)
 - Used by: ToastViewport

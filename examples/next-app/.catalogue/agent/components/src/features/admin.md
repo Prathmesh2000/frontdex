@@ -25,8 +25,8 @@ Live visitor counter fed by a server-sent events stream.
 - Effect `componentDidMount` L8: mount → this.setState, Number, window.addEventListener
 - Props from AdminDashboard: channel="storefront"
 - Variables: source
-- Timer `new EventSource` in componentDidMount L9: NOT RELEASED
-- Timer `window.addEventListener`('online') in componentDidMount L12: NOT RELEASED
+- Timer `new EventSource` in componentDidMount (line 9): NOT RELEASED
+- Timer `window.addEventListener`('online') in componentDidMount (line 12): NOT RELEASED
 - CSS classes: live, offline
 - ⚠ HIGH memory-leak L9: new EventSource started in componentDidMount with no matching release in componentWillUnmount. Fix: release it in componentWillUnmount
 - ⚠ HIGH memory-leak L12: window.addEventListener('online') started in componentDidMount with no matching release in componentWillUnmount. Fix: release it in componentWillUnmount
@@ -58,9 +58,9 @@ Create or edit a product. `productId` undefined means "new".
 - Effect `useEffect` L12: mount+update+unmount (deps [productId]) → http.get, setProduct, setLoading; cleanup → controller.abort
 - Props from AdminProductPage: productId=productId
 - Handler `async handleSubmit(e: React.FormEvent)` L22 → e.preventDefault, http.put, http.post
-- API GET `/products/${productId}` via http.get in useEffect L12 L15
-- API PUT `/products/${productId}` via http.put in handler handleSubmit L24
-- API POST `/products` via http.post in handler handleSubmit L25
+- API GET `/products/${productId}` via http.get in useEffect L12 (line 15)
+- API PUT `/products/${productId}` via http.put in handler handleSubmit (line 24)
+- API POST `/products` via http.post in handler handleSubmit (line 25)
 - Validation (html): Name [required, minLength]
 - Validation (html): Price (cents) [required, min, type=number]
 - Validation (html): Stock [min, type=number]
@@ -88,7 +88,7 @@ Canvas revenue chart. Class component with the full lifecycle for imperative dra
 - Variables: canvasRef, frame
 - Handler `handleMove(e: MouseEvent)` L48 → Math.floor, this.setState
 - Function `draw()` L53 → ctx.clearRect, ctx.fillRect
-- Timer `requestAnimationFrame` in componentDidUpdate L40: released
+- Timer `requestAnimationFrame` in componentDidUpdate (line 40): released
 - CSS classes: chart
 - Used by: SalesPanel
 - Pages: /admin
@@ -104,8 +104,8 @@ Sizes the chart to the window and loads the revenue series.
 - Hooks: useSWR, useState, useEffect
 - Effect `useEffect` L12: mount (once) → window.addEventListener, setWidth, Math.min
 - Props from AdminDashboard: range="30d"
-- Timer `window.addEventListener`('resize') in useEffect L12 L14: NOT RELEASED
-- API GET `/api/admin/sales?range=${range}` via useSWR in render L9
+- Timer `window.addEventListener`('resize') in useEffect L12 (line 14): NOT RELEASED
+- API GET `/api/admin/sales?range=${range}` via useSWR in render (line 9)
 - ⚠ HIGH memory-leak L14: window.addEventListener('resize') started in useEffect L12 without cleanup. Fix: return () => target.removeEventListener(sameEvent, sameHandler) from the effect
 - Renders: SalesChart(data, width)
 - Used by: AdminDashboard
@@ -122,7 +122,7 @@ Catches render errors in the admin area and reports them.
 - Effect `getDerivedStateFromError` L12: error
 - Effect `componentDidCatch` L16: error → fetch, JSON.stringify
 - Props from AdminLayout: fallbackTitle="The admin panel crashed"
-- API POST `/api/errors` via fetch in componentDidCatch L17
+- API POST `/api/errors` via fetch in componentDidCatch (line 17)
 - CSS classes: error-panel
 - Renders: Button(onClick)
 - Used by: AdminLayout
@@ -141,8 +141,8 @@ Modal to change an order's status or delete it.
 - Variables: unusedDraftNote (UNUSED)
 - Handler `async handleSave()` L18 sets busy → setBusy, http.patch, notify, onSaved
 - Handler `async handleDelete()` L27 → confirm, http.delete, onSaved
-- API PATCH `/orders/${order.id}` via http.patch in handler handleSave L21
-- API DELETE `/orders/${order.id}` via http.delete in handler handleDelete L29
+- API PATCH `/orders/${order.id}` via http.patch in handler handleSave (line 21)
+- API DELETE `/orders/${order.id}` via http.delete in handler handleDelete (line 29)
 - Reads context:ToastContext via useToast
 - ⚠ LOW unused-variable L16: `unusedDraftNote` is declared but never used. Fix: remove it
 - Renders: Modal(open, title, onClose, footer), Button(variant, onClick, loading, onClick), Card, CardHeader(title, action), Badge, CardBody
@@ -178,7 +178,7 @@ Latest orders table on the dashboard; also reused by the orders page.
 - Effect `useEffect` L20: mount+update+unmount (deps [limit]) → http.get, setOrders, setLoading; cleanup → controller.abort
 - Props from AdminOrdersPage: key=version, limit=100, onSelect=setSelected
 - Props from AdminDashboard: limit=5
-- API GET `/orders` via http.get in useEffect L20 L22
+- API GET `/orders` via http.get in useEffect L20 (line 22)
 - Renders: DataTable(rows, columns, loading, onRowClick, emptyText)
 - Used by: AdminOrdersPage, AdminDashboard
 - Pages: /admin/orders, /admin

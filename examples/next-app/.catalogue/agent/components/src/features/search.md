@@ -11,7 +11,7 @@ Results list for a search term; re-fetches as the term changes.
 - Hooks: useSWR
 - Props from SearchPage: term=term
 - Variables: count
-- API GET `term ? '/api/search?q=${encodeURIComponent(term)}&limit=${limit}' : null` via useSWR in render L10
+- API GET `term ? '/api/search?q=${encodeURIComponent(term)}&limit=${limit}' : null` via useSWR in render (line 10)
 - CSS classes: hint, grid (app/globals.css:6)
 - Renders: Spinner(label), ProductCard(key, product, compact)
 - Used by: SearchPage
@@ -32,8 +32,8 @@ Debounced search input with recent-term suggestions.
 - Props from SearchPage: placeholder="What are you looking for?", onSearch=setTerm, autoFocus=true
 - Props from Header: placeholder="Search products"
 - Handler `handleSubmit(e: React.FormEvent)` L33 → e.preventDefault, term.trim, addRecent, trackEvent, onSearch, encodeURIComponent
-- Timer `setTimeout` in inline callback L44: one-shot
-- API CALL `trackEvent()` via service in handler handleSubmit L37
+- Timer `setTimeout` in inline callback (line 44): one-shot
+- API CALL `trackEvent()` via service in handler handleSubmit (line 37)
 - Reads zustand:useSearchStore `recent` via useSearchStore
 - Reads zustand:useSearchStore `addRecent` via useSearchStore
 - Validation (html): input [required, minLength]

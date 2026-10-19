@@ -73,7 +73,8 @@ export function scan(config, { full = false, dryRun = false, message } = {}) {
     fs.writeFileSync(mirrorFile, JSON.stringify({ mtimeMs, size, catalogue }));
   }
   const agentDir = path.join(kb, 'agent');
-  if (config.agents.enabled && (changed || !fs.existsSync(path.join(agentDir, 'INDEX.md')))) out.agent = writeAgentKnowledge(agentDir, catalogue);
+  // Not gated on `changed`: a new card format with an unchanged catalogue must still reach the agents. Only differing files are rewritten.
+  if (config.agents.enabled) out.agent = writeAgentKnowledge(agentDir, catalogue);
   if (config.history.enabled) {
     const history = createHistory(path.join(kb, 'history'));
     if (changed || !history.log().length) out.commit = history.commit(catalogue, { root: config.root, message, limit: config.history.limit });

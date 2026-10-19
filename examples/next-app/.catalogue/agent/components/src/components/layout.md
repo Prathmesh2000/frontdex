@@ -49,7 +49,7 @@ Legacy class component wired to Redux with connect(). Pulses when the count chan
 - Effect `componentDidUpdate` L19: update → this.setState, setTimeout
 - Effect `componentWillUnmount` L26: unmount → clearTimeout
 - Variables: pulseTimer
-- Timer `setTimeout` in componentDidUpdate L22: released
+- Timer `setTimeout` in componentDidUpdate (line 22): released
 - Reads redux:cart `cart.items` via connect
 - Writes redux:cart: `clearCart` via connect
 - CSS classes: badge (app/globals.css:22), badge-success (app/globals.css:24), pulse (app/globals.css:27)
@@ -68,7 +68,7 @@ Homepage hero with a live promo countdown.
 - Effect `useEffect` L17: mount+update (deps [endsAt]) → setInterval, setRemaining, Date.parse, Date.now
 - Props from HomePage: headline="Autumn sale — up to 40% off", endsAt="2026-11-01T00:00:00Z"
 - Variables: hours, minutes
-- Timer `setInterval` in useEffect L17 L19: NOT RELEASED
+- Timer `setInterval` in useEffect L17 (line 19): NOT RELEASED
 - CSS classes: hero, grid (app/globals.css:6), md:grid-cols-2, gap-8, text-4xl, font-bold, countdown
 - ⚠ HIGH memory-leak L19: setInterval started in useEffect L17 without cleanup. Fix: return () => clearInterval(id) from the effect
 - Renders: Button(size, onClick)
@@ -86,7 +86,7 @@ Sticky top navigation: search, account, theme toggle and the cart drawer trigger
 - Hooks: useAuth, useTheme, useAppDispatch, useState, useEffect
 - Effect `useEffect` L27: mount+unmount (once) → setScrolled, window.addEventListener; cleanup → window.removeEventListener
 - Handler `onToggleCart()` L33 → dispatch, toggleDrawer
-- Timer `window.addEventListener`('scroll') in useEffect L27 L29: released
+- Timer `window.addEventListener`('scroll') in useEffect L27 (line 29): released
 - Reads context:AuthContext via useAuth
 - Reads context:ThemeContext via useTheme
 - Writes redux:ui: `toggleDrawer` via dispatch in handler onToggleCart
