@@ -151,3 +151,40 @@ test('Gatsby, SolidStart and Qwik City file routes', () => {
   assert.equal(qwik.pages['/products/[id]'].layouts.length, 1);
   assert.ok(qwik.pages['/'].component);
 });
+
+test('React Router: constant paths, conditional and wrapped elements, nested <Routes>, stale route files', () => {
+  const cat = scanFixture({ react: '18', 'react-router-dom': '6' }, {
+    'src/index.jsx': "import App from './App';\nexport default App;\n",
+    'src/routes.js': "const ROUTES = { HOME: '/home', LOGIN: '/login', ADMIN: '/admin' };\nexport default ROUTES;\n",
+    'src/App.jsx': [
+      "import { Routes, Route } from 'react-router-dom';",
+      "import ROUTES from './routes';",
+      "import { Home, Login, Spinner, RequireAuth, Admin } from './pages';",
+      'const routes = [',
+      '  { path: ROUTES.LOGIN, element: loading ? <Spinner /> : <Login /> },',
+      '  { path: `${ROUTES.ADMIN}/settings`, element: <RequireAuth><Admin /></RequireAuth> },',
+      '];',
+      'export default function App({ loading }) {',
+      '  return <Routes>{routes.map((r) => <Route key={r.path} path={r.path} element={r.element} />)}<Route path={`${ROUTES.HOME}/*`} element={<Home />} /></Routes>;',
+      '}',
+    ].join('\n'),
+    'src/pages.jsx': [
+      "import { Routes, Route } from 'react-router-dom';",
+      "import ROUTES from './routes';",
+      'export const Spinner = () => <i />;',
+      'export const Login = () => <form />;',
+      'export const Admin = () => <main />;',
+      'export const RequireAuth = ({ children }) => <>{children}</>;',
+      'export const Profile = () => <section />;',
+      'export const Home = () => <Routes><Route path={ROUTES.HOME.slice(1) + "/profile"} element={<Profile />} /></Routes>;',
+    ].join('\n'),
+    // Leftover: nothing reachable from src/index.jsx imports it.
+    'old/App.jsx': "import { Route } from 'react-router-dom';\nconst Old = () => <p />;\nexport const routes = <Route path=\"/legacy\" element={<Old />} />;\n",
+  });
+  assert.equal(cat.pages['/login'].component, 'Login');
+  assert.deepEqual(cat.pages['/login'].alternates, ['Spinner']);
+  assert.equal(cat.pages['/admin/settings'].component, 'Admin');
+  assert.deepEqual(cat.pages['/admin/settings'].wrappers, ['RequireAuth']);
+  assert.equal(cat.pages['/home/home/profile'].component, 'Profile', 'nested <Routes> hang under the /home/* route that renders them');
+  assert.equal(cat.pages['/legacy'], undefined, 'routes in files the app never loads are dropped');
+});

@@ -19,7 +19,16 @@ export function createResolver(root, { workspaces = [] } = {}) {
   const compilerCache = new Map();
   const packages = new Map(workspaces.map((w) => [w.name, w]));
 
-  const isFile = (p) => fs.statSync(p, { throwIfNoEntry: false })?.isFile();
+  // Windows and macOS file systems ignore case; bundlers on Linux CI do not, so `./testCaseView` must not match
+  // TestcaseView.jsx. A listing is re-read only on a miss, so files added while watching are still found.
+  const listings = new Map();
+  const isFile = (p) => {
+    if (!fs.statSync(p, { throwIfNoEntry: false })?.isFile()) return false;
+    const dir = path.dirname(p);
+    const name = path.basename(p);
+    if (!listings.get(dir)?.has(name)) listings.set(dir, new Set(fs.readdirSync(dir)));
+    return listings.get(dir).has(name);
+  };
   const tryFile = (base) => {
     const candidates = [base, ...SOURCE_EXT.map((e) => base + e), ...SOURCE_EXT.map((e) => path.join(base, 'index' + e))];
     return candidates.find(isFile);

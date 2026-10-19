@@ -8,6 +8,7 @@ import { cachedLister, codeownersMatcher, testsAndStories } from './analyzers/ow
 import { heavyImports } from './analyzers/perf.js';
 import { readStories } from './analyzers/stories.js';
 import { collectEndpoints } from './endpoints.js';
+import { joinRoute, routePath } from './parse-file.js';
 import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
 import { loadMany, MAP_FIELDS } from './parse-pool.js';
@@ -184,6 +185,25 @@ export function scanProject(config, { cache, known } = {}) {
     return { external: `${imp.source}#${exported === 'default' || exported === '*' ? head : exported}` };
   };
 
+  /** Value of a constant reference such as ROUTES.HOME.LIST in `file`, following imports (route path constants). */
+  const constValue = (file, ref, depth = 0) => {
+    const mod = modules.get(file);
+    if (!mod || depth > 4) return undefined;
+    const [head, ...rest] = ref.split('.');
+    let value = mod.consts?.[head];
+    if (value === undefined) {
+      const imp = mod.imports.get(head);
+      const target = imp && resolveImport(file, imp.source);
+      const tmod = target && modules.get(target);
+      if (!tmod) return undefined;
+      if (imp.imported === '*') return rest.length ? constValue(target, rest.join('.'), depth + 1) : undefined;
+      const local = tmod.exports.get(imp.imported) ?? imp.imported;
+      return constValue(target, [local, ...rest].join('.'), depth + 1);
+    }
+    for (const key of rest) value = value?.[key];
+    return value;
+  };
+
   const findExportedHook = (file, exported, depth) => {
     const mod = modules.get(file);
     if (!mod || depth > 6) return null;
@@ -295,10 +315,17 @@ export function scanProject(config, { cache, known } = {}) {
     const workspace = workspaceOf(config.workspaces, path.join(root, page.file))?.name;
     if (workspace) page.workspace = workspace;
     // Two apps in a monorepo may both have `/`; the second is keyed by its workspace (or by router within one app).
-    const key = pages[route] ? `${route} (${workspace && workspace !== pages[route].workspace ? workspace : page.router})` : route;
+    let key = pages[route] ? `${route} (${workspace && workspace !== pages[route].workspace ? workspace : page.router})` : route;
+    // A third declaration of the same route (say a catch-all in a nested <Routes>) must not overwrite the second.
+    if (pages[key]) key = `${route} (${page.file})`;
     pages[key] = page;
   };
   const idOf = (r) => r?.id;
+  // A path that is nothing but an unresolved expression ({route.path}) says nothing about the app: skip it.
+  const addRoutePage = (route, p) => {
+    if (/^\/\{[^}]*\}$/.test(route)) return;
+    addPage(route, { router: p.router, file: p.file, component: p.component, params: [...route.matchAll(/:(\w+)/g)].map((m) => m[1]), layouts: p.layouts, wrappers: p.wrappers, alternates: p.alternates, extras: p.extras });
+  };
 
   // Next.js app roots: the project root when it is a Next app, plus every workspace package that depends on next.
   const nextRoots = [
@@ -378,17 +405,80 @@ export function scanProject(config, { cache, known } = {}) {
     (components[c.id].issues ??= []).push({ type: 'i18n-hardcoded-text', severity: 'low', message: `${count} piece(s) of hard-coded text, e.g. "${sample}"`, ...(line && { line }), fix: 'move the copy into translation files and use the i18n helper' });
   }
 
+  // Routes count only in files the app actually loads: reachable through imports from an entry. An old App.js beside
+  // src/, kept alive by an equally old index.js, is not. Entries per app root: index.html module scripts (Vite), else
+  // src/index|main.*, else index|main.* at the root. No entry found means no filtering.
+  // ponytail: dynamic import() outside React.lazy/route loaders is not followed; a route file loaded that way reads as stale.
+  let reachable;
+  const reachableFromEntries = () => {
+    const entryFiles = [];
+    for (const dir of [root, ...config.workspaces.map((w) => w.dir)]) {
+      const html = path.join(dir, 'index.html');
+      const scripts = fs.existsSync(html) ? [...fs.readFileSync(html, 'utf8').matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)].map((m) => path.join(dir, m[1].replace(/^\.?\//, ''))) : [];
+      const named = (sub) => ['index', 'main'].flatMap((n) => ['.tsx', '.ts', '.jsx', '.js', '.mjs'].map((e) => path.join(dir, sub, n + e)));
+      const tier = [scripts, named('src'), named('')].map((list) => list.filter((f) => modules.has(f))).find((list) => list.length);
+      if (tier) entryFiles.push(...tier);
+    }
+    if (!entryFiles.length) return null;
+    const seen = new Set(entryFiles);
+    for (const queue = [...entryFiles]; queue.length; ) {
+      const m = modules.get(queue.shift());
+      if (!m) continue;
+      for (const source of [...[...m.imports.values()].map((i) => i.source), ...m.reexports.map((r) => r.source), ...m.exportAll]) {
+        const target = resolveImport(m.file, source);
+        if (target && !seen.has(target)) seen.add(target), queue.push(target);
+      }
+    }
+    return seen;
+  };
+  const isStaleRouteFile = (file) => {
+    reachable ??= reachableFromEntries() ?? false;
+    return reachable !== false && !reachable.has(file);
+  };
+  const routeRecords = [];
   for (const mod of modules.values()) {
+    mod.staleRoutes = mod.routes.length > 0 && isStaleRouteFile(mod.file);
+    if (mod.staleRoutes) continue;
+    const ids = (names) => (names ?? []).map((l) => idOf(resolveLocal(mod.file, l))).filter(Boolean);
     for (const r of mod.routes) {
-      addPage(r.path, {
+      const route = routePath(r.segments, (ref) => constValue(mod.file, ref));
+      const page = {
         router: depsFor(mod.file)?.['vue-router'] ? 'vue-router' : depsFor(mod.file)?.['@angular/router'] ? 'angular-router' : 'react-router',
         file: rel(mod.file),
         component: idOf(resolveLocal(mod.file, r.component)),
-        params: [...r.path.matchAll(/:(\w+)/g)].map((m) => m[1]),
-        layouts: r.layouts.map((l) => idOf(resolveLocal(mod.file, l))).filter(Boolean),
-        extras: (r.extras ?? []).map((l) => idOf(resolveLocal(mod.file, l))).filter(Boolean),
-      });
+        layouts: ids(r.layouts),
+        wrappers: ids(r.wrappers),
+        alternates: ids(r.alternates),
+        extras: ids(r.extras),
+      };
+      routeRecords.push({ file: mod.file, route, page });
     }
+  }
+
+  // Descendant <Routes> (React Router v6+): routes declared in a module that a `/parent/*` page renders, or that one of
+  // its modules imports (a route config file), match the rest of the URL, so they live under /parent, even when
+  // written with a leading slash. Routes in no such module keep their path from the root.
+  // ponytail: one level of nesting; a splat route that is itself nested does not mount further routes.
+  const modOfId = new Map(entries.map(({ mod, c }) => [c.id, mod]));
+  const reach = (page) => {
+    const files = new Set();
+    const seen = new Set();
+    const queue = [...page.layouts, ...page.wrappers, page.component].filter(Boolean);
+    while (queue.length) {
+      const id = queue.shift();
+      if (seen.has(id) || !components[id]) continue;
+      seen.add(id);
+      const mod = modOfId.get(id);
+      if (mod) [mod.file, ...[...mod.imports.values()].map((i) => resolveImport(mod.file, i.source))].forEach((f) => files.add(f));
+      queue.push(...(components[id].renders ?? []));
+    }
+    return files;
+  };
+  const mounts = routeRecords.filter((r) => r.route.endsWith('/*')).map((r) => ({ file: r.file, prefix: r.route.slice(0, -2) || '/', files: reach(r.page) }));
+  for (const r of routeRecords) {
+    const at = mounts.filter((m) => m.file !== r.file && m.files.has(r.file));
+    if (!at.length) addRoutePage(r.route, r.page);
+    for (const m of at) addRoutePage(joinRoute([m.prefix, r.route.slice(1) || null]), r.page);
   }
 
   // File-system routers other than Next.js (Remix, React Router v7, TanStack, Gatsby, SolidStart, Qwik City), per app root.
@@ -411,7 +501,7 @@ export function scanProject(config, { cache, known } = {}) {
 
   for (const [route, page] of Object.entries(pages)) {
     const seen = new Set();
-    const queue = [...page.layouts, page.component, ...(page.extras ?? [])].filter(Boolean);
+    const queue = [...page.layouts, ...(page.wrappers ?? []), page.component, ...(page.alternates ?? []), ...(page.extras ?? [])].filter(Boolean);
     delete page.extras;
     while (queue.length) {
       const id = queue.shift();

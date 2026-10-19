@@ -35,6 +35,7 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8'), { syntaxFi
     aliases: new Map(),
     components: [],
     routes: [],
+    consts: {},
     types: new Map(),
     statics: new Map(),
     typeImports: [],
@@ -163,6 +164,26 @@ function importedName(mod, callee) {
   return imp?.source === '@react-router/dev/routes' ? imp.imported : null;
 }
 
+// Route paths often live in constant objects (ROUTES.LOGIN). Only path-like strings are kept, so translation tables
+// and other big string maps do not bloat every parse record.
+const PATH_LIKE = /^[\w\-./:*$~]{0,200}$/;
+
+/** A const initialiser as a plain value: a path-like string, or an object (nested) of them. undefined otherwise. */
+function pathLiteral(node) {
+  while (node?.type === 'TSAsExpression' || node?.type === 'TSSatisfiesExpression') node = node.expression;
+  if (node?.type === 'CallExpression' && memberText(node.callee) === 'Object.freeze') node = node.arguments[0];
+  const text = node?.type === 'StringLiteral' ? node.value : node?.type === 'TemplateLiteral' && !node.expressions.length ? node.quasis[0].value.cooked : undefined;
+  if (text !== undefined) return PATH_LIKE.test(text) ? text : undefined;
+  if (node?.type !== 'ObjectExpression') return undefined;
+  const out = {};
+  for (const p of node.properties) {
+    const key = p.type === 'ObjectProperty' ? keyName(p.key) : undefined;
+    const value = key !== undefined ? pathLiteral(p.value) : undefined;
+    if (value !== undefined) out[key] = value;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 function keyName(node) {
   return node?.type === 'Identifier' ? node.name : node?.type === 'StringLiteral' ? node.value : undefined;
 }
@@ -182,6 +203,16 @@ function scanDeclarations(programPath, mod) {
     }
     const decl = stmt.type === 'ExportNamedDeclaration' || stmt.type === 'ExportDefaultDeclaration' ? stmt.declaration : stmt;
     if (decl?.type === 'TSInterfaceDeclaration' || decl?.type === 'TSTypeAliasDeclaration') mod.types.set(decl.id.name, decl);
+    if (decl?.type === 'VariableDeclaration' && decl.kind === 'const') {
+      for (const d of decl.declarations) {
+        const value = d.id.type === 'Identifier' ? pathLiteral(d.init) : undefined;
+        if (value !== undefined) mod.consts[d.id.name] = value;
+      }
+    }
+    if (stmt.type === 'ExportDefaultDeclaration') {
+      const value = pathLiteral(stmt.declaration);
+      if (value !== undefined) mod.consts.default = value;
+    }
 
     if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression') {
       const m = memberText(stmt.expression.left)?.match(/^(\w+)\.(propTypes|defaultProps)$/);
@@ -379,7 +410,7 @@ function scanComponents(programPath, mod) {
   }
 }
 
-function joinRoute(segments) {
+export function joinRoute(segments) {
   let out = '';
   for (const seg of segments) {
     if (seg == null) continue;
@@ -388,6 +419,41 @@ function joinRoute(segments) {
   out = out.replace(/\/+/g, '/');
   return out === '' ? '/' : out.length > 1 ? out.replace(/\/$/, '') : out;
 }
+
+/**
+ * A route path expression as parts, evaluated in graph.js once every module is parsed, because the constants it
+ * names (ROUTES.HOME) usually live in another file. Parts are strings, { ref: 'ROUTES.HOME' } and
+ * { slice: parts, args } for `.slice(1)`. Anything else becomes a ref that will not resolve and shows as {text}.
+ */
+function pathParts(node) {
+  if (typeof node === 'string') return [node];
+  while (node?.type === 'TSAsExpression' || node?.type === 'TSNonNullExpression') node = node.expression;
+  if (node?.type === 'StringLiteral') return [node.value];
+  if (node?.type === 'TemplateLiteral') return node.quasis.flatMap((q, i) => [q.value.cooked, ...(i < node.expressions.length ? pathParts(node.expressions[i]) : [])]);
+  if (node?.type === 'BinaryExpression' && node.operator === '+') return [...pathParts(node.left), ...pathParts(node.right)];
+  const callee = node?.type === 'CallExpression' ? node.callee : null;
+  if (callee?.type === 'MemberExpression' && keyName(callee.property) === 'slice') {
+    const args = node.arguments.map((a) => (a.type === 'NumericLiteral' ? a.value : a.type === 'UnaryExpression' && a.operator === '-' && a.argument.type === 'NumericLiteral' ? -a.argument.value : NaN));
+    if (!args.some(Number.isNaN)) return [{ slice: pathParts(callee.object), args }];
+  }
+  return [{ ref: memberText(node) ?? 'dynamic' }];
+}
+
+function evalParts(parts, lookup) {
+  let out = '';
+  for (const p of parts) {
+    if (typeof p === 'string') out += p;
+    else if (p.slice) out += evalParts(p.slice, lookup).slice(...p.args);
+    else {
+      const value = lookup(p.ref);
+      out += typeof value === 'string' ? value : `{${p.ref}}`;
+    }
+  }
+  return out;
+}
+
+/** Joins a route's segments (outermost first; null for pathless and index routes) into its path. */
+export const routePath = (segments, lookup) => joinRoute(segments.map((s) => (s ? evalParts(s, lookup) : null)));
 
 function jsxAttrs(opening) {
   const attrs = {};
@@ -407,34 +473,61 @@ function jsxName(n) {
 
 const TRANSPARENT = /^(React\.)?(Suspense|Fragment|StrictMode)$/;
 
-function componentOf(value) {
-  if (!value || value === true) return undefined;
+// What a route renders while the real page loads or when it redirects; never the page itself when there is a choice.
+const NOT_A_PAGE = /^(Navigate|Redirect)$|Loader|Loading|Spinner|Skeleton|Fallback|Placeholder/;
+
+/** Of several possible elements (cond ? <A /> : <B />), the page is the first that is not a loader or redirect. */
+function choose(options) {
+  const found = options.filter(Boolean);
+  if (!found.length) return null;
+  const page = found.find((o) => !NOT_A_PAGE.test(o.component)) ?? found[0];
+  const alternates = found.filter((o) => o !== page).flatMap((o) => [o.component, ...o.alternates]);
+  return { ...page, alternates: [...page.alternates, ...alternates] };
+}
+
+/**
+ * The page a route element shows: { component, wrappers, alternates }. Guards and providers wrapping a single child
+ * (<RequireAuth><Dashboard /></RequireAuth>) become wrappers of the page they wrap; conditional elements pick the
+ * branch that is not a loader or redirect and keep the rest as alternates.
+ */
+function pickComponent(value) {
+  if (!value || typeof value !== 'object') return null;
   if (value.type === 'JSXElement') {
     const name = jsxName(value.openingElement.name);
-    if (!TRANSPARENT.test(name ?? '')) return name;
-    const child = value.children.find((c) => c.type === 'JSXElement');
-    return child ? componentOf(child) : undefined;
+    const transparent = !name || TRANSPARENT.test(name) || /^[a-z]/.test(name);
+    const kids = value.children.filter((c) => c.type === 'JSXElement' || (c.type === 'JSXExpressionContainer' && c.expression.type !== 'JSXEmptyExpression'));
+    // <Layout><Outlet /></Layout> is a layout for child routes, not a wrapper around a page called Outlet.
+    const only = kids.length === 1 && !(kids[0].type === 'JSXElement' && jsxName(kids[0].openingElement.name) === 'Outlet') ? kids[0] : null;
+    const inner = only && pickComponent(only.type === 'JSXExpressionContainer' ? only.expression : only);
+    if (inner) return transparent ? inner : { ...inner, wrappers: [name, ...inner.wrappers] };
+    return transparent ? null : { component: name, wrappers: [], alternates: [] };
   }
+  if (value.type === 'ConditionalExpression') return choose([pickComponent(value.consequent), pickComponent(value.alternate)]);
+  if (value.type === 'LogicalExpression') return value.operator === '&&' ? pickComponent(value.right) : choose([pickComponent(value.left), pickComponent(value.right)]);
   // Helpers such as withSuspense(<Page />) or guard(<Page />, opts)
   if (value.type === 'CallExpression') {
     for (const arg of value.arguments) {
-      const found = componentOf(arg);
+      const found = pickComponent(arg);
       if (found) return found;
     }
-    return undefined;
+    return null;
   }
-  if (value.type === 'Identifier') return value.name;
-  return undefined;
+  if (value.type === 'Identifier') return { component: value.name, wrappers: [], alternates: [] };
+  return null;
 }
+
+const componentOf = (value) => pickComponent(value)?.component;
 
 function jsxRoute(p, mod) {
   if (p.node.name.type !== 'JSXIdentifier' || p.node.name.name !== 'Route') return;
   const attrs = jsxAttrs(p.node);
-  if (typeof attrs.path !== 'string' && !attrs.index) return;
-  // A <Route> with nested <Route>s is a layout for them, not a page of its own.
-  if (p.parent.children?.some((c) => c.type === 'JSXElement' && jsxName(c.openingElement.name) === 'Route')) return;
-  const component = componentOf(attrs.element) ?? componentOf(attrs.component) ?? componentOf(attrs.Component);
-  const paths = [];
+  if (attrs.path == null && !attrs.index) return;
+  // A <Route> with nested <Route>s is a layout for them, not a page of its own; so is one whose children are generated
+  // ({routes.map((r) => <Route … />)}), since a leaf route has no children.
+  if (p.parent.children?.some((c) => (c.type === 'JSXElement' && jsxName(c.openingElement.name) === 'Route') || (c.type === 'JSXExpressionContainer' && c.expression.type !== 'JSXEmptyExpression'))) return;
+  const pick = pickComponent(attrs.element) ?? pickComponent(attrs.component) ?? pickComponent(attrs.Component);
+  if (!pick) return;
+  const segments = [attrs.index ? null : pathParts(attrs.path)];
   const layouts = [];
   const extras = [componentOf(attrs.errorElement) ?? componentOf(attrs.ErrorBoundary)].filter(Boolean);
   for (let a = p.parentPath.parentPath; a; a = a.parentPath) {
@@ -442,13 +535,13 @@ function jsxRoute(p, mod) {
     const name = a.node.openingElement.name;
     if (name.type !== 'JSXIdentifier' || name.name !== 'Route') continue;
     const outer = jsxAttrs(a.node.openingElement);
-    paths.unshift(typeof outer.path === 'string' ? outer.path : null);
+    segments.unshift(outer.path == null ? null : pathParts(outer.path));
     const layout = componentOf(outer.element) ?? componentOf(outer.Component);
     if (layout) layouts.unshift(layout);
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);
   }
-  if (component) mod.routes.push({ path: joinRoute([...paths, attrs.index ? null : attrs.path]), component, layouts, extras, line: p.node.loc?.start.line });
+  mod.routes.push({ segments, ...pick, layouts, extras, line: p.node.loc?.start.line });
 }
 
 function objectProps(node) {
@@ -488,22 +581,24 @@ function lowerComponent(value, mod) {
 
 function objectRoute(p, mod) {
   const own = objectProps(p.node);
-  if (typeof own.path !== 'string' && own.index !== true) return;
+  if (own.path == null && own.index !== true) return;
   if ('children' in own) return;
-  const component = componentOf(own.element) ?? componentOf(own.Component) ?? lowerComponent(own.component, mod) ?? lowerComponent(own.loadComponent, mod);
-  if (!component) return;
-  const paths = [];
+  // Vue/Angular lazy loaders first (they register a synthetic import), then JSX elements, which may be conditional or wrapped.
+  const lazy = lowerComponent(own.component, mod) ?? lowerComponent(own.loadComponent, mod);
+  const pick = pickComponent(own.element) ?? pickComponent(own.Component) ?? (lazy ? { component: lazy, wrappers: [], alternates: [] } : pickComponent(own.component));
+  if (!pick) return;
+  const segments = [own.index === true ? null : pathParts(own.path)];
   const layouts = [];
   const extras = [componentOf(own.errorElement) ?? componentOf(own.ErrorBoundary)].filter(Boolean);
   for (let a = p.parentPath; a; a = a.parentPath) {
     if (!a.isObjectExpression()) continue;
     const outer = objectProps(a.node);
     if (!('children' in outer)) continue;
-    paths.unshift(typeof outer.path === 'string' ? outer.path : null);
+    segments.unshift(outer.path == null ? null : pathParts(outer.path));
     const layout = componentOf(outer.element) ?? componentOf(outer.Component) ?? lowerComponent(outer.component, mod) ?? lowerComponent(outer.loadComponent, mod);
     if (layout) layouts.unshift(layout);
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);
   }
-  mod.routes.push({ path: joinRoute([...paths, own.index ? null : own.path]), component, layouts, extras, line: p.node.loc?.start.line });
+  mod.routes.push({ segments, ...pick, layouts, extras, line: p.node.loc?.start.line });
 }

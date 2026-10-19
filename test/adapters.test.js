@@ -294,6 +294,7 @@ test('Angular: @Component selectors, decorator and signal inputs, signals, HttpC
       '}',
     ].join('\n'),
     'src/app/users.component.html': '<ul class="users">\n  <app-user-card name="Ada" (selected)="open($event)"></app-user-card>\n</ul>\n',
+    'src/app/app.config.ts': "import { provideRouter } from '@angular/router';\nimport { routes } from './app.routes';\nexport const appConfig = { providers: [provideRouter(routes)] };\n",
     'src/app/app.routes.ts': [
       "import { Routes } from '@angular/router';",
       "import { UsersComponent } from './users.component';",

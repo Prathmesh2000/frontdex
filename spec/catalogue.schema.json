@@ -691,6 +691,14 @@
         "layouts": {
           "$ref": "#/definitions/StringList"
         },
+        "wrappers": {
+          "$ref": "#/definitions/StringList",
+          "description": "Guards and providers wrapping the page component in the route element, outermost first."
+        },
+        "alternates": {
+          "$ref": "#/definitions/StringList",
+          "description": "Other components the route can show instead of the page (loaders, redirects, conditional branches)."
+        },
         "metadata": {
           "enum": [
             "static",

@@ -166,7 +166,7 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
       if (target) importedFiles.add(target);
     }
   }
-  const isEntry = (file) => FRAMEWORK_FILE.test(path.basename(file)) || /(^|\/)(pages|app)\//.test(rel(file)) || [...modules.get(file)?.routes ?? []].length > 0;
+  const isEntry = (file) => FRAMEWORK_FILE.test(path.basename(file)) || /(^|\/)(pages|app)\//.test(rel(file)) || ((modules.get(file)?.routes?.length ?? 0) > 0 && !modules.get(file).staleRoutes);
   const unusedFiles = [];
   const unusedExports = [];
   for (const mod of modules.values()) {
