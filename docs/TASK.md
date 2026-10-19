@@ -324,8 +324,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] Stable IDs; sharded YAML; history keyed by stable IDs; `frontdex upgrade` migrates the examples' 1.x files.
 
 **Reach**
-- [ ] Package-manager and workspace detection; linker for tsconfig `extends`/references, `exports`, workspace packages, PnP.
-- [ ] New monorepo example (pnpm workspace: `apps/web` Next + `packages/ui`) with cross-package usage.
+- [x] Package-manager and workspace detection; linker for tsconfig `extends`, `exports`, workspace packages, PnP (nothing resolves through node_modules). Not done: tsconfig project `references`.
+- [x] New monorepo example (pnpm workspace: `apps/web` Next + `apps/admin` Vite + `packages/ui`) with cross-package usage.
 - [ ] Routers: RR v7/Remix, TanStack, Gatsby, Solid, Qwik, plus Next RSC/server actions/route handlers/middleware/metadata.
 - [ ] Adapters + routers: Vue/Nuxt, Svelte/SvelteKit, Astro, Angular, Lit, HTML (+ Alpine/htmx/Stimulus).
 - [ ] One fixture project per framework under `test/fixtures/`, each asserting its pages, components, state and API calls.
@@ -353,6 +353,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] **Confirm GitHub owner and visibility with the user**, then create the repo and push. Repo 1 work goes on a branch, not `main`.
 
 **Release readiness (no publishing in this task)**
+- [x] Rename in code: package `frontdex`, CLI `frontdex`/`fdx` (+ `rcat`, `react-catalogue` aliases), new file names with legacy detection and `frontdex upgrade`; frontdex-mcp follows.
 - [ ] `react-catalogue` compatibility release prepared (re-export + rename notice), not published.
 - [ ] READMEs for both repos, `docs/SPEC.md`, CHANGELOGs, migration notes from 0.2.
 - [ ] Performance run on a synthetic 20k-file monorepo; record results in the README.
