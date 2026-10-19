@@ -1,6 +1,6 @@
 # frontdex
 
-A living knowledge base for frontends (React, Next.js, Remix, TanStack, Vue, Nuxt and more), like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
+A living knowledge base for frontends (React, Next.js, Remix, TanStack, Vue, Nuxt, Svelte, SvelteKit and more), like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
 
 - **For developers:** `frontdex.yaml` (the [CatalogueSpec](docs/SPEC.md) format) plus a page-first UI:
   - **Navigation:** URL → layouts → component → its state, props, functions, timers, API calls, global state, validation and styles. Every item links to its `file:line`.
@@ -207,6 +207,7 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 |---|---|
 | Components | function declarations, arrow functions, default exports (named or anonymous), `memo`, `forwardRef`, class components, Qwik `component$` |
 | Vue | `.vue` single-file components via the project's own `vue/compiler-sfc`: `<script setup>` (`defineProps` type or runtime form, `withDefaults`, `ref`/`reactive`/`computed`, lifecycle hooks, `watch`, composables, `fetch`/`$fetch`/`useFetch`) and the Options API (`props`, `data`, lifecycle, `components`); template children with their props, listeners and `v-model`; static classes. Vue Router route objects (including lazy `() => import()`), Nuxt `pages/` with `app.vue` and `layouts/default.vue` |
+| Svelte | `.svelte` components via the project's own `svelte/compiler`: Svelte 5 runes (`$props` with types and defaults, `$state`, `$derived`, `$effect` with cleanup) and Svelte 4 (`export let`, top-level `let`, `$:`, `onMount`/`onDestroy`); child components with props, `on:` events and `bind:`; static classes. SvelteKit `+page`/`+layout` routes, `+server.ts` handlers, `+page.server.ts` form actions, the `$lib` alias |
 | Props | TS param types, `FC<Props>`, `forwardRef<Ref, Props>`, interfaces with `extends`, intersections, `PropsWithChildren`, destructuring defaults, `propTypes`, `defaultProps`, `props.x` usage |
 | State | `useState`, `useReducer`, class `state` / `this.state` |
 | Lifecycle | effect hooks (deps → mount/update, cleanup → unmount) and all class lifecycle methods, with the functions each one calls |
@@ -250,4 +251,4 @@ node bin/frontdex.js serve -C examples/next-app -w
 
 ## Limits
 
-Static analysis only: components produced by factories and routes built from runtime data are not followed. Custom hooks are recorded on their callers but not catalogued on their own yet. Vue: Nuxt auto-imported components (used without an import) and Pinia stores are not linked yet, and leak/render-loop diagnostics are React-only.
+Static analysis only: components produced by factories and routes built from runtime data are not followed. Custom hooks are recorded on their callers but not catalogued on their own yet. Vue: Nuxt auto-imported components (used without an import) and Pinia stores are not linked yet. Svelte stores (`$store`) are not linked yet. Leak/render-loop diagnostics are React-only.

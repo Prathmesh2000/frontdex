@@ -14,6 +14,13 @@ const DEFAULTS = {
     '**/.next/**',
     '**/dist/**',
     '**/build/**',
+    // Framework build/generated folders (SvelteKit, Nuxt, Astro, Remix, Vercel).
+    '**/.svelte-kit/**',
+    '**/.nuxt/**',
+    '**/.output/**',
+    '**/.astro/**',
+    '**/.cache/**',
+    '**/.vercel/**',
     '**/out/**',
     '**/coverage/**',
     '**/.git/**',

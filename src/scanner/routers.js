@@ -10,7 +10,7 @@ import path from 'node:path';
  * Gatsby/Solid/Qwik), the same convention Next.js pages follow with `[id]`.
  */
 
-const SOURCE = /\.(tsx|jsx|ts|js|mjs|vue)$/;
+const SOURCE = /\.(tsx|jsx|ts|js|mjs|vue|svelte)$/;
 const stripExt = (f) => f.replace(SOURCE, '');
 
 /** Splits a flat-route file name on dots, except dots escaped in [brackets] (`sitemap[.]xml`). */
@@ -238,6 +238,28 @@ function qwikCity(app, files) {
   return out;
 }
 
+/**
+ * SvelteKit: src/routes/**\/+page.svelte are pages; +layout.svelte in each folder from the routes root down wraps them.
+ * `(group)` folders are dropped, `[id]`, `[[optional]]` and `[...rest]` kept.
+ */
+function svelteKit(app, files) {
+  const routesDir = path.join(app.dir, 'src', 'routes');
+  const routeFiles = [...files].filter((f) => f.startsWith(routesDir + path.sep));
+  const out = [];
+  for (const file of routeFiles) {
+    if (!/^\+page(@[\w-]*)?\.svelte$/.test(path.basename(file))) continue;
+    const dirs = path.relative(routesDir, path.dirname(file)).split(path.sep).filter(Boolean);
+    const layouts = [];
+    for (let k = 0; k <= dirs.length; k++) {
+      const layout = routeFiles.find((f) => f === path.join(routesDir, ...dirs.slice(0, k), '+layout.svelte'));
+      if (layout) layouts.push({ file: layout, export: 'default' });
+    }
+    const segs = dirs.filter((p) => !/^\(.*\)$/.test(p));
+    out.push({ route: routeOf(segs), router: 'sveltekit', file, params: params(segs), page: { file, export: 'default' }, layouts });
+  }
+  return out;
+}
+
 /** Runs every router whose package is a dependency of the app root. `app = { dir, deps }`. */
 export function fileSystemRoutes(app, files, modules) {
   const has = (...names) => names.some((n) => app.deps?.[n]);
@@ -249,5 +271,6 @@ export function fileSystemRoutes(app, files, modules) {
   if (has('@solidjs/start')) out.push(...solidStart(app, files));
   if (has('@builder.io/qwik-city')) out.push(...qwikCity(app, files));
   if (has('nuxt')) out.push(...nuxt(app, files));
+  if (has('@sveltejs/kit')) out.push(...svelteKit(app, files));
   return out;
 }

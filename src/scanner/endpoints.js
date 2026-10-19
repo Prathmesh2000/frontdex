@@ -12,7 +12,7 @@ import path from 'node:path';
 export const HTTP_VERBS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const SOURCE = /\.(tsx|jsx|ts|js|mjs)$/;
 
-export function collectEndpoints({ nextRoots, modules, rel, resolveImport, workspaceName }) {
+export function collectEndpoints({ nextRoots, svelteKitRoots = [], modules, rel, resolveImport, workspaceName }) {
   const endpoints = {};
   const add = (key, entry) => {
     const workspace = workspaceName(entry.file);
@@ -41,6 +41,18 @@ export function collectEndpoints({ nextRoots, modules, rel, resolveImport, works
     for (const base of [root, path.join(root, 'src')]) {
       const file = files.find((f) => path.dirname(f) === base && /^middleware\.(ts|js)$/.test(path.basename(f)));
       if (file) add('middleware', { kind: 'middleware', file });
+    }
+  }
+
+  // SvelteKit: +server.ts handlers, and form actions exported by +page.server.ts.
+  for (const root of svelteKitRoots) {
+    const routesDir = path.join(root, 'src', 'routes');
+    for (const file of files) {
+      if (!file.startsWith(routesDir + path.sep)) continue;
+      const base = path.basename(file);
+      const route = '/' + path.relative(routesDir, path.dirname(file)).split(path.sep).filter((s) => s && !/^\(.*\)$/.test(s)).join('/');
+      if (/^\+server\.(ts|js)$/.test(base)) add(route, { kind: 'route-handler', file, methods: exportsOf(file).filter((e) => HTTP_VERBS.includes(e) || e === 'fallback') });
+      else if (/^\+page\.server\.(ts|js)$/.test(base) && exportsOf(file).includes('actions')) add(`action:${route}`, { kind: 'server-action', file });
     }
   }
 

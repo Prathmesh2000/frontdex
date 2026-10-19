@@ -123,7 +123,8 @@
               "solid-start",
               "qwik-city",
               "nuxt",
-              "vue-router"
+              "vue-router",
+              "sveltekit"
             ]
           }
         },
@@ -349,7 +350,9 @@
             "ref",
             "reactive",
             "computed",
-            "data"
+            "data",
+            "$state",
+            "let"
           ]
         },
         "initial": {
@@ -456,7 +459,8 @@
             "solid-start",
             "qwik-city",
             "nuxt",
-            "vue-router"
+            "vue-router",
+            "sveltekit"
           ]
         },
         "file": {

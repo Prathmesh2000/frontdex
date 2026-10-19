@@ -1,9 +1,9 @@
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { memberText } from '../component.js';
 import { deriveName, parseFile } from '../parse-file.js';
+import { apiCall as genericApiCall, loadFromProject, mergeScript, pascal, snippet } from './common.js';
 
 /*
  * Vue single-file components. The SFC compiler comes from the project's own `vue` package (vue/compiler-sfc), so frontdex
@@ -13,23 +13,6 @@ import { deriveName, parseFile } from '../parse-file.js';
  */
 
 const traverse = _traverse.default ?? _traverse;
-const ownRequire = createRequire(import.meta.url);
-const compilerByDir = new Map();
-
-function loadCompiler(file) {
-  const dir = path.dirname(file);
-  if (!compilerByDir.has(dir)) {
-    let sfc = null;
-    for (const req of [createRequire(file), ownRequire]) {
-      try {
-        sfc = req('vue/compiler-sfc');
-        break;
-      } catch {}
-    }
-    compilerByDir.set(dir, sfc);
-  }
-  return compilerByDir.get(dir);
-}
 
 const STATE_CALLS = { ref: 'ref', shallowRef: 'ref', reactive: 'reactive', shallowReactive: 'reactive', computed: 'computed' };
 const LIFECYCLE = { onBeforeMount: 'mount', onMounted: 'mount', onBeforeUpdate: 'update', onUpdated: 'update', onBeforeUnmount: 'unmount', onUnmounted: 'unmount', onErrorCaptured: 'error', watch: 'update', watchEffect: 'update' };
@@ -39,14 +22,8 @@ const ROUTER_COMPOSABLES = /^use(Route|Router)$/;
 // Built-ins and router/Nuxt components that are not project components.
 const BUILTIN = /^(Transition|TransitionGroup|KeepAlive|Teleport|Suspense|Component|RouterView|RouterLink|NuxtLink|NuxtPage|NuxtLayout|ClientOnly|Slot|Template)$/;
 
-const pascal = (s) => s.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
-const snippet = (code, node, max = 40) => {
-  const s = code.slice(node.start, node.end).replace(/\s+/g, ' ');
-  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
-};
-
 export function parseVue(file, code) {
-  const sfc = loadCompiler(file);
+  const sfc = loadFromProject(file, 'vue/compiler-sfc');
   const empty = { file, imports: new Map(), exports: new Map(), reexports: [], exportAll: [], aliases: new Map(), components: [], routes: [], typeImports: [] };
   if (!sfc) return { ...empty, error: 'vue/compiler-sfc not found: install vue in the project to scan .vue files' };
   const { descriptor, errors } = sfc.parse(code, { filename: file });
@@ -55,20 +32,13 @@ export function parseVue(file, code) {
   // Module facts (imports, exports, stores, schemas) from each <script> block, line numbers kept.
   const blocks = [descriptor.script, descriptor.scriptSetup].filter(Boolean);
   const mod = empty;
-  for (const block of blocks) {
-    const ext = { ts: '.ts', tsx: '.tsx', jsx: '.jsx' }[block.lang] ?? '.js';
-    const part = parseFile(file, block.content, { syntaxFile: file + ext, startLine: block.loc.start.line });
-    if (part.error) mod.error = part.error;
-    for (const k of ['imports', 'exports', 'aliases']) for (const [a, b] of part[k]) mod[k].set(a, b);
-    for (const k of ['reexports', 'exportAll', 'routes', 'typeImports']) mod[k].push(...(part[k] ?? []));
-    for (const k of ['stores', 'thunks', 'schemas', 'customHooks', 'styleImports', 'unusedImports']) if (part[k]) mod[k] = Array.isArray(part[k]) ? [...(mod[k] ?? []), ...part[k]] : { ...mod[k], ...part[k] };
-  }
+  for (const block of blocks) mergeScript(mod, parseFile(file, block.content, { syntaxFile: file + ({ ts: '.ts', tsx: '.tsx', jsx: '.jsx' }[block.lang] ?? '.js'), startLine: block.loc.start.line }));
 
   // Same naming as JSX files (pages/products/[id].vue → ProductsIdPage); Nuxt layouts/default.vue → DefaultLayout.
   const name = path.basename(path.dirname(file)) === 'layouts' ? `${pascal(path.basename(file, '.vue'))}Layout` : deriveName(file);
   const record = { name, kind: 'function', line: 1, props: {}, state: {}, context: [], refs: [], hooks: new Map(), lifecycle: [], jsx: [], apiCalls: [] };
   const registered = new Map();
-  for (const block of blocks) scanScript(block, record, registered, mod);
+  for (const block of blocks) scanScript(block, record, registered);
   if (descriptor.template?.ast) scanTemplate(descriptor.template.ast, record, registered);
 
   record.hooks = [...record.hooks].map(([name, count]) => ({ name, category: DATA_COMPOSABLES.test(name) ? 'data' : ROUTER_COMPOSABLES.test(name) ? 'router' : 'custom', ...(count > 1 && { count }) }));
@@ -78,7 +48,7 @@ export function parseVue(file, code) {
 }
 
 /** <script setup> macros and composables, or the Options API object of `export default {}` / defineComponent({}). */
-function scanScript(block, record, registered, mod) {
+function scanScript(block, record, registered) {
   const code = block.content;
   let ast;
   try {
@@ -164,14 +134,11 @@ function enclosingName(p) {
   return call ?? null;
 }
 
-/** fetch / $fetch / useFetch-style composables / axios-like `client.get('/x')`. */
+/** Vue data composables (useFetch, useAsyncData, …) on top of fetch / $fetch / axios-like clients. */
 function apiCall(name, node, text) {
-  const target = node.arguments[0]?.type === 'StringLiteral' ? node.arguments[0].value : node.arguments[0]?.type === 'TemplateLiteral' ? text(node.arguments[0], 60) : undefined;
-  if (name === 'fetch' || name === '$fetch') return { via: name, method: 'GET', ...(target && { target }) };
-  if (DATA_COMPOSABLES.test(name)) return { via: name, method: 'GET', ...(target && { target }) };
-  const m = /^(axios|api|http|client|\$axios)\.(get|post|put|patch|delete)$/i.exec(name);
-  if (m) return { via: name, method: m[2].toUpperCase(), ...(target && { target }) };
-  return null;
+  if (!DATA_COMPOSABLES.test(name)) return genericApiCall(name, node, text);
+  const arg = node.arguments[0];
+  return { via: name, method: 'GET', ...(arg?.type === 'StringLiteral' ? { target: arg.value } : arg?.type === 'TemplateLiteral' ? { target: text(arg, 60) } : {}) };
 }
 
 function runtimeProps(arg, record, text) {

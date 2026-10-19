@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import { MessageChannel, receiveMessageOnPort, Worker } from 'node:worker_threads';
+import { parseSvelte } from './adapters/svelte.js';
 import { parseVue } from './adapters/vue.js';
 import { parseFile } from './parse-file.js';
 
@@ -10,7 +11,7 @@ export const MAP_FIELDS = ['imports', 'exports', 'aliases'];
 
 /** Parses one file into its cacheable (Map-free) form. */
 export function parseOne(file, code) {
-  const mod = file.endsWith('.vue') ? parseVue(file, code) : parseFile(file, code);
+  const mod = file.endsWith('.vue') ? parseVue(file, code) : file.endsWith('.svelte') ? parseSvelte(file, code) : parseFile(file, code);
   delete mod.file;
   return { ...mod, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, [...mod[k]]])) };
 }

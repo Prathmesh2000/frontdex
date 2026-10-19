@@ -74,6 +74,14 @@ export function createResolver(root, { workspaces = [] } = {}) {
         if (hit) return hit;
       }
     }
+    // SvelteKit's built-in `$lib` alias (src/lib), declared only in the generated .svelte-kit/tsconfig.json.
+    if (spec === '$lib' || spec.startsWith('$lib/')) {
+      for (let dir = path.dirname(fromFile); (dir + path.sep).startsWith(root + path.sep); dir = path.dirname(dir)) {
+        const lib = path.join(dir, 'src', 'lib');
+        if (fs.existsSync(lib)) return tryFile(path.join(lib, spec.slice(5)));
+        if (dir === root) break;
+      }
+    }
     const scoped = spec.startsWith('@');
     const parts = spec.split('/');
     const name = parts.slice(0, scoped ? 2 : 1).join('/');

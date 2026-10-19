@@ -212,7 +212,7 @@ export function deriveName(file) {
   if (NEXT_SPECIAL[base]) {
     const parent = path.basename(path.dirname(path.dirname(file)));
     const clean = dir.startsWith('[') ? pascal(parent) + pascal(dir) : pascal(dir);
-    const prefix = ['App', 'Pages', 'Src', ''].includes(clean) ? (base === 'layout' ? 'Root' : 'Home') : clean;
+    const prefix = ['App', 'Pages', 'Src', 'Routes', ''].includes(clean) ? (base === 'layout' ? 'Root' : 'Home') : clean;
     return prefix + NEXT_SPECIAL[base];
   }
   if (base.startsWith('[')) return pascal(dir) + pascal(base) + 'Page';

@@ -108,3 +108,67 @@ test('Nuxt pages, nested routes and the default layout', () => {
     '/products/[id]': 'nuxt ProductsIdPage App DefaultLayout',
   });
 });
+
+test('Svelte 5 runes and Svelte 4 components, SvelteKit routes, layouts and endpoints', () => {
+  const cat = scanFixture({ svelte: '5', '@sveltejs/kit': '2' }, {
+    'src/routes/+layout.svelte': '<script>\n  let { children } = $props();\n</script>\n<nav class="top">Shop</nav>\n{@render children()}\n',
+    'src/routes/+page.svelte': [
+      '<script lang="ts">',
+      "  import Counter from '$lib/Counter.svelte';",
+      "  import Legacy from '$lib/Legacy.svelte';",
+      '</script>',
+      '<main class="home">',
+      '  {#if true}<Counter label="Clicks" step={2} onchange={() => {}} />{/if}',
+      '  <Legacy title="old" on:close={() => {}} />',
+      '</main>',
+    ].join('\n'),
+    'src/routes/products/[id]/+page.svelte': '<h1>Product</h1>\n',
+    'src/routes/(shop)/cart/+page.svelte': '<h1>Cart</h1>\n',
+    'src/routes/api/items/+server.ts': 'export function GET() { return new Response("[]"); }\nexport function POST() { return new Response(null, { status: 201 }); }\n',
+    'src/routes/login/+page.svelte': '<form method="POST"></form>\n',
+    'src/routes/login/+page.server.ts': 'export const actions = { default: async () => ({ ok: true }) };\n',
+    'src/lib/Counter.svelte': [
+      '<script lang="ts">',
+      "  let { label, step = 1 }: { label: string; step?: number } = $props();",
+      '  let count = $state(0);',
+      '  let doubled = $derived(count * 2);',
+      '  $effect(() => {',
+      '    const id = setInterval(() => count++, 1000);',
+      '    return () => clearInterval(id);',
+      '  });',
+      "  async function load() { await fetch('/api/items'); }",
+      '</script>',
+      '<button class="counter" onclick={() => (count += step)}>{label}: {count} ({doubled})</button>',
+    ].join('\n'),
+    'src/lib/Legacy.svelte': [
+      '<script>',
+      "  import { onMount, onDestroy } from 'svelte';",
+      '  export let title;',
+      "  export let tone = 'info';",
+      '  let open = false;',
+      '  $: upper = title.toUpperCase();',
+      '  onMount(() => {});',
+      '  onDestroy(() => {});',
+      '</script>',
+      '<div class="legacy {tone}">{upper}</div>',
+    ].join('\n'),
+    // No tsconfig `paths`: $lib resolves through SvelteKit's src/lib convention.
+    'svelte.config.js': 'export default { kit: {} };\n',
+  });
+  const C = cat.components;
+  assert.deepEqual(C.Counter.props, { label: { type: 'string', required: true }, step: { type: 'number', required: false, default: '1' } });
+  assert.deepEqual(Object.fromEntries(Object.entries(C.Counter.state).map(([k, v]) => [k, v.source])), { count: '$state', doubled: 'computed' });
+  assert.deepEqual(C.Counter.lifecycle[0].phases, ['mount', 'update', 'unmount']);
+  assert.equal(C.Counter.apiCalls[0].target, '/api/items');
+  assert.deepEqual(C.Legacy.props, { title: { type: 'unknown', required: true }, tone: { type: 'unknown', required: false, default: "'info'" } });
+  assert.equal(C.Legacy.state.open.source, 'let');
+  assert.deepEqual(C.Legacy.lifecycle.map((e) => e.via), ['$:', 'onMount', 'onDestroy']);
+  assert.deepEqual(C.HomePage.renders.sort(), ['Counter', 'Legacy']);
+  assert.deepEqual(C.HomePage.passes.Counter.map((p) => p.name), ['label', 'step', 'onchange']);
+  assert.deepEqual(C.HomePage.passes.Legacy.map((p) => p.name), ['title', 'on:close']);
+  assert.deepEqual(Object.keys(cat.pages).sort(), ['/', '/cart', '/login', '/products/[id]']);
+  assert.deepEqual(cat.pages['/products/[id]'].layouts, ['RootLayout']);
+  assert.equal(cat.pages['/'].router, 'sveltekit');
+  assert.deepEqual(cat.endpoints['/api/items'].methods, ['GET', 'POST']);
+  assert.equal(cat.endpoints['action:/login'].kind, 'server-action');
+});
