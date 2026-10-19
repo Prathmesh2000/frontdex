@@ -205,6 +205,41 @@ function describe(a, b, ignored) {
   return out;
 }
 
+/**
+ * Field-level diff of two whole catalogues (e.g. two git refs), same rules as history commits: added / removed /
+ * changed components, pages and endpoints, ignoring line shifts and derived fields (usedBy, pages, components).
+ */
+export function diffCatalogues(before, after, { ignoreComponentFields = [] } = {}) {
+  const changes = [];
+  const summary = {};
+  const componentIgnored = new Set([...IGNORED_COMPONENT_FIELDS, ...ignoreComponentFields]);
+  for (const kind of ['components', 'pages', 'endpoints']) {
+    const a = before?.[kind] ?? {};
+    const b = after?.[kind] ?? {};
+    const ignored = kind === 'components' ? componentIgnored : kind === 'pages' ? IGNORED_PAGE_FIELDS : new Set();
+    const s = { added: 0, removed: 0, changed: 0 };
+    for (const key of Object.keys(b)) {
+      if (!(key in a)) {
+        s.added++;
+        changes.push({ kind, key, change: 'added' });
+        continue;
+      }
+      const details = describe(a[key], b[key], ignored);
+      if (details.length) {
+        s.changed++;
+        changes.push({ kind, key, change: 'changed', details });
+      }
+    }
+    for (const key of Object.keys(a)) {
+      if (key in b) continue;
+      s.removed++;
+      changes.push({ kind, key, change: 'removed' });
+    }
+    if (kind !== 'endpoints' || s.added + s.removed + s.changed) summary[kind] = s;
+  }
+  return { summary, changes };
+}
+
 function gitHead(root) {
   if (!root) return undefined;
   try {

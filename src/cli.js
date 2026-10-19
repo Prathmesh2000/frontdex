@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { installAgents, runHook, TARGETS } from './agents.js';
+import { buildReport, catalogueAtRef, formatMarkdown, formatText } from './ci.js';
 import { formatDetail, formatSummary } from './history.js';
 import { upgradeProject } from './config.js';
 import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
@@ -43,6 +44,12 @@ Explore
   owners <Component>       CODEOWNERS, tests/stories and live git activity for a component
   adoption <Component>     Usage of a component across knowledge-base snapshots
 
+Change review (CI)
+  diff [base] [head]       What a change does to the frontend: components/pages/endpoints changed, pages affected,
+                           issues introduced. base defaults to HEAD, head to the working tree. --json | --markdown,
+                           --scan (scan refs instead of reading their committed YAML), --fail-on high|medium|low
+  pr-comment [base]        Markdown report for a pull-request comment (base defaults to origin/$GITHUB_BASE_REF)
+
 Agents
   mcp                      Run the MCP server over stdio (needs the frontdex-mcp package; registered by "frontdex agents")
   hook <post-edit|session-start> [--format claude|cursor]   Agent hook entry point
@@ -74,6 +81,10 @@ export async function main(argv) {
       'parent-pid': { type: 'string' },
       severity: { type: 'string' },
       props: { type: 'string' },
+      json: { type: 'boolean' },
+      markdown: { type: 'boolean' },
+      scan: { type: 'boolean' },
+      'fail-on': { type: 'string' },
       strict: { type: 'boolean' },
       quiet: { type: 'boolean', short: 'q' },
       help: { type: 'boolean', short: 'h' },
@@ -202,6 +213,23 @@ export async function main(argv) {
         if (values.strict && (scan(config, { dryRun: true }).catalogue.health?.issues?.high ?? 0) > 0) process.exitCode = 1;
       } else if (command === 'state') console.log(tools.catalogue_state({ store: arg }));
       else console.log(tools.catalogue_api({ endpoint: arg }));
+      return;
+    }
+    case 'diff':
+    case 'pr-comment': {
+      const baseRef = arg ?? (command === 'pr-comment' && process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'HEAD');
+      const headRef = command === 'diff' ? positionals[2] : undefined;
+      const base = catalogueAtRef(config, baseRef, { scan: values.scan });
+      const head = headRef ? catalogueAtRef(config, headRef, { scan: values.scan }) : { catalogue: scan(config, { dryRun: true }).catalogue, source: 'working tree' };
+      const report = buildReport(base.catalogue, head.catalogue, { baseLabel: baseRef, headLabel: headRef ?? 'working tree' });
+      if (values.json) console.log(JSON.stringify(report, null, 2));
+      else if (values.markdown || command === 'pr-comment') console.log(formatMarkdown(report));
+      else console.log(formatText(report));
+      const failOn = values['fail-on'];
+      if (failOn) {
+        const levels = ['high', 'medium', 'low'].slice(0, ['high', 'medium', 'low'].indexOf(failOn) + 1);
+        if (report.newIssues.some((i) => levels.includes(i.severity))) process.exitCode = 1;
+      }
       return;
     }
     case 'owners':

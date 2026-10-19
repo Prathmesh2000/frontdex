@@ -345,13 +345,13 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] Dev-only overlay.
 - [ ] Integrations: Next (no webpack plugin), Vite, webpack, Rspack.
 - [x] Agent rules updated (duplicate check via `catalogue_find_existing`, tokens). Hook messages unchanged.
-- [ ] CI: `diff`, `pr-comment`, GitHub Action with commit-keyed cache.
+- [x] CI: `diff`, `pr-comment`, GitHub Action (sticky PR comment, job summary, `fail-on`). Not done: commit-keyed parse cache in CI.
 
 **MCP split**
 - [x] Remove `src/mcp.js` and its test from repo 1; `rcat mcp` shim (existing `.mcp.json` entries keep working, so `agents` output is unchanged).
 - [x] Create `C:\frontdex-mcp`; port the 12 tools onto the public API (`createTools`).
 - [x] New MCP tools: `catalogue_find_existing`, `catalogue_duplicates`, `catalogue_tokens`, `catalogue_owners`, `catalogue_adoption` (17 in total).
-- [ ] MCP tools still planned: `catalogue_hooks`, `catalogue_diff`.
+- [ ] MCP tools still planned: `catalogue_hooks` (`catalogue_diff` done).
 - [x] MCP golden responses match the baseline for the 12 existing tools.
 - [x] **Confirm GitHub owner and visibility with the user**, then create the repo and push. Repo 1 work goes on a branch, not `main`.
 

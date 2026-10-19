@@ -51,6 +51,7 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 | `frontdex scan [--full] [-m msg]` | Incremental rescan: unchanged files (same mtime/size or content hash) reuse their cached parse. `--full` ignores the cache. Records a history snapshot when anything changed. |
 | `frontdex watch` | Keeps everything updated while you code. This is what `autoUpdate` runs. |
 | `frontdex check` | Exits 1 if the catalogue is stale. Use in CI or a pre-commit hook. |
+| `frontdex diff [base] [head]` / `frontdex pr-comment [base]` | Frontend impact of a change between git refs (text, `--json`, `--markdown`); see [Pull requests and CI](#pull-requests-and-ci). |
 | `frontdex history [id] [-n 20]` | Log of knowledge-base snapshots; pass an id for the full change list. |
 | `frontdex serve` / `frontdex start` | UI server. Auto-updates and live-reloads when `autoUpdate` is on (or with `-w`). |
 | `frontdex build [-o dir]` | Static export of the UI, history included. |
@@ -97,6 +98,42 @@ Every scan that changes the catalogue records a snapshot, like a commit: id, tim
 - **Agents:** the `catalogue_history` MCP tool
 
 History lives in `.frontdex/history/`, which is git-ignored by default. Remove `history/` from `.frontdex/.gitignore` to share it.
+
+## Pull requests and CI
+
+`frontdex diff [base] [head]` reports what a change does to the frontend: components, pages and endpoints added, removed or changed (field by field), the pages each change reaches through everything that renders it, and the issues, duplicates and token drift it introduces. `base` defaults to `HEAD`, `head` to the working tree. A ref's catalogue is read from the `frontdex.yaml` committed at that ref, or scanned in a temporary git worktree when there is none (`--scan` forces scanning).
+
+```bash
+npx frontdex diff                 # working tree vs last commit
+npx frontdex diff origin/main     # this branch vs main
+npx frontdex diff v1.2 v1.3 --json
+npx frontdex diff origin/main --fail-on high   # exit 1 when new high-severity issues appear
+```
+
+The GitHub Action posts the same report as one PR comment, updated on every push, and adds it to the job summary:
+
+```yaml
+# .github/workflows/frontdex.yml
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  frontdex:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - uses: Prathmesh2000/frontdex/integrations/github-action@main
+        with:
+          fail-on: high        # optional
+          # working-directory: apps/web
+```
+
+A comment looks like: **~2 components · 3 page(s) affected · 1 new issue**, then a table of changed components (what changed, pages reached, dependents), route and endpoint changes, and collapsible sections for new issues and design-system findings.
 
 ## Coding agents
 

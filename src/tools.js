@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { componentCard } from './agent-kb.js';
+import { buildReport, catalogueAtRef, formatText } from './ci.js';
 import { similarTo } from './scanner/analyzers/duplicates.js';
 import { formatDetail, formatSummary } from './history.js';
 import { createHistory, knowledgeDir, scan } from './index.js';
@@ -231,6 +232,16 @@ export function createTools(config) {
       if (git) lines.push(`- Last changed ${git.last} by ${git.lastAuthor}; ${git.recent} commit(s) in the last 90 days; top authors: ${git.authors.join(', ')}`);
       else lines.push('- Git history: unavailable (not a git checkout, or the file is untracked)');
       return lines.join('\n');
+    },
+    catalogue_diff({ base = 'HEAD', head } = {}) {
+      // Working tree vs a git ref (default: the last commit): what the current change does to the frontend.
+      try {
+        const before = catalogueAtRef(config, base).catalogue;
+        const after = head ? catalogueAtRef(config, head).catalogue : refresh(true).state.cat;
+        return formatText(buildReport(before, after, { baseLabel: base, headLabel: head ?? 'working tree' }));
+      } catch (err) {
+        return `Cannot diff against ${base}: ${err.message.split('\n')[0]} (needs a git checkout with that ref).`;
+      }
     },
     catalogue_history({ name, limit = 10 }) {
       const { idx } = refresh().state;
