@@ -1,10 +1,11 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { installAgents, runHook, TARGETS } from './agents.js';
 import { formatDetail, formatSummary } from './history.js';
-import { createHistory, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
-import { createMcpHandlers, startMcpServer } from './mcp.js';
+import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
 import { buildSite, startServer } from './server.js';
 import { startWatcher } from './watch.js';
 
@@ -36,7 +37,7 @@ Explore
   api [endpoint]           Every API call grouped by endpoint
 
 Agents
-  mcp                      Run the MCP server over stdio (registered by "rcat agents")
+  mcp                      Run the MCP server over stdio (needs the frontdex-mcp package; registered by "rcat agents")
   hook <post-edit|session-start> [--format claude|cursor]   Agent hook entry point
 
 Options
@@ -168,7 +169,7 @@ export async function main(argv) {
     case 'impact':
     case 'dataflow': {
       if (!arg) throw new Error(`Usage: rcat ${command} ${command === 'query' ? '"<filters>"' : '<Component>'}`);
-      const { tools } = createMcpHandlers(config);
+      const { tools } = createTools(config);
       const tool = { query: 'catalogue_search', show: 'catalogue_component', impact: 'catalogue_impact', dataflow: 'catalogue_dataflow' }[command];
       console.log(tools[tool](command === 'query' ? { query: positionals.slice(1).join(' '), limit: Number(values.limit ?? 50) } : { name: arg }));
       return;
@@ -176,7 +177,7 @@ export async function main(argv) {
     case 'health':
     case 'state':
     case 'api': {
-      const { tools } = createMcpHandlers(config);
+      const { tools } = createTools(config);
       if (command === 'health') {
         console.log(tools.catalogue_health({ severity: values.severity, type: arg }));
         if (values.strict && (scan(config, { dryRun: true }).catalogue.health?.issues?.high ?? 0) > 0) process.exitCode = 1;
@@ -194,8 +195,23 @@ export async function main(argv) {
       notes.forEach((n) => console.log(`\nℹ ${n}`));
       return;
     }
-    case 'mcp':
+    case 'mcp': {
+      // The server lives in the separate frontdex-mcp package; resolve it from the project first so its peer dependency is this project's copy.
+      const entry = [path.join(config.root, 'package.json'), import.meta.url].map((from) => {
+        try {
+          return createRequire(from).resolve('frontdex-mcp');
+        } catch {
+          return null;
+        }
+      }).find(Boolean);
+      if (!entry) {
+        console.error('The MCP server is a separate package. Install it next to react-catalogue:\n  npm install --save-dev frontdex-mcp');
+        process.exitCode = 1;
+        return;
+      }
+      const { startMcpServer } = await import(pathToFileURL(entry).href);
       return startMcpServer(config);
+    }
     case 'hook':
       return runHook(config, arg, { format: values.format });
     default:

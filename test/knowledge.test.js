@@ -2,11 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
 import { installAgents } from '../src/agents.js';
-import { createHistory, knowledgeDir, loadConfig, scan } from '../src/index.js';
-import { startMcpServer } from '../src/mcp.js';
+import { createHistory, createTools, knowledgeDir, loadConfig, scan } from '../src/index.js';
 
 function tempProject() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rcat-'));
@@ -84,32 +82,11 @@ test('agents install is idempotent, preserves user content and can be removed', 
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, '.claude/settings.json'), 'utf8')).hooks.PostToolUse[0].hooks[0].command, 'echo mine');
 });
 
-test('MCP server answers legacy and stateless clients', async () => {
-  const dir = tempProject();
-  const input = new PassThrough();
-  const output = new PassThrough();
-  let buf = '';
-  output.on('data', (d) => (buf += d));
-  const done = startMcpServer(loadConfig(dir), { input, output });
-  const modern = { _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' } };
-  for (const msg of [
-    { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-11-25', capabilities: {} } },
-    { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'catalogue_impact', arguments: { name: 'ProductCard' } } },
-    { jsonrpc: '2.0', id: 3, method: 'server/discover', params: modern },
-    { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'catalogue_search', arguments: { query: 'is:leaky' }, ...modern } },
-    { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'catalogue_health', arguments: { severity: 'high' } } },
-    { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'catalogue_dataflow', arguments: { name: 'CartDrawer' } } },
-    { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'catalogue_state', arguments: { store: 'redux:cart' } } },
-  ]) input.write(JSON.stringify(msg) + '\n');
-  input.end();
-  await done;
-  const replies = buf.trim().split('\n').map((l) => JSON.parse(l));
-  assert.equal(replies[0].result.protocolVersion, '2025-11-25');
-  assert.match(replies[1].result.content[0].text, /dependent component/);
-  assert.ok(replies[2].result.supportedVersions.includes('2026-07-28'));
-  assert.equal(replies[3].result.resultType, 'complete');
-  assert.match(replies[3].result.content[0].text, /HeroBanner[\s\S]*LiveVisitors/);
-  assert.match(replies[4].result.content[0].text, /render-loop · AdminSidebar/);
-  assert.match(replies[5].result.content[0].text, /reads redux:ui `ui.drawerOpen`/);
-  assert.match(replies[6].result.content[0].text, /written by: .*CartBadge/);
+test('createTools answers the queries the CLI and frontdex-mcp rely on', () => {
+  const { tools } = createTools(loadConfig(tempProject()));
+  assert.match(tools.catalogue_impact({ name: 'ProductCard' }), /dependent component/);
+  assert.match(tools.catalogue_search({ query: 'is:leaky' }), /HeroBanner[\s\S]*LiveVisitors/);
+  assert.match(tools.catalogue_health({ severity: 'high' }), /render-loop · AdminSidebar/);
+  assert.match(tools.catalogue_dataflow({ name: 'CartDrawer' }), /reads redux:ui `ui.drawerOpen`/);
+  assert.match(tools.catalogue_state({ store: 'redux:cart' }), /written by: .*CartBadge/);
 });

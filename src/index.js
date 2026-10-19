@@ -9,6 +9,7 @@ export { loadConfig, initConfig } from './config.js';
 export { scanProject } from './scanner/graph.js';
 export { readCatalogue, writeCatalogue, validateCatalogue, mergeManual } from './spec.js';
 export { createHistory } from './history.js';
+export { createTools } from './tools.js';
 
 export const knowledgeDir = (config) => path.resolve(config.root, config.knowledgeDir);
 

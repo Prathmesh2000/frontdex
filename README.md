@@ -16,7 +16,7 @@ flowchart LR
   Scan --> Agent[.catalogue/agent<br/>INDEX.md · cards · graph.json]
   Yaml --> UI[rcat serve<br/>explorer · graph · history]
   Agent --> Rules[AGENTS.md · CLAUDE.md · .cursor/rules]
-  Agent --> MCP[rcat mcp]
+  Agent --> MCP[frontdex-mcp<br/>separate package]
   Hooks[agent hooks after each edit] --> Scan
 ```
 
@@ -104,23 +104,17 @@ The hooks make this hard to skip:
 - After every file edit, the agent receives what changed and who is affected, e.g. `ProductGrid changed: props +title. Rendered by: Page. Pages: /`.
 - `rcat check` in CI fails a PR whose catalogue is stale.
 
-MCP tools:
-- `catalogue_search`
-- `catalogue_component`
-- `catalogue_dataflow`
-- `catalogue_impact`
-- `catalogue_page`
-- `catalogue_state`
-- `catalogue_api`
-- `catalogue_styles`
-- `catalogue_health`
-- `catalogue_overview`
-- `catalogue_rescan`
-- `catalogue_history`
-
 The rules also tell agents to reuse existing stores, endpoints and CSS classes, and never to ship an effect without cleanup.
 
-The server speaks both the stateless 2026-07-28 MCP revision and the older initialize-handshake revisions.
+### MCP server
+
+The MCP server is a separate package, [frontdex-mcp](https://github.com/Prathmesh2000/frontdex-mcp). Install it next to this one:
+
+```bash
+npm install --save-dev frontdex-mcp
+```
+
+The `.mcp.json` entry written by `rcat agents` runs `npx react-catalogue mcp`, which starts frontdex-mcp from your project. Without it installed, `rcat mcp` prints the install command. The tools behind it (`createTools`) are part of this package's public API and also power `rcat query`, `show`, `impact`, `dataflow`, `health`, `state` and `api`.
 
 ## The UI
 
