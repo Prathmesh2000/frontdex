@@ -89,6 +89,9 @@ test('createTools answers the queries the CLI and frontdex-mcp rely on', () => {
   assert.match(tools.catalogue_health({ severity: 'high' }), /render-loop · AdminSidebar/);
   assert.match(tools.catalogue_dataflow({ name: 'CartDrawer' }), /reads redux:ui `ui.drawerOpen`/);
   assert.match(tools.catalogue_state({ store: 'redux:cart' }), /written by: .*CartBadge/);
+  assert.match(tools.catalogue_find_existing({ name: 'PrimaryButton', props: ['onClick', 'variant'] }), /^Existing components similar[\s\S]*- Button `src\/components\/ui\/Button\.tsx`/);
+  assert.match(tools.catalogue_duplicates({ name: 'Button' }), /Button ~ LegacyButton/);
+  assert.match(tools.catalogue_tokens({ query: 'danger' }), /#dc2727 at `src\/features\/products\/ProductCard\.module\.css:7` ≈ --danger/);
 });
 
 test('watch session: reported edits, additions and deletions match a cold scan; YAML waits for flush', () => {

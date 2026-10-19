@@ -537,7 +537,8 @@ export function analyzeComponent(rootPath, record, mod, { isClass = false } = {}
     },
   });
   const styles = {};
-  if (classes.size) styles.classes = [...classes].filter((c) => /^[\w:/[\].%-]+$/.test(c)).slice(0, MAX_ITEMS);
+  // Allows Tailwind arbitrary values (`bg-[#3b82f6]`, `w-[calc(100%-2rem)]`) so design-token drift can see them.
+  if (classes.size) styles.classes = [...classes].filter((c) => /^[\w:/[\].%#(),!-]+$/.test(c)).slice(0, MAX_ITEMS);
   if (moduleClasses.size) styles.modules = [...moduleClasses].map(([local, set]) => ({ file: styleModules[local], classes: [...set] }));
 
   // ---------- props passed to children ----------

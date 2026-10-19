@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { componentCard } from './agent-kb.js';
+import { similarTo } from './scanner/analyzers/duplicates.js';
 import { formatDetail, formatSummary } from './history.js';
 import { createHistory, knowledgeDir, scan } from './index.js';
 
@@ -131,6 +132,33 @@ export function createTools(config) {
       if (!map.size && !defined.length) return 'No API calls match.';
       const calls = [...map].sort(([a], [b]) => a.localeCompare(b)).map(([k, list]) => `- \`${k}\`\n${list.map((l) => `    - ${l}`).join('\n')}`);
       return [...(defined.length ? ['Server endpoints defined in this project:', ...defined, ''] : []), ...(calls.length ? ['Calls made by components:', ...calls] : [])].join('\n').trim();
+    },
+    catalogue_find_existing({ name, props = [] } = {}) {
+      const { cat } = refresh().state;
+      if (!name) return 'Pass the name of the component you plan to create (and optionally its props).';
+      const hits = similarTo(cat.components, { name, props: Array.isArray(props) ? props : String(props).split(',').map((p) => p.trim()).filter(Boolean) });
+      if (!hits.length) return `Nothing similar to ${name} exists; creating it is fine.`;
+      return [`Existing components similar to ${name}: reuse or extend one of these before creating a new one.`, ...hits.map((h) => `- ${h.id} \`${cat.components[h.id].file}\` score ${h.score} (${h.reasons.join('; ')}); props: ${Object.keys(cat.components[h.id].props ?? {}).join(', ') || 'none'}; used by ${cat.components[h.id].usedBy?.length ?? 0}`)].join('\n');
+    },
+    catalogue_duplicates({ name } = {}) {
+      const { cat } = refresh().state;
+      const list = (cat.duplicates ?? []).filter((d) => !name || d.components.some((id) => id === name || cat.components[id]?.name === name));
+      if (!list.length) return name ? `No likely duplicates of ${name}.` : 'No likely duplicate components.';
+      return list.map((d) => `- ${d.components.join(' ~ ')} (score ${d.score}): ${(d.reasons ?? []).join('; ')}`).join('\n');
+    },
+    catalogue_tokens({ query } = {}) {
+      const { cat } = refresh().state;
+      if (!cat.tokens) return 'No design tokens found (CSS custom properties or a Tailwind theme).';
+      const q = query?.toLowerCase();
+      const defs = Object.entries(cat.tokens.definitions).filter(([k, t]) => !q || k.toLowerCase().includes(q) || t.value.toLowerCase().includes(q));
+      const drift = (cat.tokens.drift ?? []).filter((d) => !q || d.token.toLowerCase().includes(q) || d.at.toLowerCase().includes(q) || d.value.toLowerCase().includes(q));
+      return [
+        `Tokens (${defs.length}):`,
+        ...defs.map(([k, t]) => `- ${k} = ${t.value} \`${t.at}\``),
+        '',
+        drift.length ? `Hard-coded values that should use a token (${drift.length}):` : 'No token drift.',
+        ...drift.map((d) => `- ${d.value} at \`${d.at}\` ${d.match === 'exact' ? '=' : '≈'} ${d.token} (defined \`${d.defined}\`): use ${d.use}`),
+      ].join('\n');
     },
     catalogue_styles({ className, name } = {}) {
       const { cat, idx } = refresh().state;

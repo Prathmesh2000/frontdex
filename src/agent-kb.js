@@ -75,7 +75,7 @@ ${idx.comps.length} components · ${Object.keys(cat.pages).length} pages · rout
 
 1. Before editing a component, read its card in the folder file listed below (the path mirrors the source folder).
 2. Check **Used by** and **Impact** before changing props, exports or behaviour. Update every caller in the same change.
-3. Prefer reusing an existing component: search with \`npx frontdex query "<terms or filters>"\` (e.g. \`uses:Button\`, \`hook:useQuery\`, \`prop:onClose\`, \`is:shared\`).
+3. Prefer reusing an existing component: before creating one, run \`npx frontdex find <PlannedName> --props a,b\` (MCP: \`catalogue_find_existing\`), or search with \`npx frontdex query "<terms or filters>"\` (e.g. \`uses:Button\`, \`hook:useQuery\`, \`prop:onClose\`, \`is:shared\`). Use design tokens instead of hard-coded colors and sizes (see Design tokens below).
 4. After editing components or routes, run \`npx frontdex scan\` (incremental, usually under a second) so this knowledge stays current.
 5. When the MCP server \`frontdex\` is available, its tools (\`catalogue_search\`, \`catalogue_component\`, \`catalogue_impact\`, \`catalogue_page\`, \`catalogue_rescan\`) return the same data.
 
@@ -111,7 +111,15 @@ ${cat.endpoints ? `
 |---|---|---|---|
 ${Object.entries(cat.endpoints).map(([k, e]) => `| ${code(k)} | ${e.kind} | ${(e.methods ?? []).join(', ') || '-'} | ${code(e.file)} |`).join('\n')}
 ` : ''}
+${cat.tokens ? `
+## Design tokens
 
+${Object.entries(cat.tokens.definitions).slice(0, 60).map(([k, t]) => `- ${code(k)} = ${code(t.value)}`).join('\n')}${Object.keys(cat.tokens.definitions).length > 60 ? '\n- …' : ''}
+${cat.tokens.drift?.length ? `\n${cat.tokens.drift.length} hard-coded value(s) match a token; prefer the token. Examples:\n${cat.tokens.drift.slice(0, 10).map((d) => `- ${code(d.value)} at ${code(d.at)} → ${code(d.use)}`).join('\n')}\n` : ''}` : ''}${cat.duplicates?.length ? `
+## Possible duplicate components
+
+${cat.duplicates.slice(0, 20).map((d) => `- ${d.components.join(' ~ ')} (${(d.reasons ?? []).join('; ')})`).join('\n')}
+` : ''}
 ## Health
 
 ${healthLines(cat, idx).join('\n')}

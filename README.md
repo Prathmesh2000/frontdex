@@ -59,6 +59,9 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 | `frontdex dataflow <Component>` | Props in (per parent, with values) → store reads → state/effects → API calls, dispatches → props out. |
 | `frontdex health [type] [--severity high] [--strict]` | Leaks, render loops, async/unmount bugs, stale deps, dead code. `--strict` exits 1 on high-severity issues (CI). |
 | `frontdex state [store]` / `frontdex api [endpoint]` | Global state map with readers/writers; every API call grouped by endpoint. |
+| `frontdex find <Name> [--props a,b]` | Existing components similar to one you are about to create (base name, name words, props). |
+| `frontdex dupes [Component]` | Components that look like duplicates: same or similar names, shared props, children and classes. |
+| `frontdex tokens [query]` | Design tokens (CSS custom properties, Tailwind theme) and hard-coded values that match them exactly or nearly. |
 | `frontdex agents [--targets …] [--no-hooks] [--no-mcp] [--remove]` | Installs or removes agent integration. |
 | `frontdex mcp` | MCP server over stdio (registered automatically by `frontdex agents`). |
 | `frontdex validate [file]` | Validates against the JSON Schema. |
@@ -222,6 +225,7 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | Data & validation | `fetch`, axios-style clients, SWR, React Query, service modules; zod, yup, react-hook-form, HTML constraints, custom validators |
 | Styles | `className` strings, template literals, `clsx`/`cn`, CSS modules, global stylesheets (class → `file:line`) |
 | Diagnostics | memory leaks, render loops, side effects in render, unsafe async updates, missing deps, unused variables/functions/props/state/imports/exports/files/components, deprecated usage, hooks or class components rendered as Server Components |
+| Design system | Near-duplicate components (scored on base name, name words, props, children and classes); design tokens from CSS custom properties, Tailwind v4 `@theme` and Tailwind JS config; hard-coded colors (exact or within a small RGB distance) and sizes that match a token, in stylesheets and Tailwind arbitrary values (`bg-[#3b82f6]`) |
 
 ## Performance
 

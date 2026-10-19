@@ -37,6 +37,9 @@ Explore
   health [type] [--severity high] [--strict]   Leaks, render loops, stale deps, dead code (--strict: exit 1 on high)
   state [store]            Redux slices / contexts / zustand stores with readers and writers
   api [endpoint]           Every API call grouped by endpoint
+  find <Name> [--props a,b] Existing components like one you plan to create (run before creating)
+  dupes [Component]        Components that look like duplicates of each other
+  tokens [query]           Design tokens and hard-coded values that should use them
 
 Agents
   mcp                      Run the MCP server over stdio (needs the frontdex-mcp package; registered by "frontdex agents")
@@ -68,6 +71,7 @@ export async function main(argv) {
       'auto-update': { type: 'boolean' },
       'parent-pid': { type: 'string' },
       severity: { type: 'string' },
+      props: { type: 'string' },
       strict: { type: 'boolean' },
       quiet: { type: 'boolean', short: 'q' },
       help: { type: 'boolean', short: 'h' },
@@ -196,6 +200,17 @@ export async function main(argv) {
         if (values.strict && (scan(config, { dryRun: true }).catalogue.health?.issues?.high ?? 0) > 0) process.exitCode = 1;
       } else if (command === 'state') console.log(tools.catalogue_state({ store: arg }));
       else console.log(tools.catalogue_api({ endpoint: arg }));
+      return;
+    }
+    case 'find':
+    case 'dupes':
+    case 'tokens': {
+      const { tools } = createTools(config);
+      if (command === 'find') {
+        if (!arg) throw new Error('Usage: frontdex find <PlannedComponentName> [--props a,b,c]');
+        console.log(tools.catalogue_find_existing({ name: arg, props: values.props ?? '' }));
+      } else if (command === 'dupes') console.log(tools.catalogue_duplicates({ name: arg }));
+      else console.log(tools.catalogue_tokens({ query: arg }));
       return;
     }
     case 'agents': {

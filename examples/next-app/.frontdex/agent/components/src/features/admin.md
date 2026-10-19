@@ -11,6 +11,7 @@ Admin-only metric card (different from the design-system Card).
 - Props from StatCard: key=m.label, ...m=spread
 - Variables: trend
 - CSS classes: admin-card, rounded-lg, p-4, bg-slate-900, text-white, text-xs, uppercase, text-2xl, trend-
+- ⚠ LOW possible-duplicate: Card looks like Card@src/components/ui/Card.tsx (same name; 0/5 props shared). Fix: reuse or extend Card@src/components/ui/Card.tsx, or merge the two
 - Used by: StatCard
 - Pages: /admin
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".

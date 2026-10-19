@@ -332,7 +332,8 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] Styles: lightningcss, Tailwind, CSS-in-JS.
 
 **Insight**
-- [ ] Analyzers: dupes, adoption, tokens, a11y, i18n, perf, tests, owners; health ported with no loss.
+- [x] Analyzers: duplicates (`find`, `dupes`, `catalogue_find_existing`), design tokens and drift (`tokens`).
+- [ ] Analyzers: adoption, a11y, i18n, perf, tests, owners.
 - [ ] CSF / fixture / Storybook-manifest ingestion.
 - [ ] `fix` for the safe automatic cases.
 

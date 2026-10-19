@@ -7,7 +7,7 @@ info:
   routers:
     - next-app
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T12:48:42.193Z
+  generatedAt: 2026-10-19T13:22:07.748Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -1040,6 +1040,11 @@ components:
     pages:
       - /admin
     rendering: server
+    issues:
+      - type: possible-duplicate
+        severity: low
+        message: Card looks like Card@src/components/ui/Card.tsx (same name; 0/5 props shared)
+        fix: reuse or extend Card@src/components/ui/Card.tsx, or merge the two
   CardBody:
     name: CardBody
     file: src/components/ui/Card.tsx
@@ -2399,6 +2404,10 @@ components:
         severity: high
         message: LegacyButton is a class component but renders as a Server Component
         fix: add 'use client' at the top of its file, or render it from a client component
+      - type: possible-duplicate
+        severity: low
+        message: LegacyButton looks like Button (same base name "Button"; 1/8 props shared)
+        fix: reuse or extend Button, or merge the two
   LiveVisitors:
     name: LiveVisitors
     file: src/features/admin/LiveVisitors.tsx
@@ -6071,19 +6080,100 @@ styles:
       - src/features/checkout/PaymentForm.tsx
   src/features/products/ProductCard.module.css:
     module: true
-    classes: 5
+    classes: 6
     importedBy:
       - src/features/products/ProductCard.tsx
+tokens:
+  definitions:
+    --accent:
+      value: "#4f46e5"
+      at: app/globals.css:1
+      source: css
+    --border:
+      value: "#e5e7eb"
+      at: app/globals.css:1
+      source: css
+    --danger:
+      value: "#dc2626"
+      at: app/globals.css:1
+      source: css
+    --radius-card:
+      value: 12px
+      at: app/globals.css:1
+      source: css
+    --surface:
+      value: "#fff"
+      at: app/globals.css:1
+      source: css
+  drift:
+    - value: "#fff"
+      at: app/globals.css:9
+      property: color
+      token: --surface
+      defined: app/globals.css:1
+      match: exact
+      use: var(--surface)
+    - value: "#fff"
+      at: app/globals.css:12
+      property: color
+      token: --surface
+      defined: app/globals.css:1
+      match: exact
+      use: var(--surface)
+    - value: 12px
+      at: app/globals.css:17
+      property: border-radius
+      token: --radius-card
+      defined: app/globals.css:1
+      match: exact
+      use: var(--radius-card)
+    - value: 12px
+      at: src/features/checkout/Checkout.module.css:2
+      property: border-radius
+      token: --radius-card
+      defined: app/globals.css:1
+      match: exact
+      use: var(--radius-card)
+    - value: 12px
+      at: src/features/products/ProductCard.module.css:1
+      property: border-radius
+      token: --radius-card
+      defined: app/globals.css:1
+      match: exact
+      use: var(--radius-card)
+    - value: "#dc2727"
+      at: src/features/products/ProductCard.module.css:7
+      property: color
+      token: --danger
+      defined: app/globals.css:1
+      match: near
+      use: var(--danger)
+duplicates:
+  - components:
+      - Card@src/components/ui/Card.tsx
+      - Card@src/features/admin/Card.tsx
+    score: 0.75
+    reasons:
+      - same name
+      - 0/5 props shared
+  - components:
+      - Button
+      - LegacyButton
+    score: 0.66
+    reasons:
+      - same base name "Button"
+      - 1/8 props shared
 health:
   issues:
     high: 8
     medium: 2
-    low: 7
+    low: 9
     info: 1
   byType:
     deprecated-usage: 1
     memory-leak: 5
     client-code-in-server-component: 2
+    possible-duplicate: 2
     state-never-updated: 1
     unused-variable: 2
     render-loop: 1

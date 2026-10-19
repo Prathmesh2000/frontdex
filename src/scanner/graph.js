@@ -424,7 +424,7 @@ export function scanProject(config, { cache, known } = {}) {
   }
 
   lap('link');
-  const { stores, styles, health, styleCache, styleCacheDirty } = buildProjectInsights({
+  const { stores, styles, health, duplicates, tokens, styleCache, styleCacheDirty } = buildProjectInsights({
     modules,
     entries,
     components,
@@ -434,6 +434,7 @@ export function scanProject(config, { cache, known } = {}) {
     styleFiles: projectFiles.styles,
     styleCache: cache?.version === CACHE_VERSION ? cache.styles : undefined,
     touched,
+    roots: [root, ...config.workspaces.map((w) => w.dir)],
   });
   for (const comp of Object.values(components)) if (comp.styles === undefined) delete comp.styles;
 
@@ -456,6 +457,8 @@ export function scanProject(config, { cache, known } = {}) {
     ...(Object.keys(endpoints).length && { endpoints: sortKeys(endpoints) }),
     stores: sortKeys(stores),
     styles: sortKeys(styles),
+    ...(Object.keys(tokens.definitions).length && { tokens: { definitions: sortKeys(tokens.definitions), ...(tokens.drift.length && { drift: tokens.drift }) } }),
+    ...(duplicates.length && { duplicates }),
     health,
   };
   return {

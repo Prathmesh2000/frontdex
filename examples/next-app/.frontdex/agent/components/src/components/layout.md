@@ -25,6 +25,7 @@ Button from the old design system.
 - Handler `handleClick(event)` L10 → event.preventDefault, this.props.onPress
 - CSS classes: legacy-btn (app/globals.css:37), legacy-btn--
 - ⚠ HIGH client-code-in-server-component: LegacyButton is a class component but renders as a Server Component. Fix: add 'use client' at the top of its file, or render it from a client component
+- ⚠ LOW possible-duplicate: LegacyButton looks like Button (same base name "Button"; 1/8 props shared). Fix: reuse or extend Button, or merge the two
 - Used by: BlogPage
 - Pages: /blog/[[...slug]]
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".

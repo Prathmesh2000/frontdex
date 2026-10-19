@@ -55,6 +55,108 @@
         "$ref": "#/definitions/Stylesheet"
       }
     },
+    "tokens": {
+      "type": "object",
+      "description": "Design tokens (CSS custom properties, Tailwind theme) and hard-coded values that drift from them.",
+      "additionalProperties": false,
+      "properties": {
+        "definitions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "at"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "css",
+                  "tailwind"
+                ]
+              }
+            }
+          }
+        },
+        "drift": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "at",
+              "token",
+              "match"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "property": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string"
+              },
+              "defined": {
+                "type": "string"
+              },
+              "match": {
+                "enum": [
+                  "exact",
+                  "near"
+                ]
+              },
+              "use": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "duplicates": {
+      "type": "array",
+      "description": "Pairs of components that look like duplicates, best match first.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "components",
+          "score"
+        ],
+        "properties": {
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "score": {
+            "type": "number"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "health": {
       "$ref": "#/definitions/Health"
     }

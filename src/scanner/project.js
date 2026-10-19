@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { findDuplicates } from './analyzers/duplicates.js';
+import { cssValues, tailwindTokens, tokenReport } from './analyzers/tokens.js';
 
 /*
  * Cross-file insights computed after linking:
@@ -24,14 +26,15 @@ function parseStylesheet(file) {
     const line = text.slice(0, m.index + m[0].length - selector.trimStart().length).split('\n').length;
     for (const c of selector.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) classes[c[1]] ??= line;
   }
-  return classes;
+  return { classes, ...cssValues(text) };
 }
 
 /**
  * `styleFiles` comes from the same directory walk as the sources. `styleCache` maps a stylesheet's relative path to
  * its last parse ({ mtimeMs, size, classes }); unchanged sheets are not re-read. Returns the next cache in `styleCache`.
  */
-export function buildProjectInsights({ modules, entries, components, pages, rel, resolveImport, styleFiles, styleCache = {}, touched }) {
+export function buildProjectInsights({ modules, entries, components, pages, rel, resolveImport, styleFiles, styleCache = {}, touched, roots = [] }) {
+  const sheetValues = {};
   const idOfLocal = new Map(entries.map(({ mod, c }) => [`${mod.file}#${c.name}`, c.id]));
 
   // ---------- styles ----------
@@ -43,9 +46,10 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
     const prev = styleCache[key];
     // `touched` (watcher fast path): sheets the watcher did not report are trusted without a stat.
     const stat = touched && prev && !touched.has(file) ? null : fs.statSync(file);
-    const entry = prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size)) ? prev : (stylesParsed++, { mtimeMs: stat.mtimeMs, size: stat.size, classes: parseStylesheet(file) });
+    const entry = prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size)) ? prev : (stylesParsed++, { mtimeMs: stat.mtimeMs, size: stat.size, ...parseStylesheet(file) });
     nextStyleCache[key] = entry;
     sheets[key] = { module: /\.module\.\w+$/.test(file), classes: entry.classes, importedBy: [] };
+    sheetValues[key] = { tokens: entry.tokens, literals: entry.literals };
   }
   const styleCacheDirty = stylesParsed > 0 || Object.keys(styleCache).length !== styleFiles.length;
   const globalIndex = new Map();
@@ -183,6 +187,10 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
     .map(([id]) => id);
   const unusedImports = [...modules.values()].flatMap((mod) => (mod.unusedImports ?? []).map((u) => ({ file: rel(mod.file), ...u })));
 
+  // Analyzers that add issues must run before the totals below.
+  const duplicates = findDuplicates(components, pages);
+  const tokens = tokenReport({ sheets: sheetValues, components, tailwind: tailwindTokens(roots, rel) });
+
   const counts = Object.fromEntries(SEVERITIES.map((s) => [s, 0]));
   const byType = {};
   for (const comp of Object.values(components)) {
@@ -202,5 +210,5 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
     ...(unusedFiles.length && { unusedFiles }),
     ...(unusedImports.length && { unusedImports }),
   };
-  return { stores, styles, health, styleCache: nextStyleCache, styleCacheDirty };
+  return { stores, styles, health, duplicates, tokens, styleCache: nextStyleCache, styleCacheDirty };
 }

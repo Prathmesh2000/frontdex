@@ -24,7 +24,7 @@ export const rulesFor = (config) => {
 
 This project keeps a generated map of every React component and page in \`${kb}/agent/\` (start at \`${kb}/agent/INDEX.md\`). Follow these rules for every frontend change:
 
-1. **Before creating a component**, search for an existing one: MCP tool \`catalogue_search\` or \`${CMD} query "<terms or filters>"\` (filters: \`uses:Button\`, \`hook:useQuery\`, \`prop:onClose\`, \`is:shared\`). Reuse or extend instead of duplicating.
+1. **Before creating a component**, check for an existing one: MCP tool \`catalogue_find_existing\` with the name and props you plan (or \`${CMD} find <Name> --props a,b\`), and \`catalogue_search\` / \`${CMD} query "<terms or filters>"\` (filters: \`uses:Button\`, \`hook:useQuery\`, \`prop:onClose\`, \`is:shared\`). Reuse or extend instead of duplicating. Use design tokens (\`catalogue_tokens\`) instead of hard-coded colors and sizes.
 2. **Before editing a component**, read its card: \`catalogue_component\`, \`${CMD} show <Name>\`, or \`${kb}/agent/components/<source folder>.md\`.
 3. **Before changing props, exports or behaviour**, check the blast radius with \`catalogue_impact\` or \`${CMD} impact <Name>\`, and update every caller in the same change.
 4. **Reuse what exists**: check \`catalogue_state\` (Redux/context/zustand), \`catalogue_api\` (endpoints) and \`catalogue_styles\` (CSS classes) before adding new state, API calls or styles.
