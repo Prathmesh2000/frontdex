@@ -1,0 +1,171 @@
+# yaml-language-server: $schema=./node_modules/react-catalogue/spec/catalogue.schema.json
+catalogue: "1.0"
+info:
+  title: admin-spa
+  version: 1.0.0
+  framework: react
+  routers:
+    - react-router
+  generator: react-catalogue 0.1.0
+  generatedAt: 2026-10-19T08:06:55.893Z
+components:
+  App:
+    name: App
+    file: src/App.jsx
+    line: 10
+    kind: function
+    export: default
+    renders:
+      - Shell
+      - Dashboard
+      - Users
+      - UserDetail
+      - NotFound
+    externals:
+      - react-router-dom#BrowserRouter
+      - react#Suspense
+      - react-router-dom#Routes
+      - react-router-dom#Route
+  Chart:
+    name: Chart
+    file: src/Chart.jsx
+    line: 2
+    kind: memo
+    export: default
+    props:
+      width:
+        type: unknown
+        required: false
+      data:
+        type: unknown
+        required: false
+    usedBy:
+      - Dashboard
+    pages:
+      - /
+  Dashboard:
+    name: Dashboard
+    file: src/pages/Dashboard.jsx
+    line: 6
+    kind: function
+    export: default
+    state:
+      tick:
+        source: useState
+        initial: "0"
+        setter: setTick
+    hooks:
+      - name: useQuery
+        category: data
+      - name: useWindowSize
+        category: custom
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        line: 10
+    renders:
+      - Chart
+    usedBy:
+      - App
+    pages:
+      - /
+  NotFound:
+    name: NotFound
+    file: src/pages/misc.jsx
+    line: 3
+    kind: function
+    export: named
+    usedBy:
+      - App
+    pages:
+      - /*
+  Settings:
+    name: Settings
+    file: src/pages/misc.jsx
+    line: 4
+    kind: function
+    export: named
+  Shell:
+    name: Shell
+    file: src/Shell.jsx
+    line: 2
+    kind: function
+    export: default
+    externals:
+      - react-router-dom#NavLink
+      - react-router-dom#Outlet
+    usedBy:
+      - App
+    pages:
+      - /
+      - /users
+      - /users/:userId
+  UserDetail:
+    name: UserDetail
+    file: src/pages/misc.jsx
+    line: 2
+    kind: function
+    export: named
+    hooks:
+      - name: useParams
+        category: router
+    usedBy:
+      - App
+    pages:
+      - /users/:userId
+  Users:
+    name: Users
+    file: src/pages/Users.jsx
+    line: 2
+    kind: function
+    export: default
+    hooks:
+      - name: useNavigate
+        category: router
+    usedBy:
+      - App
+    pages:
+      - /users
+pages:
+  /:
+    router: react-router
+    file: src/App.jsx
+    component: Dashboard
+    layouts:
+      - Shell
+    components:
+      - Shell
+      - Dashboard
+      - Chart
+  /*:
+    router: react-router
+    file: src/App.jsx
+    component: NotFound
+    components:
+      - NotFound
+  /users:
+    router: react-router
+    file: src/App.jsx
+    component: Users
+    layouts:
+      - Shell
+    components:
+      - Shell
+      - Users
+  /users/:userId:
+    router: react-router
+    file: src/App.jsx
+    component: UserDetail
+    params:
+      - userId
+    layouts:
+      - Shell
+    components:
+      - Shell
+      - UserDetail

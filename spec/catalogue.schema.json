@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://react-catalogue.dev/schema/1.0/catalogue.schema.json",
+  "title": "CatalogueSpec 1.0",
+  "type": "object",
+  "required": ["catalogue", "info", "components", "pages"],
+  "additionalProperties": false,
+  "patternProperties": { "^x-": {} },
+  "properties": {
+    "catalogue": { "type": "string", "enum": ["1.0"] },
+    "info": { "$ref": "#/definitions/Info" },
+    "components": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/Component" }
+    },
+    "pages": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/Page" }
+    }
+  },
+  "definitions": {
+    "StringList": { "type": "array", "items": { "type": "string" } },
+    "Info": {
+      "type": "object",
+      "required": ["title"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": {} },
+      "properties": {
+        "title": { "type": "string" },
+        "version": { "type": "string" },
+        "description": { "type": "string" },
+        "framework": { "enum": ["react", "next"] },
+        "routers": {
+          "type": "array",
+          "items": { "enum": ["next-app", "next-pages", "react-router"] }
+        },
+        "generator": { "type": "string" },
+        "generatedAt": { "type": "string" }
+      }
+    },
+    "Component": {
+      "type": "object",
+      "required": ["name", "file", "kind"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": {} },
+      "properties": {
+        "name": { "type": "string" },
+        "file": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "kind": { "enum": ["function", "class", "memo", "forwardRef"] },
+        "export": { "enum": ["default", "named", "none"] },
+        "description": { "type": "string" },
+        "status": { "enum": ["experimental", "stable", "deprecated"] },
+        "tags": { "$ref": "#/definitions/StringList" },
+        "owner": { "type": "string" },
+        "props": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/Prop" }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/State" }
+        },
+        "context": { "$ref": "#/definitions/StringList" },
+        "refs": { "$ref": "#/definitions/StringList" },
+        "hooks": { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
+        "lifecycle": { "type": "array", "items": { "$ref": "#/definitions/LifecycleEvent" } },
+        "renders": { "$ref": "#/definitions/StringList" },
+        "externals": { "$ref": "#/definitions/StringList" },
+        "usedBy": { "$ref": "#/definitions/StringList" },
+        "pages": { "$ref": "#/definitions/StringList" }
+      }
+    },
+    "Prop": {
+      "type": "object",
+      "required": ["type", "required"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": {} },
+      "properties": {
+        "type": { "type": "string" },
+        "required": { "type": "boolean" },
+        "default": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "State": {
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "enum": ["useState", "useReducer", "class"] },
+        "initial": { "type": "string" },
+        "setter": { "type": "string" },
+        "type": { "type": "string" },
+        "reducer": { "type": "string" }
+      }
+    },
+    "Hook": {
+      "type": "object",
+      "required": ["name", "category"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "enum": ["state", "effect", "context", "ref", "memo", "router", "data", "custom"] },
+        "count": { "type": "integer", "minimum": 2 }
+      }
+    },
+    "LifecycleEvent": {
+      "type": "object",
+      "required": ["via", "phases"],
+      "additionalProperties": false,
+      "properties": {
+        "via": { "type": "string" },
+        "phases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["mount", "update", "unmount", "error"] }
+        },
+        "deps": { "$ref": "#/definitions/StringList" },
+        "calls": { "$ref": "#/definitions/StringList" },
+        "cleanup": { "$ref": "#/definitions/StringList" },
+        "line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "Page": {
+      "type": "object",
+      "required": ["router", "file"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-": {} },
+      "properties": {
+        "router": { "enum": ["next-app", "next-pages", "react-router"] },
+        "file": { "type": "string" },
+        "component": { "type": "string" },
+        "params": { "$ref": "#/definitions/StringList" },
+        "layouts": { "$ref": "#/definitions/StringList" },
+        "components": { "$ref": "#/definitions/StringList" },
+        "description": { "type": "string" },
+        "tags": { "$ref": "#/definitions/StringList" }
+      }
+    }
+  }
+}

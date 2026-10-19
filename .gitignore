@@ -1,0 +1,4 @@
+node_modules/
+catalogue-site/
+.DS_Store
+*.log

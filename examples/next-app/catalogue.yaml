@@ -1,0 +1,351 @@
+# yaml-language-server: $schema=./node_modules/react-catalogue/spec/catalogue.schema.json
+catalogue: "1.0"
+info:
+  title: shop-web
+  version: 2.3.0
+  framework: next
+  routers:
+    - next-app
+  generator: react-catalogue 0.1.0
+  generatedAt: 2026-10-19T08:09:50.129Z
+components:
+  AboutPage:
+    name: AboutPage
+    file: app/(marketing)/about/page.tsx
+    line: 1
+    kind: function
+    export: default
+    pages:
+      - /about
+  CartBadge:
+    name: CartBadge
+    file: src/components/CartBadge.tsx
+    line: 7
+    kind: class
+    export: default
+    props:
+      max:
+        type: number
+        required: true
+    state:
+      count:
+        source: class
+        initial: "0"
+        setter: this.setState
+        type: number
+      pulse:
+        source: class
+        initial: "false"
+        setter: this.setState
+        type: boolean
+    context:
+      - CartContext
+    lifecycle:
+      - via: componentDidMount
+        phases:
+          - mount
+        calls:
+          - window.setInterval
+          - this.setState
+        line: 13
+      - via: componentDidUpdate
+        phases:
+          - update
+        calls:
+          - this.setState
+        line: 17
+      - via: componentWillUnmount
+        phases:
+          - unmount
+        calls:
+          - clearInterval
+        line: 21
+    usedBy:
+      - Header
+    pages:
+      - /about
+      - /
+      - /products/[id]
+  CartProvider:
+    name: CartProvider
+    file: src/context/CartContext.tsx
+    line: 10
+    kind: function
+    export: named
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    state:
+      items:
+        source: useReducer
+        initial: "[]"
+        setter: dispatch
+        reducer: reducer
+    hooks:
+      - name: useReducer
+        category: state
+    usedBy:
+      - RootLayout
+    pages:
+      - /about
+      - /
+      - /products/[id]
+  Footer:
+    name: Footer
+    file: src/components/Footer.jsx
+    line: 4
+    kind: function
+    export: named
+    status: deprecated
+    props:
+      year:
+        type: number
+        required: false
+        default: "2026"
+      links:
+        type: arrayOf(PropTypes.string)
+        required: true
+    usedBy:
+      - RootLayout
+    pages:
+      - /about
+      - /
+      - /products/[id]
+  Header:
+    name: Header
+    file: src/components/Header.tsx
+    line: 9
+    kind: function
+    export: default
+    description: Top navigation bar. Becomes compact after scrolling.
+    state:
+      menuOpen:
+        source: useState
+        initial: "false"
+        setter: setMenuOpen
+      scrolled:
+        source: useState
+        initial: "false"
+        setter: setScrolled
+        type: boolean
+    refs:
+      - navRef
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useRef
+        category: ref
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - unmount
+        deps: []
+        calls:
+          - setScrolled
+          - window.addEventListener
+        cleanup:
+          - window.removeEventListener
+        line: 14
+    renders:
+      - CartBadge
+    externals:
+      - next/link#Link
+    usedBy:
+      - RootLayout
+    pages:
+      - /about
+      - /
+      - /products/[id]
+  Page:
+    name: Page
+    file: app/page.tsx
+    line: 3
+    kind: function
+    export: default
+    renders:
+      - ProductGrid
+    pages:
+      - /
+  ProductCard:
+    name: ProductCard
+    file: src/components/ProductCard.tsx
+    line: 18
+    kind: memo
+    export: named
+    description: Card shown in product grids.
+    props:
+      className:
+        type: string
+        required: false
+      product:
+        type: Product
+        required: true
+        description: Product to render
+      onAdd:
+        type: "(id: string) => void"
+        required: false
+        description: Called when the user adds the product to the cart
+      compact:
+        type: boolean
+        required: false
+        default: "false"
+    state:
+      hovered:
+        source: useState
+        initial: "false"
+        setter: setHovered
+    context:
+      - CartContext
+    hooks:
+      - name: useState
+        category: state
+      - name: useContext
+        category: context
+    externals:
+      - next/image#Image
+    usedBy:
+      - ProductsIdPage
+      - ProductGrid
+    pages:
+      - /
+      - /products/[id]
+  ProductGrid:
+    name: ProductGrid
+    file: src/components/ProductGrid.tsx
+    line: 11
+    kind: function
+    export: default
+    props:
+      category:
+        type: string
+        required: true
+        description: Category slug used to filter the API call
+      pageSize:
+        type: number
+        required: false
+        default: "12"
+    state:
+      products:
+        source: useState
+        initial: "[]"
+        setter: setProducts
+        type: Product[]
+      loading:
+        source: useState
+        initial: "true"
+        setter: setLoading
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useEffect
+        category: effect
+      - name: useMemo
+        category: memo
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - category
+          - pageSize
+        calls:
+          - setLoading
+          - fetch
+          - setProducts
+        cleanup:
+          - controller.abort
+        line: 15
+    renders:
+      - ProductCard
+    usedBy:
+      - Page
+    pages:
+      - /
+  ProductsIdPage:
+    name: ProductsIdPage
+    file: app/products/[id]/page.tsx
+    line: 5
+    kind: function
+    export: default
+    props:
+      params:
+        type: "{ id: string }"
+        required: true
+    hooks:
+      - name: useParams
+        category: router
+    renders:
+      - ProductCard
+    pages:
+      - /products/[id]
+  RootLayout:
+    name: RootLayout
+    file: app/layout.tsx
+    line: 4
+    kind: function
+    export: default
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    renders:
+      - CartProvider
+      - Header
+      - Footer
+    pages:
+      - /about
+      - /
+      - /products/[id]
+pages:
+  /:
+    router: next-app
+    file: app/page.tsx
+    component: Page
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - Page
+      - CartProvider
+      - Header
+      - Footer
+      - ProductGrid
+      - CartBadge
+      - ProductCard
+  /about:
+    router: next-app
+    file: app/(marketing)/about/page.tsx
+    component: AboutPage
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - AboutPage
+      - CartProvider
+      - Header
+      - Footer
+      - CartBadge
+  /products/[id]:
+    router: next-app
+    file: app/products/[id]/page.tsx
+    component: ProductsIdPage
+    params:
+      - id
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - ProductsIdPage
+      - CartProvider
+      - Header
+      - Footer
+      - ProductCard
+      - CartBadge

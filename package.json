@@ -1,0 +1,44 @@
+{
+  "name": "react-catalogue",
+  "version": "0.1.0",
+  "description": "OpenAPI-style catalogue for React and Next.js frontends: components, pages, props, state, hooks and lifecycle.",
+  "type": "module",
+  "bin": {
+    "rcat": "bin/rcat.js",
+    "react-catalogue": "bin/rcat.js"
+  },
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./schema.json": "./spec/catalogue.schema.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "ui",
+    "spec",
+    "docs"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "keywords": [
+    "react",
+    "nextjs",
+    "catalogue",
+    "components",
+    "documentation",
+    "openapi",
+    "storybook-alternative"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.29.9",
+    "@babel/traverse": "^7.29.10",
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.1"
+  }
+}

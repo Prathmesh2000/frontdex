@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frontend Catalogue</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <button id="menu" class="icon-btn" aria-label="Toggle navigation">☰</button>
+      <a href="#/" class="brand"><span class="logo">◆</span><span id="title">Catalogue</span></a>
+      <span id="meta" class="muted small"></span>
+      <a href="#/graph" class="nav-link">Graph</a>
+      <input id="search" type="search" placeholder="Search components, pages, hooks, props…  ( / )" autocomplete="off" />
+    </header>
+    <div class="layout">
+      <aside id="sidebar">
+        <nav class="tabs" role="tablist">
+          <button data-tab="components" class="active" role="tab">Components <span id="count-components" class="count"></span></button>
+          <button data-tab="pages" role="tab">Pages <span id="count-pages" class="count"></span></button>
+        </nav>
+        <ul id="list"></ul>
+      </aside>
+      <main id="main"></main>
+    </div>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
