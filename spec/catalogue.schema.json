@@ -79,8 +79,20 @@
               "source": {
                 "enum": [
                   "css",
-                  "tailwind"
+                  "tailwind",
+                  "theme"
                 ]
+              },
+              "uses": {
+                "type": "integer",
+                "description": "References: classes resolving to it and var() uses in stylesheets."
+              },
+              "usedBy": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Components using it through Tailwind classes."
               }
             }
           }
@@ -309,12 +321,17 @@
             "function",
             "class",
             "memo",
-            "forwardRef"
+            "forwardRef",
+            "styled"
           ]
         },
         "tag": {
           "type": "string",
           "description": "Custom element tag (customElements.define / @customElement)."
+        },
+        "element": {
+          "type": "string",
+          "description": "HTML element a styled component renders (styled.button → button)."
         },
         "export": {
           "enum": [
@@ -908,6 +925,10 @@
         },
         "at": {
           "type": "string"
+        },
+        "token": {
+          "type": "string",
+          "description": "Tailwind theme token the utility class resolves to."
         }
       },
       "required": [

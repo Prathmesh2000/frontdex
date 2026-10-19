@@ -6,6 +6,7 @@ import { extractClassComponent, extractFunctionComponent, isReactClass, memberTe
 import { analyzeComponent, analyzeModule } from './insights.js';
 import { extractAngularComponent, isAngularComponent } from './angular.js';
 import { jsxA11y } from './analyzers/a11y.js';
+import { styledLiterals, styledTarget, themeTokens } from './analyzers/cssinjs.js';
 import { jsxText } from './analyzers/i18n.js';
 import { definedTags, extractCustomElement, isElementClass } from './webcomponents.js';
 
@@ -57,6 +58,8 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8'), { syntaxFi
         analyzeModule(p, mod);
         scanComponents(p, mod);
         scanRouteModule(p, mod);
+        const theme = themeTokens(p.node);
+        if (Object.keys(theme).length) mod.themeTokens = theme;
         p.stop();
       },
     });
@@ -336,6 +339,13 @@ function scanComponents(programPath, mod) {
         const init = d.get('init');
         if (!name || !/^[A-Z]/.test(name) || !init.node) continue;
         if (compoundAssign(name, init.node, mod)) continue;
+        const styled = styledTarget(init.node);
+        if (styled) {
+          const line = d.node.loc?.start.line;
+          // cssLiterals stays on the parse record; the token-drift check reads it, the catalogue does not store it.
+          mod.components.push({ name, kind: 'styled', line, ...(styled.element && { element: styled.element }), props: {}, state: {}, context: [], refs: [], hooks: [], lifecycle: [], jsx: styled.base ? [{ name: styled.base, line, props: [] }] : [], cssLiterals: styledLiterals(init.node) });
+          continue;
+        }
         const lazy = lazyImport(init);
         if (lazy) {
           mod.imports.set(name, lazy);

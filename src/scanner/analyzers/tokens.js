@@ -37,10 +37,12 @@ const px = (n, unit) => (unit === 'rem' ? n * 16 : n);
 export function cssValues(text) {
   const tokens = {};
   const literals = [];
+  const vars = [];
   const lineAt = (offset) => text.slice(0, offset).split('\n').length;
   for (const m of text.matchAll(/([-\w]+)\s*:\s*([^;{}]+)/g)) {
     const [, prop, value] = m;
     const line = lineAt(m.index);
+    for (const v of value.matchAll(/var\(\s*(--[\w-]+)/g)) vars.push(v[1]);
     if (prop.startsWith('--')) {
       tokens[prop] ??= { value: value.trim(), line };
       continue;
@@ -49,7 +51,7 @@ export function cssValues(text) {
     for (const c of value.matchAll(COLOR_RE)) literals.push({ prop, value: c[0], line });
     if (SIZE_PROPS.test(prop)) for (const l of value.matchAll(LENGTH_RE)) if (Number(l[1]) > 1) literals.push({ prop, value: l[0], line });
   }
-  return { tokens, literals };
+  return { tokens, literals, vars };
 }
 
 /** Tailwind JS config themes (root and workspace packages): colors, spacing, radius and font sizes as tokens. */
@@ -100,7 +102,7 @@ function flatten(obj, prefix, emit) {
  * Token definitions and drift findings. `sheets` maps a stylesheet path to { tokens, literals }; components carry their
  * resolved classes. Components with drifting arbitrary values get a `token-drift` issue.
  */
-export function tokenReport({ sheets, components, tailwind }) {
+export function tokenReport({ sheets, components, tailwind, styled = [] }) {
   const definitions = { ...tailwind };
   for (const [file, sheet] of Object.entries(sheets)) for (const [name, t] of Object.entries(sheet.tokens ?? {})) definitions[name] ??= { value: t.value, at: `${file}:${t.line}`, source: 'css' };
   const colors = [];
@@ -111,6 +113,7 @@ export function tokenReport({ sheets, components, tailwind }) {
     const len = /^(\d*\.?\d+)(px|rem)$/.exec(t.value.trim());
     if (len && !sizes.has(px(Number(len[1]), len[2]))) sizes.set(px(Number(len[1]), len[2]), name);
   }
+  countUsage(definitions, sheets, components);
   if (!colors.length && !sizes.size) return { definitions, drift: [] };
 
   const match = (value) => {
@@ -127,8 +130,11 @@ export function tokenReport({ sheets, components, tailwind }) {
     const token = len && sizes.get(px(Number(len[1]), len[2]));
     return token ? { token, match: 'exact' } : null;
   };
-  // Tailwind tokens are used as classes (bg-brand-500), CSS ones as var(--x).
-  const use = (token) => (definitions[token].source === 'tailwind' ? token.split('.').slice(1).join('-') : `var(${token})`);
+  // Tailwind tokens are used as classes (bg-brand-500), theme objects as theme.x.y, CSS ones as var(--x).
+  const use = (token) => {
+    const source = definitions[token].source;
+    return source === 'tailwind' ? token.split('.').slice(1).join('-') : source === 'theme' ? token : `var(${token})`;
+  };
 
   const drift = [];
   for (const [file, sheet] of Object.entries(sheets)) {
@@ -146,5 +152,58 @@ export function tokenReport({ sheets, components, tailwind }) {
       (c.issues ??= []).push({ type: 'token-drift', severity: 'low', message: `class ${cls.name} hard-codes ${m.match === 'exact' ? 'the value of' : 'a value close to'} token ${m.token} (${definitions[m.token].at})`, ...(c.line && { line: c.line }), fix: `use ${use(m.token)}` });
     }
   }
+  // styled-components / Emotion CSS.
+  for (const s of styled) {
+    const c = components[s.id];
+    for (const l of s.literals) {
+      const m = match(l.value);
+      if (!m) continue;
+      drift.push({ value: l.value, at: `${s.file}:${l.line}`, property: l.prop, token: m.token, defined: definitions[m.token].at, match: m.match, use: use(m.token) });
+      if (c) (c.issues ??= []).push({ type: 'token-drift', severity: 'low', message: `${l.prop}: ${l.value} hard-codes ${m.match === 'exact' ? 'the value of' : 'a value close to'} token ${m.token} (${definitions[m.token].at})`, line: l.line, fix: `use ${use(m.token)}` });
+    }
+  }
   return { definitions, drift };
+}
+
+// Tailwind utility prefixes and the theme section their value comes from.
+const TW_PREFIX = [
+  [/^(bg|text|border(-[trblxy])?|ring|ring-offset|fill|stroke|from|via|to|outline|decoration|divide|accent|caret|placeholder|shadow)-(.+)$/, 'colors'],
+  [/^(-?(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|inset|inset-x|inset-y|top|right|bottom|left|w|h|size|min-w|min-h|max-w|max-h|scroll-m|scroll-p|translate-x|translate-y))-(.+)$/, 'spacing'],
+  [/^(rounded(-[trbl]{1,2}|-[se]{2})?)-(.+)$/, 'borderRadius'],
+  [/^(text)-(.+)$/, 'fontSize'],
+];
+
+/** Theme token a Tailwind utility class resolves to (`md:hover:bg-brand-500` → colors.brand.500), or null. */
+export function tailwindClassToken(cls, definitions) {
+  const utility = cls.split(':').pop().replace(/^!/, '').replace(/\/\d+$/, '');
+  for (const [re, section] of TW_PREFIX) {
+    const m = re.exec(utility);
+    if (!m) continue;
+    const value = m[m.length - 1];
+    for (const name of [`${section}.${value.replace(/-/g, '.')}`, `${section}.${value}`]) if (definitions[name]?.source === 'tailwind') return name;
+  }
+  return null;
+}
+
+/**
+ * Token usage: components whose classes resolve to a Tailwind token (the class gets a `token` field), and var(--x)
+ * references in stylesheets. Adds `usedBy` (components) and `uses` (all references) to each definition.
+ */
+function countUsage(definitions, sheets, components) {
+  const uses = new Map();
+  const usedBy = new Map();
+  for (const [id, c] of Object.entries(components)) {
+    for (const cls of c.styles?.classes ?? []) {
+      const token = tailwindClassToken(cls.name, definitions);
+      if (!token) continue;
+      cls.token = token;
+      uses.set(token, (uses.get(token) ?? 0) + 1);
+      (usedBy.get(token) ?? usedBy.set(token, new Set()).get(token)).add(id);
+    }
+  }
+  for (const sheet of Object.values(sheets)) for (const name of sheet.vars ?? []) if (definitions[name]) uses.set(name, (uses.get(name) ?? 0) + 1);
+  for (const [name, def] of Object.entries(definitions)) {
+    if (uses.has(name)) def.uses = uses.get(name);
+    if (usedBy.has(name)) def.usedBy = [...usedBy.get(name)].sort();
+  }
 }

@@ -7,7 +7,7 @@ info:
   routers:
     - next-app
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:47:50.897Z
+  generatedAt: 2026-10-19T13:55:58.896Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -6294,14 +6294,17 @@ tokens:
       value: "#4f46e5"
       at: app/globals.css:1
       source: css
+      uses: 4
     --border:
       value: "#e5e7eb"
       at: app/globals.css:1
       source: css
+      uses: 2
     --danger:
       value: "#dc2626"
       at: app/globals.css:1
       source: css
+      uses: 3
     --radius-card:
       value: 12px
       at: app/globals.css:1
@@ -6310,6 +6313,7 @@ tokens:
       value: "#fff"
       at: app/globals.css:1
       source: css
+      uses: 3
   drift:
     - value: "#fff"
       at: app/globals.css:9

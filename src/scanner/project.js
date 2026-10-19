@@ -49,7 +49,7 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
     const entry = prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size)) ? prev : (stylesParsed++, { mtimeMs: stat.mtimeMs, size: stat.size, ...parseStylesheet(file) });
     nextStyleCache[key] = entry;
     sheets[key] = { module: /\.module\.\w+$/.test(file), classes: entry.classes, importedBy: [] };
-    sheetValues[key] = { tokens: entry.tokens, literals: entry.literals };
+    sheetValues[key] = { tokens: entry.tokens, literals: entry.literals, vars: entry.vars };
   }
   const styleCacheDirty = stylesParsed > 0 || Object.keys(styleCache).length !== styleFiles.length;
   const globalIndex = new Map();
@@ -189,7 +189,10 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
 
   // Analyzers that add issues must run before the totals below.
   const duplicates = findDuplicates(components, pages);
-  const tokens = tokenReport({ sheets: sheetValues, components, tailwind: tailwindTokens(roots, rel) });
+  const themes = [...modules.values()].flatMap((mod) => Object.entries(mod.themeTokens ?? {}).map(([name, t]) => [name, { value: t.value, at: `${rel(mod.file)}:${t.line}`, source: 'theme' }]));
+  // Styled components carry their CSS literals on the parse record (entries), keyed here by component id.
+  const styled = entries.filter(({ c }) => c.cssLiterals?.length).map(({ mod, c }) => ({ id: c.id, file: rel(mod.file), literals: c.cssLiterals }));
+  const tokens = tokenReport({ sheets: sheetValues, components, tailwind: { ...Object.fromEntries(themes), ...tailwindTokens(roots, rel) }, styled });
 
   const counts = Object.fromEntries(SEVERITIES.map((s) => [s, 0]));
   const byType = {};

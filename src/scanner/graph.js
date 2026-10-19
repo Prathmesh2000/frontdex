@@ -259,6 +259,7 @@ export function scanProject(config, { cache, known } = {}) {
       line: c.line,
       kind: c.kind,
       tag: c.tag,
+      element: c.element,
       export: exportNames.includes('default') ? 'default' : exportNames.length ? 'named' : 'none',
       description: c.description,
       status: c.status,
