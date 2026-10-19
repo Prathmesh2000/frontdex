@@ -27,18 +27,21 @@ const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', st
  */
 export function catalogueAtRef(config, ref, { scan = false } = {}) {
   const gitRoot = git(config.root, ['rev-parse', '--show-toplevel']);
+  // Refs can come from HTTP (/api/diff): never let one be read as a git option, and use only the resolved commit.
+  if (typeof ref !== 'string' || !ref || ref.startsWith('-') || ref.length > 200) throw new Error(`Invalid git ref: ${ref}`);
+  const sha = git(gitRoot, ['rev-parse', '--verify', '--quiet', '--end-of-options', `${ref}^{commit}`]);
   const projectRel = path.relative(gitRoot, config.root);
   if (!scan) {
     const yamlRel = path.join(projectRel, config.output).split(path.sep).join('/');
     try {
-      return { catalogue: YAML.parse(git(gitRoot, ['show', `${ref}:${yamlRel}`])), source: `${config.output} at ${ref}` };
+      return { catalogue: YAML.parse(git(gitRoot, ['show', `${sha}:${yamlRel}`])), source: `${config.output} at ${ref}` };
     } catch {
       // Not committed at that ref: fall through to a scan.
     }
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdex-ref-'));
   try {
-    git(gitRoot, ['worktree', 'add', '--detach', '--force', tmp, ref]);
+    git(gitRoot, ['worktree', 'add', '--detach', '--force', tmp, sha]);
     const refConfig = loadConfig(path.join(tmp, projectRel));
     return { catalogue: scanProject(refConfig).catalogue, source: `scan of ${ref}` };
   } finally {

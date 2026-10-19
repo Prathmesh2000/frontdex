@@ -62,3 +62,11 @@ test('git refs: committed YAML at a ref is read directly; without it the ref is 
   assert.equal(committed.source, 'frontdex.yaml at HEAD');
   assert.deepEqual(Object.keys(committed.catalogue.components).sort(), Object.keys(scanned.catalogue.components).sort());
 });
+
+test('git refs that look like options are rejected before reaching git', () => {
+  const dir = project();
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  const config = loadConfig(dir);
+  assert.throws(() => catalogueAtRef(config, '--output=/tmp/x'), /Invalid git ref/);
+  assert.throws(() => catalogueAtRef(config, 'no-such-ref-xyz'));
+});

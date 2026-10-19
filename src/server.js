@@ -13,6 +13,7 @@ const UI_DIR = new URL('../ui/', import.meta.url);
 const { createIndex } = createRequire(import.meta.url)('./query.cjs');
 // One query index per catalogue object, rebuilt only after a rescan replaces the catalogue.
 const indexes = new WeakMap();
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 const indexFor = (cat) => indexes.get(cat) ?? indexes.set(cat, createIndex(cat)).get(cat);
 const QUERY_FILE = new URL('./query.cjs', import.meta.url);
 const UI_FILES = { '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/styles.css': 'styles.css' };
@@ -40,6 +41,8 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
 
   const handler = (req, res) => {
     const url = new URL(req.url, 'http://localhost');
+    // The API reads source files and runs git: answer only requests addressed to this machine (blocks DNS rebinding).
+    if (url.pathname.startsWith('/api/') && !LOCAL_HOST.test(req.headers.host ?? '')) return res.writeHead(403).end('Forbidden');
     if (UI_FILES[url.pathname] || url.pathname === '/query.js') {
       const name = UI_FILES[url.pathname] ?? 'query.js';
       const src = url.pathname === '/query.js' ? QUERY_FILE : new URL(name, UI_DIR);
@@ -121,7 +124,8 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, () => resolve(server));
+    // Loopback only by default: the UI exposes source code. FRONTDEX_HOST=0.0.0.0 opts into LAN access.
+    server.listen(port, process.env.FRONTDEX_HOST || '127.0.0.1', () => resolve(server));
   });
 }
 
