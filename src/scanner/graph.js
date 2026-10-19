@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
-import { parseFile } from './parse-file.js';
+import { MAP_FIELDS, parseMany } from './parse-pool.js';
 import { buildProjectInsights } from './project.js';
 
 const PKG = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
@@ -16,8 +16,6 @@ const SCANNER_HASH = createHash('sha1')
   .slice(0, 12);
 export const CACHE_VERSION = `${PKG.version}/${SCANNER_HASH}`;
 
-const MAP_FIELDS = ['imports', 'exports', 'aliases'];
-const serialize = (mod) => ({ ...mod, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, [...mod[k]]])) });
 const deserialize = (data, file) => ({ ...structuredClone(data), file, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, new Map(data[k])])) });
 
 /**
@@ -39,30 +37,37 @@ export function scanProject(config, { cache, known } = {}) {
   // With `known` (a watcher session), only the paths it reports are re-listed and re-stat'ed; everything else is trusted from the cache.
   const projectFiles = known ? updateProjectFiles(config, known.files, known.changed) : listProjectFiles(config);
   const touched = known && new Set(known.changed);
-  for (const file of projectFiles.sources) {
+  // Pass 1: keep cached parses whose mtime/size or content hash still match; queue the rest.
+  const pending = [];
+  const slots = projectFiles.sources.map((file) => {
     const key = rel(file);
     const prev = prevFiles[key];
-    let entry;
     const stat = touched && prev && !touched.has(file) ? null : fs.statSync(file);
-    if (prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size))) entry = prev;
-    else {
-      const code = fs.readFileSync(file, 'utf8');
-      const hash = createHash('sha1').update(code).digest('hex');
-      if (prev?.hash === hash) entry = { ...prev, mtimeMs: stat.mtimeMs, size: stat.size };
-      else {
-        const parsed = parseFile(file, code);
-        delete parsed.file;
-        delta.parsed++;
-        if (parsed.error && prev?.mod && !prev.mod.error) {
-          // Keep the last good parse while the file is broken mid-edit, so components don't flicker out of the catalogue and history.
-          entry = { ...prev, mtimeMs: stat.mtimeMs, size: stat.size, hash };
-          warnings.push(`${key}: ${parsed.error} (kept last good version)`);
-        } else {
-          entry = { mtimeMs: stat.mtimeMs, size: stat.size, hash, mod: serialize(parsed) };
-          delta[prev ? 'changed' : 'added'].push(key);
-        }
-      }
+    if (prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size))) return { file, key, prev, entry: prev };
+    const code = fs.readFileSync(file, 'utf8');
+    const hash = createHash('sha1').update(code).digest('hex');
+    if (prev?.hash === hash) return { file, key, prev, entry: { ...prev, mtimeMs: stat.mtimeMs, size: stat.size } };
+    const slot = { file, key, prev, stat, hash, code };
+    pending.push(slot);
+    return slot;
+  });
+
+  // Pass 2: parse the queue (across worker threads when it is large, e.g. a cold scan).
+  parseMany(pending.map((s) => [s.file, s.code])).forEach((parsed, i) => {
+    const { key, prev, stat, hash } = pending[i];
+    delete pending[i].code;
+    delta.parsed++;
+    if (parsed.error && prev?.mod && !prev.mod.error) {
+      // Keep the last good parse while the file is broken mid-edit, so components don't flicker out of the catalogue and history.
+      pending[i].entry = { ...prev, mtimeMs: stat.mtimeMs, size: stat.size, hash };
+      warnings.push(`${key}: ${parsed.error} (kept last good version)`);
+    } else {
+      pending[i].entry = { mtimeMs: stat.mtimeMs, size: stat.size, hash, mod: parsed };
+      delta[prev ? 'changed' : 'added'].push(key);
     }
+  });
+
+  for (const { file, key, prev, entry } of slots) {
     if (entry.mod === prev?.mod) delta.reused++;
     nextFiles[key] = entry;
     const mod = deserialize(entry.mod, file);
