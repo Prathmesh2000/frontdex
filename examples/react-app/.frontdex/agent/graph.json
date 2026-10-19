@@ -1,0 +1,411 @@
+{
+ "generator": "frontdex 0.3.0",
+ "components": {
+  "AppShell": {
+   "name": "AppShell",
+   "file": "src/components/AppShell.jsx",
+   "line": 6,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "SelectionBar",
+    "ErrorBoundary"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/",
+    "/users",
+    "/users/:userId",
+    "/users/:userId/edit",
+    "/settings",
+    "/settings/profile",
+    "/settings/billing",
+    "/settings/security"
+   ]
+  },
+  "BillingSettings": {
+   "name": "BillingSettings",
+   "file": "src/pages/settings/BillingSettings.jsx",
+   "line": 5,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "invoices"
+   ],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/settings/billing"
+   ]
+  },
+  "Dashboard": {
+   "name": "Dashboard",
+   "file": "src/pages/Dashboard.jsx",
+   "line": 5,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "width"
+   ],
+   "renders": [
+    "MetricTicker"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/"
+   ]
+  },
+  "ErrorBoundary": {
+   "name": "ErrorBoundary",
+   "file": "src/components/ErrorBoundary.jsx",
+   "line": 4,
+   "kind": "class",
+   "props": [
+    "children"
+   ],
+   "state": [
+    "error"
+   ],
+   "renders": [],
+   "usedBy": [
+    "AppShell"
+   ],
+   "pages": [
+    "/",
+    "/users",
+    "/users/:userId",
+    "/users/:userId/edit",
+    "/settings",
+    "/settings/profile",
+    "/settings/billing",
+    "/settings/security"
+   ]
+  },
+  "ErrorScreen": {
+   "name": "ErrorScreen",
+   "file": "src/components/ErrorScreen.jsx",
+   "line": 4,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/",
+    "/users",
+    "/users/:userId",
+    "/users/:userId/edit",
+    "/settings",
+    "/settings/profile",
+    "/settings/billing",
+    "/settings/security"
+   ]
+  },
+  "LegacyStats": {
+   "name": "LegacyStats",
+   "file": "src/components/LegacyStats.jsx",
+   "line": 5,
+   "kind": "function",
+   "props": [
+    "stats"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": []
+  },
+  "MetricTicker": {
+   "name": "MetricTicker",
+   "file": "src/components/MetricTicker.jsx",
+   "line": 8,
+   "kind": "class",
+   "props": [
+    "intervalMs",
+    "label"
+   ],
+   "state": [
+    "value",
+    "previous",
+    "history",
+    "lastInterval"
+   ],
+   "renders": [],
+   "usedBy": [
+    "Dashboard"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "ProfileSettings": {
+   "name": "ProfileSettings",
+   "file": "src/pages/settings/ProfileSettings.jsx",
+   "line": 5,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "UserForm"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/settings",
+    "/settings/profile"
+   ]
+  },
+  "SecuritySettings": {
+   "name": "SecuritySettings",
+   "file": "src/pages/settings/SecuritySettings.jsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "password",
+    "twoFactor"
+   ],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/settings/security"
+   ]
+  },
+  "SelectionBar": {
+   "name": "SelectionBar",
+   "file": "src/components/SelectionBar.jsx",
+   "line": 6,
+   "kind": "class",
+   "props": [
+    "selectedCount",
+    "onClear"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "AppShell"
+   ],
+   "pages": [
+    "/",
+    "/users",
+    "/users/:userId",
+    "/users/:userId/edit",
+    "/settings",
+    "/settings/profile",
+    "/settings/billing",
+    "/settings/security"
+   ]
+  },
+  "SettingsLayout": {
+   "name": "SettingsLayout",
+   "file": "src/pages/settings/SettingsLayout.jsx",
+   "line": 4,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/settings",
+    "/settings/profile",
+    "/settings/billing",
+    "/settings/security"
+   ]
+  },
+  "UserDetail": {
+   "name": "UserDetail",
+   "file": "src/pages/users/UserDetail.jsx",
+   "line": 6,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "user"
+   ],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/users/:userId"
+   ]
+  },
+  "UserEdit": {
+   "name": "UserEdit",
+   "file": "src/pages/users/UserEdit.jsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "user"
+   ],
+   "renders": [
+    "UserForm"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/users/:userId/edit"
+   ]
+  },
+  "UserForm": {
+   "name": "UserForm",
+   "file": "src/pages/users/UserForm.jsx",
+   "line": 11,
+   "kind": "function",
+   "props": [
+    "submitLabel",
+    "initial",
+    "onSubmit"
+   ],
+   "state": [
+    "values",
+    "errors"
+   ],
+   "renders": [],
+   "usedBy": [
+    "ProfileSettings",
+    "UserEdit"
+   ],
+   "pages": [
+    "/users/:userId/edit",
+    "/settings",
+    "/settings/profile"
+   ]
+  },
+  "UsersPage": {
+   "name": "UsersPage",
+   "file": "src/pages/users/UsersPage.jsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/users"
+   ]
+  }
+ },
+ "pages": {
+  "/": {
+   "file": "src/router.jsx",
+   "component": "Dashboard",
+   "layouts": [
+    "AppShell"
+   ],
+   "components": [
+    "AppShell",
+    "Dashboard",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary",
+    "MetricTicker"
+   ]
+  },
+  "/settings": {
+   "file": "src/router.jsx",
+   "component": "ProfileSettings",
+   "layouts": [
+    "AppShell",
+    "SettingsLayout"
+   ],
+   "components": [
+    "AppShell",
+    "SettingsLayout",
+    "ProfileSettings",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary",
+    "UserForm"
+   ]
+  },
+  "/settings/billing": {
+   "file": "src/router.jsx",
+   "component": "BillingSettings",
+   "layouts": [
+    "AppShell",
+    "SettingsLayout"
+   ],
+   "components": [
+    "AppShell",
+    "SettingsLayout",
+    "BillingSettings",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary"
+   ]
+  },
+  "/settings/profile": {
+   "file": "src/router.jsx",
+   "component": "ProfileSettings",
+   "layouts": [
+    "AppShell",
+    "SettingsLayout"
+   ],
+   "components": [
+    "AppShell",
+    "SettingsLayout",
+    "ProfileSettings",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary",
+    "UserForm"
+   ]
+  },
+  "/settings/security": {
+   "file": "src/router.jsx",
+   "component": "SecuritySettings",
+   "layouts": [
+    "AppShell",
+    "SettingsLayout"
+   ],
+   "components": [
+    "AppShell",
+    "SettingsLayout",
+    "SecuritySettings",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary"
+   ]
+  },
+  "/users": {
+   "file": "src/router.jsx",
+   "component": "UsersPage",
+   "layouts": [
+    "AppShell"
+   ],
+   "components": [
+    "AppShell",
+    "UsersPage",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary"
+   ]
+  },
+  "/users/:userId": {
+   "file": "src/router.jsx",
+   "component": "UserDetail",
+   "layouts": [
+    "AppShell"
+   ],
+   "components": [
+    "AppShell",
+    "UserDetail",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary"
+   ]
+  },
+  "/users/:userId/edit": {
+   "file": "src/router.jsx",
+   "component": "UserEdit",
+   "layouts": [
+    "AppShell"
+   ],
+   "components": [
+    "AppShell",
+    "UserEdit",
+    "ErrorScreen",
+    "SelectionBar",
+    "ErrorBoundary",
+    "UserForm"
+   ]
+  }
+ }
+}

@@ -1,11 +1,13 @@
 {
-  "name": "react-catalogue",
-  "version": "0.2.0",
-  "description": "Knowledge base for React and Next.js frontends: components, pages, state, lifecycle, history, and a separate view for coding agents (MCP, rules, hooks).",
+  "name": "frontdex",
+  "version": "0.3.0",
+  "description": "A living index of your frontend: components, pages, state, APIs and health for developers and coding agents. React and Next.js today.",
   "type": "module",
   "bin": {
-    "rcat": "bin/rcat.js",
-    "react-catalogue": "bin/rcat.js"
+    "frontdex": "bin/frontdex.js",
+    "fdx": "bin/frontdex.js",
+    "rcat": "bin/frontdex.js",
+    "react-catalogue": "bin/frontdex.js"
   },
   "main": "src/index.js",
   "exports": {
@@ -29,6 +31,7 @@
     "node": ">=18.17"
   },
   "keywords": [
+    "frontdex",
     "react",
     "nextjs",
     "catalogue",
@@ -48,5 +51,9 @@
     "@babel/traverse": "^7.29.10",
     "ajv": "^8.20.0",
     "yaml": "^2.9.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Prathmesh2000/frontdex.git"
   }
 }

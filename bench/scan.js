@@ -18,7 +18,7 @@ const copies = Number(process.argv[2] ?? 20);
 const example = path.resolve(import.meta.dirname, '../examples/next-app');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rcat-bench-'));
 for (let i = 0; i < copies; i++) {
-  fs.cpSync(example, path.join(root, 'packages', `app-${i}`), { recursive: true, filter: (p) => !p.includes('.catalogue') && !p.endsWith('catalogue.yaml') && !p.endsWith('catalogue.config.json') });
+  fs.cpSync(example, path.join(root, 'packages', `app-${i}`), { recursive: true, filter: (p) => !/[\\/]\.frontdex([\\/]|$)|frontdex\.(yaml|config\.json)$/.test(p) });
 }
 fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'bench', dependencies: { next: '*' } }));
 

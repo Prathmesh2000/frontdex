@@ -1,0 +1,7 @@
+{
+  "title": "Acme Admin",
+  "include": [
+    "src"
+  ],
+  "autoUpdate": true
+}

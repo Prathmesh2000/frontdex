@@ -6,12 +6,14 @@ import { test } from 'node:test';
 import { loadConfig, readCatalogue, scan } from '../src/index.js';
 
 /*
- * Golden files: the committed catalogue.yaml and .catalogue/agent/ of each example are the expected output.
+ * Golden files: the committed frontdex.yaml and .frontdex/agent/ of each example are the expected output.
  * Any scanner change that alters them fails here; if the change is intended, regenerate with
- * `node bin/rcat.js scan -C examples/<name>` and review the diff like any other code change.
+ * `node bin/frontdex.js scan -C examples/<name>` and review the diff like any other code change.
  */
 
 const EXAMPLES = path.resolve(import.meta.dirname, '../examples');
+// Generated output (current and react-catalogue era names), excluded when copying an example's sources.
+const GENERATED = /[\\/]\.(frontdex|catalogue)([\\/]|$)|(frontdex|catalogue)\.yaml$/;
 
 function listFiles(dir, base = dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -25,7 +27,7 @@ for (const name of fs.readdirSync(EXAMPLES)) {
     const src = path.join(EXAMPLES, name);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), `golden-${name}-`));
     // Copy sources only, so the scan starts cold and cannot reuse the committed output.
-    fs.cpSync(src, dir, { recursive: true, filter: (p) => !p.includes(`${path.sep}.catalogue`) && !p.endsWith('catalogue.yaml') });
+    fs.cpSync(src, dir, { recursive: true, filter: (p) => !GENERATED.test(p) });
     const config = loadConfig(dir);
     const { catalogue } = scan(config);
 

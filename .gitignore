@@ -1,4 +1,5 @@
 node_modules/
+frontdex-site/
 catalogue-site/
 .DS_Store
 *.log

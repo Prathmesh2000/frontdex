@@ -12,7 +12,7 @@
   const len = (x) => (Array.isArray(x) ? x.length : x ? Object.keys(x).length : 0);
 
   if (!cat) {
-    main.innerHTML = '<p>No catalogue data found. Run <code>rcat scan</code> and reload.</p>';
+    main.innerHTML = '<p>No catalogue data found. Run <code>frontdex scan</code> and reload.</p>';
     return;
   }
 
@@ -194,7 +194,7 @@
       const hl = $('.hl', body);
       if (hl) body.scrollTop = hl.offsetTop - 120;
     } catch {
-      body.innerHTML = `<p class="none" style="padding:16px">Source is available while running <code>rcat serve</code>.${ROOT ? '' : ' This is a static export.'}</p>`;
+      body.innerHTML = `<p class="none" style="padding:16px">Source is available while running <code>frontdex serve</code>.${ROOT ? '' : ' This is a static export.'}</p>`;
     }
   }
   document.addEventListener('click', (e) => {
@@ -530,7 +530,7 @@
   }
 
   function pagePreview(route, params) {
-    if (!PREVIEW) return '<p class="none">Set <code>"preview": "http://localhost:3000"</code> in catalogue.config.json to see the rendered page here.</p>';
+    if (!PREVIEW) return '<p class="none">Set <code>"preview": "http://localhost:3000"</code> in frontdex.config.json to see the rendered page here.</p>';
     const dyn = [...route.matchAll(/\[\[?(?:\.\.\.)?(\w+)\]\]?|:(\w+)/g)].map((m) => m[1] || m[2]);
     const values = Object.fromEntries(dyn.map((d) => [d, params.get(`param.${d}`) || '1']));
     const path = route.replace(/ \(.*\)$/, '').replace(/\[\[?(?:\.\.\.)?(\w+)\]\]?|:(\w+)/g, (_m, a, b) => enc(values[a || b])).replace(/\/\*$/, '/');
@@ -543,7 +543,7 @@
         <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${I('external', 'sm')} Open</a>
       </div>
       <div class="frame-wrap"><iframe src="${esc(url)}" style="width:${width}" title="Preview of ${esc(route)}"></iframe></div>
-      <p class="preview-hint">Live view of your running app (${esc(PREVIEW)}). Start it with your dev command if the frame is empty; change the URL with <code>"preview"</code> in catalogue.config.json.</p>`;
+      <p class="preview-hint">Live view of your running app (${esc(PREVIEW)}). Start it with your dev command if the frame is empty; change the URL with <code>"preview"</code> in frontdex.config.json.</p>`;
   }
 
   const ISSUE_CAP = 200;
@@ -673,7 +673,7 @@
           const hl = $('.hl', body);
           if (hl) hl.parentElement.parentElement.scrollTop = hl.offsetTop - 80;
         })
-        .catch(() => ($('.card', body).lastElementChild.outerHTML = '<p class="none">Source is available while running <code>rcat serve</code>.</p>'));
+        .catch(() => ($('.card', body).lastElementChild.outerHTML = '<p class="none">Source is available while running <code>frontdex serve</code>.</p>'));
     } else body.innerHTML = render();
     const focus = params.get('focus');
     if (focus) {
@@ -1459,7 +1459,7 @@
         location.reload();
       } else toast(`${I('check', 'sm')} Up to date · ${r.delta.parsed} file(s) re-parsed, ${r.delta.reused} unchanged`);
     } catch {
-      toast(`${I('alert', 'sm')} Rescan failed. Is <code>rcat serve</code> still running?`);
+      toast(`${I('alert', 'sm')} Rescan failed. Is <code>frontdex serve</code> still running?`);
     } finally {
       btn.disabled = false;
       btn.classList.remove('spin');

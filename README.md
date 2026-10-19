@@ -1,20 +1,20 @@
-# react-catalogue
+# frontdex
 
 A living knowledge base for React and Next.js frontends, like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
 
-- **For developers:** `catalogue.yaml` (the [CatalogueSpec](docs/SPEC.md) format) plus a page-first UI:
+- **For developers:** `frontdex.yaml` (the [CatalogueSpec](docs/SPEC.md) format) plus a page-first UI:
   - **Navigation:** URL → layouts → component → its state, props, functions, timers, API calls, global state, validation and styles. Every item links to its `file:line`.
   - **Diagnostics:** memory leaks, render loops, unsafe async updates, stale dependencies, and dead code.
-- **For coding agents:** `.catalogue/agent/` (compact Markdown cards and a JSON graph), an MCP server, always-on rules and hooks for Claude Code, Cursor, OpenCode, Hermes, Copilot and anything that reads `AGENTS.md`.
+- **For coding agents:** `.frontdex/agent/` (compact Markdown cards and a JSON graph), an MCP server, always-on rules and hooks for Claude Code, Cursor, OpenCode, Hermes, Copilot and anything that reads `AGENTS.md`.
 
 ```mermaid
 flowchart LR
-  Src[React / Next source] -->|rcat scan| Scan[Incremental scanner<br/>re-parses changed files only]
-  Auto["autoUpdate<br/>rcat watch · Next/Vite plugin"] --> Scan
-  Scan --> Yaml[catalogue.yaml]
-  Scan --> Hist[.catalogue/history<br/>git-like snapshots]
-  Scan --> Agent[.catalogue/agent<br/>INDEX.md · cards · graph.json]
-  Yaml --> UI[rcat serve<br/>explorer · graph · history]
+  Src[React / Next source] -->|frontdex scan| Scan[Incremental scanner<br/>re-parses changed files only]
+  Auto["autoUpdate<br/>frontdex watch · Next/Vite plugin"] --> Scan
+  Scan --> Yaml[frontdex.yaml]
+  Scan --> Hist[.frontdex/history<br/>git-like snapshots]
+  Scan --> Agent[.frontdex/agent<br/>INDEX.md · cards · graph.json]
+  Yaml --> UI[frontdex serve<br/>explorer · graph · history]
   Agent --> Rules[AGENTS.md · CLAUDE.md · .cursor/rules]
   Agent --> MCP[frontdex-mcp<br/>separate package]
   Hooks[agent hooks after each edit] --> Scan
@@ -23,73 +23,84 @@ flowchart LR
 ## Quick start
 
 ```bash
-npm install --save-dev react-catalogue      # or: yarn add -D react-catalogue
-npx rcat init --auto-update                 # writes catalogue.config.json
-npx rcat scan                               # builds the knowledge base
-npx rcat agents                             # wires coding agents (rules, MCP, hooks)
-npx rcat serve                              # UI at http://localhost:4400
+npm install --save-dev frontdex       # or: pnpm add -D / yarn add -D / bun add -d
+npx frontdex init --auto-update        # writes frontdex.config.json
+npx frontdex scan                      # builds the knowledge base
+npx frontdex agents                    # wires coding agents (rules, MCP, hooks)
+npx frontdex serve                     # UI at http://localhost:4400
 ```
 
-Until it is published on npm: `npm install --save-dev github:Prathmesh2000/frontend-catalog`.
+Until it is published on npm: `npm install --save-dev github:Prathmesh2000/frontdex`. The CLI also answers to `fdx` and, for existing setups, `rcat`.
+
+### Coming from react-catalogue
+
+frontdex is the new name of react-catalogue. A project with `catalogue.config.json`, `catalogue.yaml` or `.catalogue/` keeps working under those names. To switch:
+
+```bash
+npx frontdex upgrade   # catalogue.config.json → frontdex.config.json, catalogue.yaml → frontdex.yaml, .catalogue/ → .frontdex/
+npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, hooks and Cursor rule
+```
+
+`require('react-catalogue/next').withCatalogue` is still exported from `frontdex/next` as `withCatalogue`.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `rcat init [--auto-update]` | Creates `catalogue.config.json`. |
-| `rcat scan [--full] [-m msg]` | Incremental rescan: unchanged files (same mtime/size or content hash) reuse their cached parse. `--full` ignores the cache. Records a history snapshot when anything changed. |
-| `rcat watch` | Keeps everything updated while you code. This is what `autoUpdate` runs. |
-| `rcat check` | Exits 1 if the catalogue is stale. Use in CI or a pre-commit hook. |
-| `rcat history [id] [-n 20]` | Log of knowledge-base snapshots; pass an id for the full change list. |
-| `rcat serve` / `rcat start` | UI server. Auto-updates and live-reloads when `autoUpdate` is on (or with `-w`). |
-| `rcat build [-o dir]` | Static export of the UI, history included. |
-| `rcat query "<filters>"` | Search from the terminal, e.g. `rcat query "uses:Button is:shared"`. |
-| `rcat show <Component>` / `rcat impact <Component>` | Component card / everything that depends on it. |
-| `rcat dataflow <Component>` | Props in (per parent, with values) → store reads → state/effects → API calls, dispatches → props out. |
-| `rcat health [type] [--severity high] [--strict]` | Leaks, render loops, async/unmount bugs, stale deps, dead code. `--strict` exits 1 on high-severity issues (CI). |
-| `rcat state [store]` / `rcat api [endpoint]` | Global state map with readers/writers; every API call grouped by endpoint. |
-| `rcat agents [--targets …] [--no-hooks] [--no-mcp] [--remove]` | Installs or removes agent integration. |
-| `rcat mcp` | MCP server over stdio (registered automatically by `rcat agents`). |
-| `rcat validate [file]` | Validates against the JSON Schema. |
+| `frontdex init [--auto-update]` | Creates `frontdex.config.json`. |
+| `frontdex scan [--full] [-m msg]` | Incremental rescan: unchanged files (same mtime/size or content hash) reuse their cached parse. `--full` ignores the cache. Records a history snapshot when anything changed. |
+| `frontdex watch` | Keeps everything updated while you code. This is what `autoUpdate` runs. |
+| `frontdex check` | Exits 1 if the catalogue is stale. Use in CI or a pre-commit hook. |
+| `frontdex history [id] [-n 20]` | Log of knowledge-base snapshots; pass an id for the full change list. |
+| `frontdex serve` / `frontdex start` | UI server. Auto-updates and live-reloads when `autoUpdate` is on (or with `-w`). |
+| `frontdex build [-o dir]` | Static export of the UI, history included. |
+| `frontdex query "<filters>"` | Search from the terminal, e.g. `frontdex query "uses:Button is:shared"`. |
+| `frontdex show <Component>` / `frontdex impact <Component>` | Component card / everything that depends on it. |
+| `frontdex dataflow <Component>` | Props in (per parent, with values) → store reads → state/effects → API calls, dispatches → props out. |
+| `frontdex health [type] [--severity high] [--strict]` | Leaks, render loops, async/unmount bugs, stale deps, dead code. `--strict` exits 1 on high-severity issues (CI). |
+| `frontdex state [store]` / `frontdex api [endpoint]` | Global state map with readers/writers; every API call grouped by endpoint. |
+| `frontdex agents [--targets …] [--no-hooks] [--no-mcp] [--remove]` | Installs or removes agent integration. |
+| `frontdex mcp` | MCP server over stdio (registered automatically by `frontdex agents`). |
+| `frontdex validate [file]` | Validates against the JSON Schema. |
 
 All commands accept `-C <dir>` to target another project.
 
 ## Auto-update
 
-With `"autoUpdate": true`, `rcat serve` watches the source. To keep the knowledge base current while your normal dev server runs, use one of:
+With `"autoUpdate": true`, `frontdex serve` watches the source. To keep the knowledge base current while your normal dev server runs, use one of:
 
 ```js
-// next.config.js: runs `rcat watch` next to `next dev`, stops with it
-const { withCatalogue } = require('react-catalogue/next');
-module.exports = withCatalogue({ reactStrictMode: true });
+// next.config.js: runs `frontdex watch` next to `next dev`, stops with it
+const { withFrontdex } = require('frontdex/next');
+module.exports = withFrontdex({ reactStrictMode: true });
 ```
 
 ```js
 // vite.config.js
-import catalogue from 'react-catalogue/vite';
-export default { plugins: [react(), catalogue()] };
+import frontdex from 'frontdex/vite';
+export default { plugins: [react(), frontdex()] };
 ```
 
-or `"dev": "rcat watch & next dev"` in `package.json`. A burst of saves triggers one scan (250 ms debounce). A file that is broken mid-edit keeps its last good version instead of disappearing.
+or `"dev": "frontdex watch & next dev"` in `package.json`. A burst of saves triggers one scan (250 ms debounce). A file that is broken mid-edit keeps its last good version instead of disappearing.
 
 ## History
 
 Every scan that changes the catalogue records a snapshot, like a commit: id, time, git HEAD, message and a field-level change list (`ProductCard props +size`, `Header state −query`, `page /checkout added`). Line-number shifts are ignored. Objects are content-addressed and packed per snapshot, so unchanged components cost nothing.
 
-- **CLI:** `rcat history`, `rcat history <id>`
+- **CLI:** `frontdex history`, `frontdex history <id>`
 - **UI:** the **History** page and the **History** tab on each component
 - **Agents:** the `catalogue_history` MCP tool
 
-History lives in `.catalogue/history/`, which is git-ignored by default. Remove `history/` from `.catalogue/.gitignore` to share it.
+History lives in `.frontdex/history/`, which is git-ignored by default. Remove `history/` from `.frontdex/.gitignore` to share it.
 
 ## Coding agents
 
-`rcat agents` installs, idempotently and between `<!-- react-catalogue -->` markers so your own content is untouched:
+`frontdex agents` installs, idempotently and between `<!-- frontdex -->` markers so your own content is untouched:
 
 | Agent | Rules (always loaded) | Tools | After-edit feedback |
 |---|---|---|---|
-| Claude Code | `AGENTS.md`, or an `@.catalogue/agent/RULES.md` import in an existing `CLAUDE.md` | `.mcp.json` | `PostToolUse` + `SessionStart` hooks in `.claude/settings.json` |
-| Cursor | `.cursor/rules/react-catalogue.mdc` (`alwaysApply`) + `AGENTS.md` | `.cursor/mcp.json` | `postToolUse` + `sessionStart` in `.cursor/hooks.json` |
+| Claude Code | `AGENTS.md`, or an `@.frontdex/agent/RULES.md` import in an existing `CLAUDE.md` | `.mcp.json` | `PostToolUse` + `SessionStart` hooks in `.claude/settings.json` |
+| Cursor | `.cursor/rules/frontdex.mdc` (`alwaysApply`) + `AGENTS.md` | `.cursor/mcp.json` | `postToolUse` + `sessionStart` in `.cursor/hooks.json` |
 | OpenCode | `AGENTS.md` | `opencode.json` | – |
 | Hermes | `AGENTS.md` (or an existing `.hermes.md`) | `~/.hermes/config.yaml` (user-level; snippet printed) | – |
 | Copilot / others | `.github/copilot-instructions.md`, `AGENTS.md` | – | – |
@@ -102,7 +113,7 @@ The rules require agents to:
 
 The hooks make this hard to skip:
 - After every file edit, the agent receives what changed and who is affected, e.g. `ProductGrid changed: props +title. Rendered by: Page. Pages: /`.
-- `rcat check` in CI fails a PR whose catalogue is stale.
+- `frontdex check` in CI fails a PR whose catalogue is stale.
 
 The rules also tell agents to reuse existing stores, endpoints and CSS classes, and never to ship an effect without cleanup.
 
@@ -114,7 +125,7 @@ The MCP server is a separate package, [frontdex-mcp](https://github.com/Prathmes
 npm install --save-dev frontdex-mcp
 ```
 
-The `.mcp.json` entry written by `rcat agents` runs `npx react-catalogue mcp`, which starts frontdex-mcp from your project. Without it installed, `rcat mcp` prints the install command. The tools behind it (`createTools`) are part of this package's public API and also power `rcat query`, `show`, `impact`, `dataflow`, `health`, `state` and `api`.
+The `.mcp.json` entry written by `frontdex agents` runs `npx frontdex mcp`, which starts frontdex-mcp from your project. Without it installed, `frontdex mcp` prints the install command. The tools behind it (`createTools`) are part of this package's public API and also power `frontdex query`, `show`, `impact`, `dataflow`, `health`, `state` and `api`.
 
 ## The UI
 
@@ -149,18 +160,18 @@ is:unused|shared|heavy|page|layout|leaf|deprecated|undocumented|leaky
 
 ## Configuration
 
-`catalogue.config.json` (every key optional):
+`frontdex.config.json` (every key optional):
 
 ```json
 {
   "title": "shop-web",
   "include": ["."],
   "exclude": ["**/node_modules/**", "**/.next/**", "**/*.test.*", "**/*.stories.*"],
-  "output": "catalogue.yaml",
+  "output": "frontdex.yaml",
   "port": 4400,
   "preview": "http://localhost:3000",
   "autoUpdate": true,
-  "knowledgeDir": ".catalogue",
+  "knowledgeDir": ".frontdex",
   "history": { "enabled": true, "limit": 500 },
   "agents": { "enabled": true }
 }
@@ -171,8 +182,8 @@ is:unused|shared|heavy|page|layout|leaf|deprecated|undocumented|leaky
 ## Files it creates
 
 ```
-catalogue.yaml                 human spec: commit it, review it, hand-edit description/tags/owner/x-*
-.catalogue/
+frontdex.yaml                 human spec: commit it, review it, hand-edit description/tags/owner/x-*
+.frontdex/
   agent/INDEX.md               agent entry point: rules, pages, folders, shared components (commit it)
   agent/components/<dir>.md    one card per component, mirroring the source folder
   agent/graph.json             machine-readable graph
@@ -222,7 +233,7 @@ Both samples contain deliberate memory leaks, a render loop, stale dependencies 
 
 ```bash
 npm install && npm test
-node bin/rcat.js serve -C examples/next-app -w
+node bin/frontdex.js serve -C examples/next-app -w
 ```
 
 ## Limits

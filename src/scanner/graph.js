@@ -378,7 +378,7 @@ export function scanProject(config, { cache, known } = {}) {
       version: config.version,
       framework: config.framework,
       routers,
-      generator: `react-catalogue ${PKG.version}`,
+      generator: `frontdex ${PKG.version}`,
       generatedAt: new Date().toISOString(),
     }),
     components: sortKeys(components),

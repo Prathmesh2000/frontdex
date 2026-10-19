@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://react-catalogue.dev/schema/1.0/catalogue.schema.json",
+  "$id": "https://github.com/Prathmesh2000/frontdex/spec/catalogue.schema.json",
   "title": "CatalogueSpec 1.1",
   "type": "object",
   "required": [

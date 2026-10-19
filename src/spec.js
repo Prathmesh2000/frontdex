@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const Ajv = require('ajv');
 const schema = require('../spec/catalogue.schema.json');
 
-const SCHEMA_HINT = '# yaml-language-server: $schema=./node_modules/react-catalogue/spec/catalogue.schema.json\n';
+const SCHEMA_HINT = '# yaml-language-server: $schema=./node_modules/frontdex/spec/catalogue.schema.json\n';
 
 export function readCatalogue(file) {
   if (!fs.existsSync(file)) return null;

@@ -8,7 +8,7 @@ import { createHistory, createTools, flushSession, knowledgeDir, loadConfig, rea
 
 function tempProject() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rcat-'));
-  fs.cpSync(path.resolve(import.meta.dirname, '../examples/next-app'), dir, { recursive: true, filter: (src) => !src.includes('.catalogue') && !src.endsWith('catalogue.yaml') });
+  fs.cpSync(path.resolve(import.meta.dirname, '../examples/next-app'), dir, { recursive: true, filter: (src) => !/[\\/]\.frontdex([\\/]|$)|frontdex\.yaml$/.test(src) });
   return dir;
 }
 
@@ -52,7 +52,7 @@ test('a file broken mid-edit keeps its last good version', () => {
 test('agent knowledge base mirrors source folders', () => {
   const dir = tempProject();
   scan(loadConfig(dir));
-  const agent = path.join(dir, '.catalogue/agent');
+  const agent = path.join(dir, '.frontdex/agent');
   const index = fs.readFileSync(path.join(agent, 'INDEX.md'), 'utf8');
   assert.match(index, /\| `\/products\/\[id\]` \| ProductDetailPage/);
   assert.match(index, /\| redux:cart \| redux-slice \|/);
@@ -72,7 +72,7 @@ test('agents install is idempotent, preserves user content and can be removed', 
   installAgents(config);
   const again = installAgents(config);
   assert.ok(again.results.every((r) => r.status === 'unchanged'));
-  assert.match(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), /^# Team notes\n[\s\S]*@\.catalogue\/agent\/RULES\.md/);
+  assert.match(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), /^# Team notes\n[\s\S]*@\.frontdex\/agent\/RULES\.md/);
   const settings = JSON.parse(fs.readFileSync(path.join(dir, '.claude/settings.json'), 'utf8'));
   assert.equal(settings.hooks.PostToolUse.length, 2);
 
@@ -129,4 +129,28 @@ test('watch session: a deleted folder falls back to a full walk', () => {
   const warm = scan(config, { session, changed: [folder] });
   assert.equal(warm.catalogue.components.ToastViewport, undefined);
   assert.ok(warm.delta.removed.includes('src/features/toast/ToastViewport.tsx'));
+});
+
+test('react-catalogue projects keep working and upgrade to frontdex names, agents included', async () => {
+  const { upgradeProject } = await import('../src/config.js');
+  const dir = tempProject();
+  fs.renameSync(path.join(dir, 'frontdex.config.json'), path.join(dir, 'catalogue.config.json'));
+  const legacy = loadConfig(dir);
+  assert.equal(legacy.legacy, true);
+  assert.equal(legacy.output, 'catalogue.yaml');
+  scan(legacy);
+  assert.ok(fs.existsSync(path.join(dir, 'catalogue.yaml')) && fs.existsSync(path.join(dir, '.catalogue/agent/INDEX.md')));
+
+  // An agent setup written by react-catalogue: its block, MCP server and hooks must be replaced, not duplicated.
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), '# Notes\n\n<!-- react-catalogue:start -->\nold rules\n<!-- react-catalogue:end -->\n');
+  fs.writeFileSync(path.join(dir, '.mcp.json'), JSON.stringify({ mcpServers: { 'react-catalogue': { command: 'npx', args: ['react-catalogue', 'mcp'] }, other: {} } }));
+
+  assert.deepEqual(upgradeProject(dir).map(([, to]) => to).sort(), ['.frontdex', 'frontdex.config.json', 'frontdex.yaml']);
+  const config = loadConfig(dir);
+  assert.equal(config.legacy, false);
+  installAgents(config);
+  const agentsMd = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  assert.equal(agentsMd.match(/:start -->/g).length, 1);
+  assert.match(agentsMd, /<!-- frontdex:start -->[\s\S]*`\.frontdex\/agent\/`/);
+  assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8')).mcpServers).sort(), ['frontdex', 'other']);
 });

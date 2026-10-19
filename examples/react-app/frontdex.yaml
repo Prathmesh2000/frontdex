@@ -1,0 +1,912 @@
+# yaml-language-server: $schema=./node_modules/frontdex/spec/catalogue.schema.json
+catalogue: "1.1"
+info:
+  title: Acme Admin
+  version: 1.8.0
+  framework: react
+  routers:
+    - react-router
+  generator: frontdex 0.3.0
+  generatedAt: 2026-10-19T12:27:19.566Z
+components:
+  AppShell:
+    name: AppShell
+    file: src/components/AppShell.jsx
+    line: 6
+    kind: function
+    export: default
+    description: "Layout route: sidebar navigation + routed content."
+    styles:
+      classes:
+        - name: shell
+          at: src/styles.css:1
+        - name: nav
+          at: src/styles.css:2
+    renders:
+      - SelectionBar
+      - ErrorBoundary
+    externals:
+      - react-router-dom#NavLink
+      - react-router-dom#Outlet
+    pages:
+      - /
+      - /users
+      - /users/:userId
+      - /users/:userId/edit
+      - /settings
+      - /settings/profile
+      - /settings/billing
+      - /settings/security
+  BillingSettings:
+    name: BillingSettings
+    file: src/pages/settings/BillingSettings.jsx
+    line: 5
+    kind: function
+    export: default
+    description: Plan and invoices.
+    state:
+      invoices:
+        source: useState
+        initial: "[]"
+        setter: setInvoices
+    hooks:
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - unmount
+        deps: []
+        calls:
+          - api.get
+          - setInvoices
+        cleanup:
+          - controller.abort
+        line: 7
+    apiCalls:
+      - via: api.get
+        method: GET
+        target: /billing/invoices
+        in: useEffect L7
+        line: 9
+    pages:
+      - /settings/billing
+  Dashboard:
+    name: Dashboard
+    file: src/pages/Dashboard.jsx
+    line: 5
+    kind: function
+    export: default
+    description: Landing page with live metrics.
+    state:
+      width:
+        source: useState
+        initial: window.innerWidth
+        setter: setWidth
+    hooks:
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+        deps: []
+        calls:
+          - window.addEventListener
+          - setWidth
+        line: 8
+    timers:
+      - type: listener
+        call: window.addEventListener
+        event: resize
+        in: useEffect L8
+        line: 10
+        cleared: false
+    styles:
+      classes:
+        - name: dashboard
+        - name: stacked
+    issues:
+      - type: memory-leak
+        severity: high
+        message: window.addEventListener('resize') started in useEffect L8 without cleanup
+        line: 10
+        fix: return () => target.removeEventListener(sameEvent, sameHandler) from the effect
+    renders:
+      - MetricTicker
+    passes:
+      MetricTicker:
+        - name: label
+          value: '"Active users"'
+          line: 15
+        - name: intervalMs
+          value: "5000"
+          line: 15
+        - name: label
+          value: '"Signups today"'
+          line: 16
+        - name: intervalMs
+          value: "30000"
+          line: 16
+    pages:
+      - /
+  ErrorBoundary:
+    name: ErrorBoundary
+    file: src/components/ErrorBoundary.jsx
+    line: 4
+    kind: class
+    export: default
+    description: Keeps a crashing page from taking down the shell.
+    props:
+      children:
+        type: unknown
+        required: false
+    state:
+      error:
+        source: class
+        initial: "null"
+        setter: this.setState
+    lifecycle:
+      - via: getDerivedStateFromError
+        phases:
+          - error
+        line: 7
+      - via: componentDidCatch
+        phases:
+          - error
+        calls:
+          - navigator.sendBeacon
+          - JSON.stringify
+        line: 11
+    styles:
+      classes:
+        - name: error-screen
+          at: src/styles.css:9
+    usedBy:
+      - AppShell
+    pages:
+      - /
+      - /users
+      - /users/:userId
+      - /users/:userId/edit
+      - /settings
+      - /settings/profile
+      - /settings/billing
+      - /settings/security
+  ErrorScreen:
+    name: ErrorScreen
+    file: src/components/ErrorScreen.jsx
+    line: 4
+    kind: function
+    export: default
+    description: Router-level errorElement (404s, loader failures).
+    hooks:
+      - name: useRouteError
+        category: custom
+    styles:
+      classes:
+        - name: error-screen
+          at: src/styles.css:9
+    externals:
+      - react-router-dom#Link
+    pages:
+      - /
+      - /users
+      - /users/:userId
+      - /users/:userId/edit
+      - /settings
+      - /settings/profile
+      - /settings/billing
+      - /settings/security
+  LegacyStats:
+    name: LegacyStats
+    file: src/components/LegacyStats.jsx
+    line: 5
+    kind: function
+    export: default
+    description: Old dashboard widget.
+    status: deprecated
+    props:
+      stats:
+        type: unknown
+        required: false
+        default: "[]"
+    styles:
+      classes:
+        - name: legacy-stats
+  MetricTicker:
+    name: MetricTicker
+    file: src/components/MetricTicker.jsx
+    line: 8
+    kind: class
+    export: default
+    description: |-
+      Polls the metrics endpoint and animates value changes.
+      Class component exercising every lifecycle method.
+    props:
+      intervalMs:
+        type: unknown
+        required: false
+        default: "10000"
+      label:
+        type: unknown
+        required: false
+        default: "'Active users'"
+    state:
+      value:
+        source: class
+        initial: "0"
+        setter: this.setState
+      previous:
+        source: class
+        initial: "0"
+        setter: this.setState
+      history:
+        source: class
+        initial: "[]"
+        setter: this.setState
+      lastInterval:
+        source: class
+        initial: props.intervalMs
+        setter: this.setState
+    refs:
+      - listRef
+    lifecycle:
+      - via: constructor
+        phases:
+          - mount
+        calls:
+          - React.createRef
+        line: 11
+      - via: getDerivedStateFromProps
+        phases:
+          - mount
+          - update
+        line: 17
+      - via: componentDidMount
+        phases:
+          - mount
+        calls:
+          - this.load
+          - setInterval
+        line: 21
+      - via: shouldComponentUpdate
+        phases:
+          - update
+        line: 26
+      - via: getSnapshotBeforeUpdate
+        phases:
+          - update
+        line: 30
+      - via: componentDidUpdate
+        phases:
+          - update
+        calls:
+          - clearInterval
+          - setInterval
+          - this.load
+        line: 35
+      - via: componentWillUnmount
+        phases:
+          - unmount
+        calls:
+          - clearInterval
+        line: 43
+    functions:
+      - name: load
+        line: 47
+        kind: method
+        async: true
+        params: ""
+        calls:
+          - fetchMetrics
+          - this.setState
+        used: true
+    timers:
+      - type: interval
+        call: setInterval
+        in: componentDidMount
+        line: 23
+        cleared: true
+      - type: interval
+        call: setInterval
+        in: componentDidUpdate
+        line: 39
+        cleared: true
+    apiCalls:
+      - via: service
+        method: CALL
+        target: fetchMetrics()
+        module: ../lib/api
+        in: load
+        line: 48
+    styles:
+      classes:
+        - name: ticker
+        - name: up
+        - name: down
+    usedBy:
+      - Dashboard
+    pages:
+      - /
+  ProfileSettings:
+    name: ProfileSettings
+    file: src/pages/settings/ProfileSettings.jsx
+    line: 5
+    kind: function
+    export: default
+    description: Current admin's own profile.
+    functions:
+      - name: save
+        line: 6
+        kind: helper
+        async: false
+        params: values
+        calls:
+          - api.patch
+        used: true
+    apiCalls:
+      - via: api.patch
+        method: PATCH
+        target: /me
+        in: handler save
+        line: 6
+    renders:
+      - UserForm
+    passes:
+      UserForm:
+        - name: initial
+          value: "{ name: '', email: '', role: 'admin' }"
+          line: 7
+        - name: onSubmit
+          value: save
+          line: 7
+    pages:
+      - /settings
+      - /settings/profile
+  SecuritySettings:
+    name: SecuritySettings
+    file: src/pages/settings/SecuritySettings.jsx
+    line: 7
+    kind: function
+    export: default
+    description: Password change + 2FA toggle.
+    state:
+      password:
+        source: useState
+        initial: "''"
+        setter: setPassword
+      twoFactor:
+        source: useState
+        initial: "false"
+        setter: setTwoFactor
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+    variables:
+      - name: strong
+        kind: const
+        value: PASSWORD_RE.test(password)
+        line: 10
+        used: true
+    functions:
+      - name: handleSubmit
+        line: 12
+        kind: handler
+        async: true
+        params: e
+        calls:
+          - e.preventDefault
+          - api.post
+        used: true
+    apiCalls:
+      - via: api.post
+        method: POST
+        target: /me/password
+        in: handler handleSubmit
+        line: 14
+    validation:
+      - via: html
+        field: input
+        rules:
+          - required
+          - minLength
+        line: 19
+    styles:
+      classes:
+        - name: form-error
+          at: src/styles.css:6
+    pages:
+      - /settings/security
+  SelectionBar:
+    name: SelectionBar
+    file: src/components/SelectionBar.jsx
+    line: 6
+    kind: class
+    export: default
+    description: Bulk-action bar shown when users are selected. Legacy connect() wiring.
+    props:
+      selectedCount:
+        type: unknown
+        required: false
+      onClear:
+        type: unknown
+        required: false
+    store:
+      reads:
+        - via: connect
+          kind: redux
+          path: users.selectedIds
+          line: 21
+          storeId: redux:users
+      writes:
+        - via: connect
+          kind: redux
+          action: clearSelection
+          line: 21
+          storeId: redux:users
+    styles:
+      classes:
+        - name: selection-bar
+    usedBy:
+      - AppShell
+    pages:
+      - /
+      - /users
+      - /users/:userId
+      - /users/:userId/edit
+      - /settings
+      - /settings/profile
+      - /settings/billing
+      - /settings/security
+  SettingsLayout:
+    name: SettingsLayout
+    file: src/pages/settings/SettingsLayout.jsx
+    line: 4
+    kind: function
+    export: default
+    description: Settings tabs (nested routes).
+    styles:
+      classes:
+        - name: tabs
+          at: src/styles.css:7
+    externals:
+      - react-router-dom#NavLink
+      - react-router-dom#Outlet
+    pages:
+      - /settings
+      - /settings/profile
+      - /settings/billing
+      - /settings/security
+  UserDetail:
+    name: UserDetail
+    file: src/pages/users/UserDetail.jsx
+    line: 6
+    kind: function
+    export: default
+    description: Read-only user profile.
+    state:
+      user:
+        source: useState
+        initial: "null"
+        setter: setUser
+    hooks:
+      - name: useParams
+        category: router
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - userId
+        calls:
+          - fetchUser
+          - setUser
+        cleanup: []
+        line: 10
+    apiCalls:
+      - via: service
+        method: CALL
+        target: fetchUser()
+        module: ../../lib/api
+        in: useEffect L10
+        line: 12
+    externals:
+      - react-router-dom#Link
+    pages:
+      - /users/:userId
+  UserEdit:
+    name: UserEdit
+    file: src/pages/users/UserEdit.jsx
+    line: 7
+    kind: function
+    export: default
+    description: Edit page, lazy-loaded by the router.
+    state:
+      user:
+        source: useState
+        initial: "null"
+        setter: setUser
+    hooks:
+      - name: useParams
+        category: router
+      - name: useNavigate
+        category: router
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - userId
+        calls:
+          - fetchUser
+        cleanup:
+          - controller.abort
+        line: 12
+    functions:
+      - name: handleSave
+        line: 18
+        kind: handler
+        async: true
+        params: values
+        calls:
+          - updateUser
+          - navigate
+        used: true
+    apiCalls:
+      - via: service
+        method: CALL
+        target: fetchUser()
+        module: ../../lib/api
+        in: useEffect L12
+        line: 14
+      - via: service
+        method: CALL
+        target: updateUser()
+        module: ../../lib/api
+        in: handler handleSave
+        line: 19
+    renders:
+      - UserForm
+    passes:
+      UserForm:
+        - name: initial
+          value: user
+          line: 23
+        - name: onSubmit
+          value: handleSave
+          line: 23
+        - name: submitLabel
+          value: '"Update user"'
+          line: 23
+    pages:
+      - /users/:userId/edit
+  UserForm:
+    name: UserForm
+    file: src/pages/users/UserForm.jsx
+    line: 11
+    kind: function
+    export: default
+    description: Controlled user form validated with yup.
+    props:
+      submitLabel:
+        type: unknown
+        required: false
+        default: "'Save'"
+      initial:
+        type: unknown
+        required: false
+      onSubmit:
+        type: unknown
+        required: false
+    state:
+      values:
+        source: useState
+        initial: initial
+        setter: setValues
+      errors:
+        source: useState
+        initial: "{}"
+        setter: setErrors
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+    functions:
+      - name: handleChange
+        line: 15
+        kind: handler
+        async: false
+        params: e
+        calls:
+          - setValues
+        sets:
+          - values
+        used: true
+      - name: handleSubmit
+        line: 17
+        kind: handler
+        async: true
+        params: e
+        calls:
+          - e.preventDefault
+          - userSchema.validate
+          - setErrors
+          - onSubmit
+          - Object.fromEntries
+        sets:
+          - errors
+        used: true
+    validation:
+      - via: yup
+        schema: userSchema
+        rules:
+          - name
+          - email
+          - role
+        line: 20
+      - via: html
+        field: name
+        rules:
+          - required
+        line: 30
+      - via: html
+        field: email
+        rules:
+          - required
+          - type=email
+        line: 31
+    styles:
+      classes:
+        - name: form-row
+          at: src/styles.css:5
+        - name: form-error
+          at: src/styles.css:6
+    usedBy:
+      - ProfileSettings
+      - UserEdit
+    pages:
+      - /users/:userId/edit
+      - /settings
+      - /settings/profile
+  UsersPage:
+    name: UsersPage
+    file: src/pages/users/UsersPage.jsx
+    line: 7
+    kind: function
+    export: default
+    description: User list with search and multi-select.
+    hooks:
+      - name: useSelector
+        category: data
+      - name: useDispatch
+        category: data
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - dispatch
+          - query
+        calls:
+          - setTimeout
+          - dispatch
+          - loadUsers
+        cleanup:
+          - clearTimeout
+        line: 11
+    timers:
+      - type: timeout
+        call: setTimeout
+        in: useEffect L11
+        line: 12
+        cleared: true
+    store:
+      reads:
+        - via: useSelector
+          kind: redux
+          path: users
+          line: 8
+          storeId: redux:users
+      writes:
+        - via: dispatch
+          kind: redux
+          action: loadUsers
+          in: useEffect L11
+          line: 12
+          storeId: redux:users
+        - via: dispatch
+          kind: redux
+          action: setQuery
+          in: inline callback
+          line: 18
+          storeId: redux:users
+        - via: dispatch
+          kind: redux
+          action: toggleSelected
+          in: inline callback
+          line: 24
+          storeId: redux:users
+    styles:
+      classes:
+        - name: table
+          at: src/styles.css:4
+    externals:
+      - react-router-dom#Link
+    pages:
+      - /users
+pages:
+  /:
+    router: react-router
+    file: src/router.jsx
+    component: Dashboard
+    layouts:
+      - AppShell
+    components:
+      - AppShell
+      - Dashboard
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+      - MetricTicker
+  /settings:
+    router: react-router
+    file: src/router.jsx
+    component: ProfileSettings
+    layouts:
+      - AppShell
+      - SettingsLayout
+    components:
+      - AppShell
+      - SettingsLayout
+      - ProfileSettings
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+      - UserForm
+  /settings/billing:
+    router: react-router
+    file: src/router.jsx
+    component: BillingSettings
+    layouts:
+      - AppShell
+      - SettingsLayout
+    components:
+      - AppShell
+      - SettingsLayout
+      - BillingSettings
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+  /settings/profile:
+    router: react-router
+    file: src/router.jsx
+    component: ProfileSettings
+    layouts:
+      - AppShell
+      - SettingsLayout
+    components:
+      - AppShell
+      - SettingsLayout
+      - ProfileSettings
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+      - UserForm
+  /settings/security:
+    router: react-router
+    file: src/router.jsx
+    component: SecuritySettings
+    layouts:
+      - AppShell
+      - SettingsLayout
+    components:
+      - AppShell
+      - SettingsLayout
+      - SecuritySettings
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+  /users:
+    router: react-router
+    file: src/router.jsx
+    component: UsersPage
+    layouts:
+      - AppShell
+    components:
+      - AppShell
+      - UsersPage
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+  /users/:userId:
+    router: react-router
+    file: src/router.jsx
+    component: UserDetail
+    params:
+      - userId
+    layouts:
+      - AppShell
+    components:
+      - AppShell
+      - UserDetail
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+  /users/:userId/edit:
+    router: react-router
+    file: src/router.jsx
+    component: UserEdit
+    params:
+      - userId
+    layouts:
+      - AppShell
+    components:
+      - AppShell
+      - UserEdit
+      - ErrorScreen
+      - SelectionBar
+      - ErrorBoundary
+      - UserForm
+stores:
+  redux:users:
+    kind: redux-slice
+    name: users
+    file: src/store/usersSlice.js
+    line: 6
+    key: users
+    state:
+      - list
+      - selectedIds
+      - status
+      - query
+    actions:
+      - toggleSelected
+      - clearSelection
+      - setQuery
+    thunks:
+      - loadUsers
+    readers:
+      - SelectionBar
+      - UsersPage
+    writers:
+      - SelectionBar
+      - UsersPage
+styles:
+  src/styles.css:
+    module: false
+    classes: 8
+health:
+  issues:
+    high: 1
+    medium: 0
+    low: 0
+    info: 0
+  byType:
+    memory-leak: 1
+  unusedComponents:
+    - LegacyStats
+  unusedFiles:
+    - src/components/LegacyStats.jsx

@@ -5,16 +5,18 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { installAgents, runHook, TARGETS } from './agents.js';
 import { formatDetail, formatSummary } from './history.js';
+import { upgradeProject } from './config.js';
 import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
 import { buildSite, startServer } from './server.js';
 import { startWatcher } from './watch.js';
 
-const HELP = `react-catalogue (rcat): knowledge base for React / Next.js frontends
+const HELP = `frontdex (fdx): a living index of your frontend: components, pages, state, APIs, health
 
-Usage: rcat <command> [options]
+Usage: frontdex <command> [options]   (aliases: fdx, rcat)
 
 Setup
-  init [--auto-update]     Create catalogue.config.json
+  init [--auto-update]     Create frontdex.config.json
+  upgrade                  Move a react-catalogue project to frontdex file names (config, YAML, knowledge folder)
   agents [--targets a,b]   Wire coding agents (rules, MCP, hooks). Targets: ${TARGETS.join(', ')}
          [--no-hooks] [--no-mcp] [--remove]
 
@@ -23,7 +25,7 @@ Knowledge base
   watch                    Keep the knowledge base updated while you code (what autoUpdate runs)
   check                    Exit 1 if the catalogue is out of date (CI / pre-commit)
   history [id] [-n 20]     Git-like log of knowledge-base changes; pass an id for the full diff
-  validate [file]          Validate catalogue.yaml against the CatalogueSpec schema
+  validate [file]          Validate the catalogue YAML against the CatalogueSpec schema
 
 Explore
   serve | start [-p 4400]  Open the catalogue UI (auto-updates when autoUpdate is on or with -w)
@@ -37,7 +39,7 @@ Explore
   api [endpoint]           Every API call grouped by endpoint
 
 Agents
-  mcp                      Run the MCP server over stdio (needs the frontdex-mcp package; registered by "rcat agents")
+  mcp                      Run the MCP server over stdio (needs the frontdex-mcp package; registered by "frontdex agents")
   hook <post-edit|session-start> [--format claude|cursor]   Agent hook entry point
 
 Options
@@ -78,11 +80,22 @@ export async function main(argv) {
   const config = loadConfig(root, command === 'scan' || command === 'generate' ? { output: values.out } : {});
   const rel = (f) => path.relative(process.cwd(), f) || '.';
 
+  if (config.legacy && ['init', 'scan', 'generate', 'watch', 'serve', 'start', 'check'].includes(command) && !values.quiet) {
+    console.error('• This project uses react-catalogue file names. Run "frontdex upgrade" to move to frontdex.config.json, frontdex.yaml and .frontdex/.');
+  }
+
   switch (command) {
+    case 'upgrade': {
+      const moves = upgradeProject(root);
+      if (!moves.length) return void console.log('✔ already using frontdex file names');
+      moves.forEach(([from, to]) => console.log(`✔ ${from} → ${to}`));
+      console.log('  next: "frontdex agents" to refresh agent rules, MCP entries and hooks under the new name');
+      return;
+    }
     case 'init': {
       const { file, created } = initConfig(root, { autoUpdate: values['auto-update'] });
       console.log(created ? `✔ created ${rel(file)}` : `• ${rel(file)} already exists`);
-      if (created) console.log('  next: "rcat scan", then "rcat agents" to wire coding agents');
+      if (created) console.log('  next: "frontdex scan", then "frontdex agents" to wire coding agents');
       return;
     }
     case 'scan':
@@ -118,14 +131,14 @@ export async function main(argv) {
     case 'check': {
       const r = scan(config, { dryRun: true });
       if (!r.changed) return void console.log('✔ catalogue is up to date');
-      console.error(`✖ catalogue is out of date (${[...r.delta.added, ...r.delta.changed].length} changed, ${r.delta.removed.length} removed file(s)). Run: npx react-catalogue scan`);
+      console.error(`✖ catalogue is out of date (${[...r.delta.added, ...r.delta.changed].length} changed, ${r.delta.removed.length} removed file(s)). Run: npx frontdex scan`);
       process.exitCode = 1;
       return;
     }
     case 'history': {
       const history = createHistory(path.join(knowledgeDir(config), 'history'));
       const entries = history.log();
-      if (!entries.length) return void console.log('No history yet. Run "rcat scan".');
+      if (!entries.length) return void console.log('No history yet. Run "frontdex scan".');
       if (arg) {
         const e = entries.find((x) => x.id.startsWith(arg));
         if (!e) throw new Error(`No history entry "${arg}"`);
@@ -159,7 +172,7 @@ export async function main(argv) {
     }
     case 'build': {
       const { catalogue } = scan(config);
-      const out = path.resolve(root, values.out ?? 'catalogue-site');
+      const out = path.resolve(root, values.out ?? 'frontdex-site');
       buildSite(config, catalogue, out);
       console.log(`✔ static catalogue written to ${rel(out)}/`);
       return;
@@ -168,7 +181,7 @@ export async function main(argv) {
     case 'show':
     case 'impact':
     case 'dataflow': {
-      if (!arg) throw new Error(`Usage: rcat ${command} ${command === 'query' ? '"<filters>"' : '<Component>'}`);
+      if (!arg) throw new Error(`Usage: frontdex ${command} ${command === 'query' ? '"<filters>"' : '<Component>'}`);
       const { tools } = createTools(config);
       const tool = { query: 'catalogue_search', show: 'catalogue_component', impact: 'catalogue_impact', dataflow: 'catalogue_dataflow' }[command];
       console.log(tools[tool](command === 'query' ? { query: positionals.slice(1).join(' '), limit: Number(values.limit ?? 50) } : { name: arg }));
@@ -205,7 +218,7 @@ export async function main(argv) {
         }
       }).find(Boolean);
       if (!entry) {
-        console.error('The MCP server is a separate package. Install it next to react-catalogue:\n  npm install --save-dev frontdex-mcp');
+        console.error('The MCP server is a separate package. Install it next to frontdex:\n  npm install --save-dev frontdex-mcp');
         process.exitCode = 1;
         return;
       }
@@ -226,5 +239,5 @@ function printChanges(changes, max) {
     const sign = { added: '+', removed: '−', changed: '~' }[c.change];
     console.log(`  ${sign} ${c.kind === 'pages' ? 'page ' : ''}${c.key}${c.details ? `  ${c.details.map(formatDetail).join(' · ')}` : ''}`);
   }
-  if (changes.length > max) console.log(`  … ${changes.length - max} more (rcat history <id>)`);
+  if (changes.length > max) console.log(`  … ${changes.length - max} more (frontdex history <id>)`);
 }

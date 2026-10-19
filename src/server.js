@@ -28,7 +28,7 @@ export function buildSite(config, catalogue, outDir) {
 export function startServer(config, { port, watch, regenerate = true, log = console.log }) {
   const output = path.resolve(config.root, config.output);
   let catalogue = regenerate ? scan(config).catalogue : readCatalogue(output);
-  if (!catalogue) throw new Error(`No catalogue at ${output}. Run "rcat scan" first.`);
+  if (!catalogue) throw new Error(`No catalogue at ${output}. Run "frontdex scan" first.`);
   const clients = new Set();
   const broadcast = () => clients.forEach((res) => res.write('data: reload\n\n'));
 
@@ -81,7 +81,7 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       },
       onSpecEdit: () => {
         catalogue = readCatalogue(output) ?? catalogue;
-        log('↻ catalogue.yaml edited by hand');
+        log(`↻ ${config.output} edited by hand`);
         broadcast();
       },
     });

@@ -56,7 +56,7 @@ function ensureKnowledgeDir(dir) {
 /**
  * Incremental scan: re-parses only files whose content changed since the last scan, then rewrites the human catalogue,
  * the agent knowledge base and a history commit only if the result differs.
- * `full` ignores the cache; `dryRun` writes nothing (used by `rcat check`).
+ * `full` ignores the cache; `dryRun` writes nothing (used by `frontdex check`).
  *
  * `session` is a plain object a long-running caller (watch, serve, MCP) passes on every call. It keeps the parse cache,
  * file list and catalogue in memory, so a rescan skips re-reading them from disk; with `changed` (absolute paths from
@@ -144,7 +144,7 @@ function refreshAgentKnowledge(config, catalogue, changed, memo) {
   const agentDir = path.join(kb, 'agent');
   const stamp = path.join(kb, 'cache', 'agent-format');
   if (!changed && readText(stamp) === AGENT_FORMAT && fs.existsSync(path.join(agentDir, 'INDEX.md'))) return null;
-  const written = writeAgentKnowledge(agentDir, catalogue, memo);
+  const written = writeAgentKnowledge(agentDir, catalogue, memo, { kb: path.relative(config.root, kb).split(path.sep).join('/') });
   fs.mkdirSync(path.dirname(stamp), { recursive: true });
   fs.writeFileSync(stamp, AGENT_FORMAT);
   return written;

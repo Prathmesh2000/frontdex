@@ -1,7 +1,0 @@
-{
-  "title": "Northwind Shop",
-  "include": ["app", "src"],
-  "autoUpdate": true,
-  "history": { "enabled": true, "limit": 500 },
-  "agents": { "enabled": true }
-}
