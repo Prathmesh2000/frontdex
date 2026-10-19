@@ -7,7 +7,7 @@ info:
   routers:
     - next-app
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:55:58.896Z
+  generatedAt: 2026-10-19T13:59:53.463Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -979,6 +979,11 @@ components:
       - Button.test.tsx
     stories:
       - Button.stories.tsx
+    examples:
+      - story: Button.stories.tsx#Primary
+        args:
+          variant: '"primary"'
+          children: '"Save"'
     pages:
       - /account/orders/[orderId]
       - /account

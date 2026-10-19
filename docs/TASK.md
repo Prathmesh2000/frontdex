@@ -335,9 +335,9 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] Analyzers: duplicates (`find`, `dupes`, `catalogue_find_existing`), design tokens and drift (`tokens`).
 - [x] Analyzers: a11y (JSX, Vue, HTML), i18n, CODEOWNERS, tests/stories, adoption over history, live git activity.
 - [x] a11y for Svelte, Astro and Angular templates.
-- [ ] Analyzers: perf (import cost per component/page).
-- [ ] CSF / fixture / Storybook-manifest ingestion.
-- [ ] `fix` for the safe automatic cases.
+- [x] Analyzers: heavy imports in client code (fixed list with alternatives; not a bundler measurement).
+- [x] CSF stories ingested as usage examples (`examples` with args). Not done: Cosmos fixtures, Storybook manifest.
+- [x] `fix`: unused imports; exact CSS token replacements with `--tokens`; `--dry-run`.
 
 **Surfaces**
 - [x] CLI: `--json` on query commands, scan, check, history, diff; `doctor`; help text.

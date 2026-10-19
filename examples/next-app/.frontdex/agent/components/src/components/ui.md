@@ -126,6 +126,7 @@ Design-system button. Use instead of raw <button> everywhere.
 
 - Owners: @northwind/design-system
 - Tests: Button.test.tsx · Stories: Button.stories.tsx
+- Examples: Primary(variant="primary", children="Save")
 - Props: `variant?: 'primary' | 'secondary' | 'ghost' | 'danger'` = `'primary'`, `size?: 'sm' | 'md' | 'lg'` = `'md'`, `loading?: boolean` = `false`, `icon?: React.ReactNode`, `children?: unknown`, `disabled?: unknown`
 - Props from CartPage: variant="ghost", onClick=() => dispatch(clearCart())
 - Props from Header: variant="ghost", size="sm", onClick=toggleTheme, aria-label="Toggle theme", variant="ghost", size="sm", onClick=signOut, variant="secondary", size="sm", onClick=onToggleCart, icon=<CartBadge />

@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { installAgents, runHook, TARGETS } from './agents.js';
 import { buildReport, catalogueAtRef, formatMarkdown, formatText } from './ci.js';
 import { diagnose, formatDiagnosis } from './doctor.js';
+import { applyFixes, planFixes } from './fix.js';
 import { formatDetail, formatSummary } from './history.js';
 import { upgradeProject } from './config.js';
 import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
@@ -37,6 +38,8 @@ Explore
   show <Component>         Component card (props, state, effects, usage)
   impact <Component>       Everything that breaks if this component changes
   dataflow <Component>     Props in (per parent) → state/store/effects → API calls, dispatches, props out
+  fix [--tokens] [--dry-run]  Safe automatic fixes: remove unused imports; --tokens also replaces exact token
+                           matches in stylesheets with var(--token)
   health [type] [--severity high] [--strict]   Leaks, render loops, stale deps, dead code (--strict: exit 1 on high)
   state [store]            Redux slices / contexts / zustand stores with readers and writers
   api [endpoint]           Every API call grouped by endpoint
@@ -89,6 +92,8 @@ export async function main(argv) {
       markdown: { type: 'boolean' },
       scan: { type: 'boolean' },
       'fail-on': { type: 'string' },
+      'dry-run': { type: 'boolean' },
+      tokens: { type: 'boolean' },
       strict: { type: 'boolean' },
       quiet: { type: 'boolean', short: 'q' },
       help: { type: 'boolean', short: 'h' },
@@ -129,6 +134,15 @@ export async function main(argv) {
   }
 
   switch (command) {
+    case 'fix': {
+      const fixes = planFixes(config, scan(config, { dryRun: true }).catalogue, { tokens: values.tokens });
+      const done = values['dry-run'] ? fixes : applyFixes(fixes);
+      if (values.json) return void console.log(JSON.stringify(done.map(({ file, kind, line, from, to }) => ({ file, kind, line, from, to })), null, 2));
+      if (!done.length) return void console.log('✔ nothing to fix');
+      for (const f of done) console.log(`${values['dry-run'] ? '•' : '✔'} ${f.file}:${f.line}  ${f.kind}: ${f.from} → ${f.to}`);
+      if (!values['dry-run']) scan(config, { message: 'frontdex fix' });
+      return;
+    }
     case 'doctor': {
       const checks = diagnose(config);
       console.log(values.json ? JSON.stringify(checks, null, 2) : formatDiagnosis(checks));

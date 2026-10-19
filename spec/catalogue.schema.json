@@ -384,6 +384,28 @@
           },
           "description": "Story files (Storybook/Ladle CSF) for the component, relative to its folder."
         },
+        "examples": {
+          "type": "array",
+          "description": "Stories (CSF) as usage examples: \"<file>#<Story>\" and the args (props) each renders with.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "story"
+            ],
+            "properties": {
+              "story": {
+                "type": "string"
+              },
+              "args": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
         "props": {
           "type": "object",
           "additionalProperties": {

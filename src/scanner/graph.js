@@ -5,6 +5,8 @@ import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
 import { I18N_LIBS } from './analyzers/i18n.js';
 import { cachedLister, codeownersMatcher, testsAndStories } from './analyzers/ownership.js';
+import { heavyImports } from './analyzers/perf.js';
+import { readStories } from './analyzers/stories.js';
 import { collectEndpoints } from './endpoints.js';
 import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
@@ -361,7 +363,12 @@ export function scanProject(config, { cache, known } = {}) {
     if (codeowners) comp.codeowners = codeowners;
     const { tests, stories } = testsAndStories(mod.file, listDir);
     if (tests.length) comp.tests = tests;
-    if (stories.length) comp.stories = stories;
+    if (stories.length) {
+      comp.stories = stories;
+      // CSF stories as usage examples: story name plus the props (args) it renders with.
+      const examples = stories.flatMap((s) => readStories(path.join(path.dirname(mod.file), s)).map((st) => ({ story: `${s}#${st.name}`, ...(st.args && Object.keys(st.args).length && { args: st.args }) })));
+      if (examples.length) comp.examples = examples;
+    }
   }
 
   // Literal copy in markup is a missed translation, but only in projects that use an i18n library.
@@ -435,6 +442,8 @@ export function scanProject(config, { cache, known } = {}) {
       }
     }
   }
+
+  heavyImports(entries, components);
 
   // Custom hooks catalogued in their own right: where they live, what they read and call, which components use them.
   const hookNames = new Map();

@@ -49,6 +49,7 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 |---|---|
 | `frontdex init [--auto-update]` | Creates `frontdex.config.json`. |
 | `frontdex doctor` | What was detected (config, frameworks, workspaces, package manager, files, compilers, routers, agents, git) and how to fix what is missing. |
+| `frontdex fix [--tokens] [--dry-run]` | Safe automatic fixes: removes unused imports; with `--tokens`, replaces stylesheet literals that exactly equal a CSS token by `var(--token)`. Near matches are left for review. |
 | `frontdex scan [--full] [-m msg]` | Incremental rescan: unchanged files (same mtime/size or content hash) reuse their cached parse. `--full` ignores the cache. Records a history snapshot when anything changed. |
 | `frontdex watch` | Keeps everything updated while you code. This is what `autoUpdate` runs. |
 | `frontdex check` | Exits 1 if the catalogue is stale. Use in CI or a pre-commit hook. |
@@ -265,9 +266,9 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | Global state | Redux Toolkit (`createSlice`, `configureStore`, thunks, `useSelector`/`useAppSelector`, `dispatch`, `connect`), React context (incl. through custom hooks), zustand |
 | Data & validation | `fetch`, axios-style clients, SWR, React Query, service modules; zod, yup, react-hook-form, HTML constraints, custom validators |
 | Styles | `className` strings, template literals, `clsx`/`cn`, CSS modules, global stylesheets (class → `file:line`), Tailwind utilities resolved to theme tokens (`md:bg-brand-500` → `colors.brand.500`), styled-components / Emotion (`styled.button`, `styled(Base)`, object styles; kind `styled`) |
-| Diagnostics | memory leaks, render loops, side effects in render, unsafe async updates, missing deps, unused variables/functions/props/state/imports/exports/files/components, deprecated usage, hooks or class components rendered as Server Components |
+| Diagnostics | memory leaks, render loops, side effects in render, unsafe async updates, missing deps, unused variables/functions/props/state/imports/exports/files/components, deprecated usage, hooks or class components rendered as Server Components, heavy imports in client code (moment, lodash CJS, chart.js/auto, aws-sdk v2, …, with lighter alternatives) |
 | Accessibility | Static checks in JSX, Vue, Svelte, Astro and Angular templates and HTML pages: images without `alt`, buttons/links without text or `aria-label`, form fields without a label (wrapping `<label>`, `id`, `aria-label`), click handlers on non-interactive elements without role/keyboard support, positive `tabIndex`, `<html>` without `lang` |
-| Ownership and tests | `CODEOWNERS` owners per component; test (`.test`/`.spec`, `__tests__/`) and story files next to it. Git activity is read live by `frontdex owners` and never stored |
+| Ownership and tests | `CODEOWNERS` owners per component; test (`.test`/`.spec`, `__tests__/`) and story files next to it; stories (CSF, incl. CSF2 `X.args`) read as usage examples with their args. Git activity is read live by `frontdex owners` and never stored |
 | i18n | Hard-coded text and copy attributes (`placeholder`, `title`, `alt`, `aria-label`) in JSX, reported only when the project uses an i18n library (react-i18next, next-intl, react-intl, Lingui, vue-i18n, …) |
 | Design system | Near-duplicate components (scored on base name, name words, props, children and classes); design tokens from CSS custom properties, Tailwind v4 `@theme`, Tailwind JS config and JS theme objects (`const theme = {…}`, `createTheme`), with usage counts; hard-coded colors (exact or within a small RGB distance) and sizes that match a token, in stylesheets, styled-components/Emotion CSS and Tailwind arbitrary values (`bg-[#3b82f6]`) |
 

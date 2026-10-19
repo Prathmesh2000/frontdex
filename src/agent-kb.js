@@ -27,6 +27,7 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
   lines.push('');
   if (c.codeowners?.length) lines.push(`- Owners: ${c.codeowners.join(', ')}`);
   if (c.tests?.length || c.stories?.length) lines.push(`- Tests: ${c.tests?.join(', ') ?? 'none'}${c.stories?.length ? ` · Stories: ${c.stories.join(', ')}` : ''}`);
+  if (c.examples?.length) lines.push(`- Examples: ${c.examples.slice(0, 5).map((e) => `${e.story.split('#')[1]}(${Object.entries(e.args ?? {}).map(([k, v]) => `${k}=${v}`).join(', ')})`).join('; ')}`);
   const props = Object.entries(c.props ?? {});
   if (props.length) lines.push(`- Props: ${props.map(([n, p]) => `${code(`${n}${p.required ? '' : '?'}: ${p.type}`)}${p.default != null ? ` = ${code(p.default)}` : ''}`).join(', ')}`);
   const state = Object.entries(c.state ?? {});
