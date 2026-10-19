@@ -31,7 +31,7 @@ function parseStylesheet(file) {
  * `styleFiles` comes from the same directory walk as the sources. `styleCache` maps a stylesheet's relative path to
  * its last parse ({ mtimeMs, size, classes }); unchanged sheets are not re-read. Returns the next cache in `styleCache`.
  */
-export function buildProjectInsights({ modules, entries, components, pages, rel, resolveImport, styleFiles, styleCache = {} }) {
+export function buildProjectInsights({ modules, entries, components, pages, rel, resolveImport, styleFiles, styleCache = {}, touched }) {
   const idOfLocal = new Map(entries.map(({ mod, c }) => [`${mod.file}#${c.name}`, c.id]));
 
   // ---------- styles ----------
@@ -40,9 +40,10 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
   let stylesParsed = 0;
   for (const file of styleFiles) {
     const key = rel(file);
-    const stat = fs.statSync(file);
     const prev = styleCache[key];
-    const entry = prev && prev.mtimeMs === stat.mtimeMs && prev.size === stat.size ? prev : (stylesParsed++, { mtimeMs: stat.mtimeMs, size: stat.size, classes: parseStylesheet(file) });
+    // `touched` (watcher fast path): sheets the watcher did not report are trusted without a stat.
+    const stat = touched && prev && !touched.has(file) ? null : fs.statSync(file);
+    const entry = prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size)) ? prev : (stylesParsed++, { mtimeMs: stat.mtimeMs, size: stat.size, classes: parseStylesheet(file) });
     nextStyleCache[key] = entry;
     sheets[key] = { module: /\.module\.\w+$/.test(file), classes: entry.classes, importedBy: [] };
   }

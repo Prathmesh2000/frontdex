@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { installAgents } from '../src/agents.js';
-import { createHistory, createTools, knowledgeDir, loadConfig, scan } from '../src/index.js';
+import { createHistory, createTools, flushSession, knowledgeDir, loadConfig, readCatalogue, scan } from '../src/index.js';
 
 function tempProject() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rcat-'));
@@ -89,4 +89,42 @@ test('createTools answers the queries the CLI and frontdex-mcp rely on', () => {
   assert.match(tools.catalogue_health({ severity: 'high' }), /render-loop · AdminSidebar/);
   assert.match(tools.catalogue_dataflow({ name: 'CartDrawer' }), /reads redux:ui `ui.drawerOpen`/);
   assert.match(tools.catalogue_state({ store: 'redux:cart' }), /written by: .*CartBadge/);
+});
+
+test('watch session: reported edits, additions and deletions match a cold scan; YAML waits for flush', () => {
+  const dir = tempProject();
+  const config = loadConfig(dir);
+  const session = {};
+  scan(config, { session });
+  const at = (p) => path.join(dir, p);
+  const yamlBefore = fs.readFileSync(at(config.output), 'utf8');
+
+  fs.appendFileSync(at('src/components/ui/Badge.tsx'), '\nexport function Pill() { return <span className="pill" />; }\n');
+  fs.writeFileSync(at('src/components/ui/Chip.tsx'), 'export function Chip({ label }: { label: string }) { return <b>{label}</b>; }\n');
+  fs.rmSync(at('src/components/ui/Spinner.tsx'));
+  const warm = scan(config, { session, changed: ['src/components/ui/Badge.tsx', 'src/components/ui/Chip.tsx', 'src/components/ui/Spinner.tsx'].map(at) });
+
+  assert.equal(warm.changed, true);
+  assert.ok(warm.catalogue.components.Pill && warm.catalogue.components.Chip);
+  assert.equal(warm.catalogue.components.Spinner, undefined);
+  assert.equal(fs.readFileSync(at(config.output), 'utf8'), yamlBefore, 'YAML is deferred until flushSession');
+
+  const strip = (c) => ({ ...c, info: { ...c.info, generatedAt: undefined } });
+  const cold = scan({ ...config }, { full: true, dryRun: true }).catalogue;
+  assert.deepEqual(strip(warm.catalogue), strip(cold));
+
+  assert.equal(flushSession(config, session), true);
+  assert.deepEqual(strip(readCatalogue(at(config.output))), strip(cold));
+});
+
+test('watch session: a deleted folder falls back to a full walk', () => {
+  const dir = tempProject();
+  const config = loadConfig(dir);
+  const session = {};
+  scan(config, { session });
+  const folder = path.join(dir, 'src/features/toast');
+  fs.rmSync(folder, { recursive: true });
+  const warm = scan(config, { session, changed: [folder] });
+  assert.equal(warm.catalogue.components.ToastViewport, undefined);
+  assert.ok(warm.delta.removed.includes('src/features/toast/ToastViewport.tsx'));
 });

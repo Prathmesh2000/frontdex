@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
  * Scan benchmark on a synthetic project: the Next example copied N times under packages/app-<i>/.
- * Measures cold scan, no-change rescan and one-file rescan, plus how much of the cold scan is spent in the parser.
+ * Measures cold scan, no-change rescan and one-file rescan (one-shot CLI, and watch mode with an in-memory session),
+ * plus how much of the cold scan is spent in the parser.
  *
  *   node bench/scan.js            # 20 copies (~2k files)
  *   node bench/scan.js 250        # ~20k files, the 1.0 target size
@@ -35,6 +36,12 @@ const edited = files.find((f) => f.endsWith('ProductCard.tsx'));
 fs.appendFileSync(edited, '\nexport const benchMarker = 1;\n');
 const [one] = time(() => scan(config));
 
+// Watch mode: what `rcat watch` / `serve -w` / the dev-server plugins do after a save.
+const session = {};
+scan(config, { session });
+fs.appendFileSync(edited, '\nexport const benchMarker2 = 2;\n');
+const [watchOne] = time(() => scan(config, { session, changed: [edited] }));
+
 // Parser share: Babel parse alone over the same files, to show what a faster parser could save at most.
 const { parse } = createRequire(import.meta.url)('@babel/parser');
 const [parseOnly] = time(() => {
@@ -47,5 +54,6 @@ console.log(`cold scan        ${(cold / 1000).toFixed(1)} s  (${(cold / files.le
 console.log(`  parse only     ${(parseOnly / 1000).toFixed(1)} s  (${Math.round((100 * parseOnly) / cold)}% of cold scan)`);
 console.log(`no-change scan   ${Math.round(noop)} ms`);
 console.log(`one-file rescan  ${Math.round(one)} ms`);
+console.log(`  watch mode     ${Math.round(watchOne)} ms`);
 console.log(`peak-ish RSS     ${rss} MB`);
 fs.rmSync(root, { recursive: true, force: true });

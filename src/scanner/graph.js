@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { listProjectFiles } from './files.js';
+import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
 import { parseFile } from './parse-file.js';
 import { buildProjectInsights } from './project.js';
@@ -23,8 +23,10 @@ const deserialize = (data, file) => ({ ...structuredClone(data), file, ...Object
 /**
  * Parses every source file, reusing cached parse results for files whose mtime/size or content hash is unchanged.
  * Linking (imports, renders, pages) always runs over the full module set because it is cheap and cross-file.
+ * `known = { files, changed }` is the watcher fast path: `files` is the previous result's file list and `changed` the
+ * absolute paths reported since, so unchanged files skip the directory walk and the stat.
  */
-export function scanProject(config, { cache } = {}) {
+export function scanProject(config, { cache, known } = {}) {
   const root = config.root;
   const rel = (f) => path.relative(root, f).split(path.sep).join('/');
   const resolveImport = createResolver(root);
@@ -34,13 +36,15 @@ export function scanProject(config, { cache } = {}) {
   const nextFiles = {};
   const delta = { added: [], changed: [], removed: [], reused: 0, parsed: 0 };
 
-  const projectFiles = listProjectFiles(config);
+  // With `known` (a watcher session), only the paths it reports are re-listed and re-stat'ed; everything else is trusted from the cache.
+  const projectFiles = known ? updateProjectFiles(config, known.files, known.changed) : listProjectFiles(config);
+  const touched = known && new Set(known.changed);
   for (const file of projectFiles.sources) {
     const key = rel(file);
-    const stat = fs.statSync(file);
     const prev = prevFiles[key];
     let entry;
-    if (prev && prev.mtimeMs === stat.mtimeMs && prev.size === stat.size) entry = prev;
+    const stat = touched && prev && !touched.has(file) ? null : fs.statSync(file);
+    if (prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size))) entry = prev;
     else {
       const code = fs.readFileSync(file, 'utf8');
       const hash = createHash('sha1').update(code).digest('hex');
@@ -341,6 +345,7 @@ export function scanProject(config, { cache } = {}) {
     resolveImport,
     styleFiles: projectFiles.styles,
     styleCache: cache?.version === CACHE_VERSION ? cache.styles : undefined,
+    touched,
   });
   for (const comp of Object.values(components)) if (comp.styles === undefined) delete comp.styles;
 
@@ -364,6 +369,7 @@ export function scanProject(config, { cache } = {}) {
   return {
     catalogue,
     warnings,
+    files: projectFiles,
     stats: { files: modules.size, components: entries.length, pages: Object.keys(pages).length },
     delta,
     cache: { version: CACHE_VERSION, files: nextFiles, styles: styleCache },

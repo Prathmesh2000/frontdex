@@ -130,8 +130,11 @@ function healthLines(cat, idx) {
   return out;
 }
 
-/** Writes the agent knowledge base. Only files whose content changed are rewritten, and stale folder cards are removed. */
-export function writeAgentKnowledge(dir, cat) {
+/**
+ * Writes the agent knowledge base. Only files whose content changed are rewritten, and stale folder cards are removed.
+ * `written` (optional Map, kept by a watch session) remembers what was last written, so unchanged cards are not re-read.
+ */
+export function writeAgentKnowledge(dir, cat, written = null) {
   const idx = createIndex(cat);
   const files = new Map();
   for (const m of idx.comps) (files.get(m.dir) ?? files.set(m.dir, []).get(m.dir)).push(m);
@@ -155,13 +158,17 @@ export function writeAgentKnowledge(dir, cat) {
     ) + '\n',
   );
 
-  let written = 0;
+  let count = 0;
   for (const [rel, content] of outputs) {
     const file = path.join(dir, rel);
-    if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === content) continue;
+    if (written?.get(rel) === content || (!written?.has(rel) && fs.existsSync(file) && fs.readFileSync(file, 'utf8') === content)) {
+      written?.set(rel, content);
+      continue;
+    }
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, content);
-    written++;
+    written?.set(rel, content);
+    count++;
   }
   const keep = new Set([...outputs.keys()].map((rel) => path.join(dir, rel)));
   const componentsDir = path.join(dir, 'components');
@@ -169,5 +176,6 @@ export function writeAgentKnowledge(dir, cat) {
     const abs = path.join(componentsDir, file);
     if (abs.endsWith('.md') && !keep.has(abs)) fs.rmSync(abs);
   }
-  return { written, total: outputs.size };
+  if (written) for (const rel of written.keys()) if (!outputs.has(rel)) written.delete(rel);
+  return { written: count, total: outputs.size };
 }

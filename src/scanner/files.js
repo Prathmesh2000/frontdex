@@ -59,3 +59,27 @@ export function listProjectFiles(config) {
   }
   return { sources: [...sources].sort(), styles: [...styles].sort() };
 }
+
+/**
+ * Applies watcher-reported paths to a previous listProjectFiles() result without walking the tree.
+ * Falls back to a full walk when a reported path is a directory, or is gone and was not a known file (a deleted or
+ * renamed folder), because only a walk can tell which files it held.
+ */
+export function updateProjectFiles(config, previous, changed) {
+  const excludes = config.exclude.map(globToRegExp);
+  const sources = new Set(previous.sources);
+  const styles = new Set(previous.styles);
+  for (const abs of changed) {
+    const rel = path.relative(config.root, abs).split(path.sep).join('/');
+    const ext = path.extname(abs);
+    const list = SOURCE_EXT.includes(ext) ? sources : STYLE_EXT.includes(ext) ? styles : null;
+    const stat = fs.statSync(abs, { throwIfNoEntry: false });
+    if (stat?.isDirectory() || (!stat && !list)) return listProjectFiles(config);
+    if (!list) continue;
+    if (stat?.isFile() && !excludes.some((re) => re.test(rel)) && config.include.some((inc) => isInside(path.resolve(config.root, inc), abs))) list.add(abs);
+    else list.delete(abs);
+  }
+  return { sources: [...sources].sort(), styles: [...styles].sort() };
+}
+
+const isInside = (dir, file) => file === dir || file.startsWith(dir + path.sep);
