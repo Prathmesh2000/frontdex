@@ -2,6 +2,35 @@
 
 One task, delivered in one go. Ordering inside it is dependency order, not release phases: nothing ships until every acceptance criterion at the end passes.
 
+## Baseline findings (2026-10-19)
+
+Measured on this machine (Node 24.21, Windows) with `bench/scan.js` (the Next example copied 20× = 1,720 files) and a CPU profile of the same run.
+
+| Measure | Result | 1.0 target |
+|---|---|---|
+| Cold scan | 14.2 s (8.2 ms/file) | < 15 s at 20k files |
+| Babel parse share of the cold scan | **7%** | – |
+| No-change rescan | 1.4 s | – |
+| One-file rescan | 2.2 s | < 300 ms |
+| RSS | 439 MB | < 1 GB at 20k |
+
+Parser comparison on the 124 source files in this repo (`oxc-parser` 0.154.0, warm, 20 runs):
+
+| | ms/file |
+|---|---|
+| Babel parse | 0.56 |
+| Babel parse + scope crawl | 2.78 |
+| oxc parse | 0.11 (5× faster than Babel) |
+| oxc parse + `eslint-scope` | 1.62, and `eslint-scope` failed on every TSX/JSX file |
+
+What this changes:
+
+- **The oxc swap does not pay for itself.** Parsing is 7% of a scan, so even an infinitely fast parser saves at most 7%. oxc has no JS-side scope analysis, and the scanner depends on Babel scopes (`binding.referenced`, `NodePath`) throughout `insights.js` and `component.js`, so the port would be a rewrite of ~1,900 lines for a single-digit gain. **Babel stays.** Revisit only if traversal itself is replaced.
+- **The real costs are I/O and whole-project recomputation:** two full directory walks per scan (sources, then stylesheets) with a `stat` per entry, stylesheets re-read every scan, the full parse cache and catalogue mirror re-read and deserialised every scan, and linking, insights, YAML and agent cards recomputed for every file on a one-file change.
+- `node:sqlite` with FTS5 works here; unflagged since Node 22.13 / 23.4 ([Node docs](https://nodejs.org/api/sqlite.html)). Still marked experimental (release candidate in 25.x).
+- `oxc-parser` ships per-platform binaries through `optionalDependencies` (confirmed: `@oxc-parser/binding-win32-x64-msvc` installed, no install script). The pattern for C2 is sound if a native dependency is ever added.
+- The committed agent cards of both examples were stale (card format changed, catalogue did not). Fixed in `001ca89`; `test/golden.test.js` now guards it.
+
 ## Goal
 
 Turn `react-catalogue` into **Frontdex** (`frontdex`): a devDependency installed inside the user's app that reads the source of any mainstream frontend (React family, Vue, Svelte, Astro, Angular, plain HTML), keeps a living, never-stale knowledge base of components, pages, state, APIs, styles, tokens and health, and serves it to developers (CLI, UI, CI) and to coding agents (rules, hooks, and a separately-packaged MCP server).
@@ -277,9 +306,9 @@ All tools read through the public API (`openIndex`), never from internal files.
 Dependency order. Tick every box; nothing is released until all are ticked.
 
 **Baseline**
-- [ ] `npm install`, `npm test` green on today's code.
-- [ ] Record golden outputs: `catalogue.json`, agent cards and MCP responses for both examples.
-- [ ] Verify at start: `oxc-parser` API stability and platform coverage, `node:sqlite` unflagged Node version, current Next/Turbopack plugin surface. Record findings at the top of this file.
+- [x] `npm install`, `npm test` green on today's code.
+- [x] Record golden outputs: `catalogue.json`, agent cards and MCP responses for both examples. Done as `test/golden.test.js` against the committed example output; MCP responses are asserted in frontdex-mcp.
+- [x] Verify at start: `oxc-parser` API stability and platform coverage, `node:sqlite` unflagged Node version, current Next/Turbopack plugin surface. Record findings at the top of this file.
 - [ ] **Confirm with the user**, then reserve the names before any other public step: publish `0.0.0` placeholders of `frontdex` and `frontdex-mcp` to npm, rename the GitHub repo `frontend-catalog` → `frontdex`, update the local `origin` remote. If either npm name has been taken since 2026-10-19, stop and ask.
 
 **Foundation**
