@@ -342,7 +342,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 **Surfaces**
 - [x] CLI: `--json` on query commands, scan, check, history, diff; `doctor`; help text.
 - [x] UI extended (option A): Design, Hooks and Changes views, server endpoints in the API map, component meta and story examples; paged HTTP API (`/api/components`, `/api/component`, `/api/pages`, `/api/diff`).
-- [x] New UI (option B: React + Vite + TanStack Router/Virtual, pre-built on `prepack`), served at `/v2/`, loading data page by page from the HTTP API. All classic views ported (site map, page, state, changes, graph via bounded `/api/graph`, history, live reload). Classic UI stays at `/` until v2 also has the folder tree, command palette and source viewer.
+- [x] New UI (option B: React + Vite + TanStack Router/Virtual, pre-built on `prepack`), the default UI at `/` (also `/v2/`); classic UI moved to `/classic/`. All classic views ported plus folders, command palette (Ctrl+K) and source panel. `/` falls back to classic in a checkout without `npm run build:ui`.
 - [ ] Preview through the user's dev server (Vite virtual route, Next generated dev-only route), props playground, `screenshot`.
 - [ ] Dev-only overlay.
 - [ ] Integrations: Next (no webpack plugin), Vite, webpack, Rspack.

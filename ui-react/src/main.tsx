@@ -1,15 +1,22 @@
 import { createHashHistory, createRootRoute, createRoute, createRouter, Link, Outlet, RouterProvider } from '@tanstack/react-router';
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 // Same look as the classic UI: the stylesheet is shared, not duplicated.
 import '../../ui/styles.css';
+import { api } from './api';
 import { GraphView } from './graph';
-import { Changes, ComponentView, Components, Design, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
+import { SourceContext, SourcePanel, useApi } from './lib';
+import { Palette } from './palette';
+import { Changes, ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
+
+// The server serves this UI at / and the previous one at /classic/; resolve from the page so /v2/ keeps working too.
+const CLASSIC = new URL('/classic/', location.href).href;
 
 const NAV: [string, string][] = [
   ['/', 'Overview'],
   ['/pages', 'Site map'],
   ['/components', 'Components'],
+  ['/folders', 'Folders'],
   ['/state', 'State'],
   ['/health', 'Health'],
   ['/design', 'Design'],
@@ -24,17 +31,20 @@ const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
 function Shell() {
   // `frontdex serve --watch` pushes "reload" after each rescan; remounting the view refetches its data in place.
   const [version, setVersion] = useState(0);
+  const [source, setSource] = useState<{ file: string; line?: number }>();
+  const { data: info } = useApi(api.info, [version]);
   useEffect(() => {
     const events = new EventSource('../api/events');
     events.onmessage = () => setVersion((v) => v + 1);
     return () => events.close();
   }, []);
+  const openSource = useCallback((file: string, line?: number) => setSource({ file, line }), []);
   return (
-    <>
+    <SourceContext.Provider value={openSource}>
       <header className="top">
-        <a href="../" className="brand" title="Classic UI">
+        <Link to="/" className="brand">
           <span id="title">frontdex</span>
-        </a>
+        </Link>
         <nav className="top-nav">
           {NAV.map(([to, label]) => (
             <Link key={to} to={to} activeOptions={{ exact: to === '/', includeSearch: false }} activeProps={{ className: 'active' }}>
@@ -42,11 +52,21 @@ function Shell() {
             </Link>
           ))}
         </nav>
+        {/* The palette listens for Ctrl+K itself; the button just sends it that shortcut. */}
+        <button className="search-trigger" style={{ marginLeft: 'auto' }} onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}>
+          <span className="st-text">Search…</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+        <a className="btn btn-sm" href={CLASSIC} title="The previous UI">
+          Classic
+        </a>
       </header>
       <main id="main" key={version} style={{ padding: '24px 32px' }}>
         <Outlet />
       </main>
-    </>
+      {source && <SourcePanel {...source} root={info?.root} onClose={() => setSource(undefined)} />}
+      <Palette />
+    </SourceContext.Provider>
   );
 }
 
@@ -87,7 +107,14 @@ const graphRoute = createRoute({
   },
 });
 
+const foldersRoute = createRoute({
+  ...route('/folders'),
+  validateSearch: (s: Record<string, unknown>) => ({ path: str(s.path) ?? '' }),
+  component: () => <Folders path={foldersRoute.useSearch().path} />,
+});
+
 const routeTree = root.addChildren([
+  foldersRoute,
   createRoute({ ...route('/'), component: Overview }),
   createRoute({ ...route('/pages'), component: Pages }),
   componentsRoute,

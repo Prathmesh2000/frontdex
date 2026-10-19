@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
-import { type DependencyList, type ReactNode, useEffect, useState } from 'react';
-import type { Issue } from './api';
+import { createContext, type DependencyList, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import { api, type Issue } from './api';
 
 /** Runs an API call when `deps` change; returns { data, error, loading }. Stale responses are dropped. */
 export function useApi<T>(fn: () => Promise<T>, deps: DependencyList) {
@@ -59,7 +59,72 @@ export const CompLink = ({ id }: { id: string }) => (
   </Link>
 );
 
-export const FileRef = ({ at }: { at?: string }) => (at ? <code className="small">{at}</code> : null);
+// The source panel lives in the shell; any file reference can open it.
+export const SourceContext = createContext<(file: string, line?: number) => void>(() => {});
+
+/** `src/x.tsx:12` as a link that opens the file in the source panel at that line. */
+export function FileRef({ at }: { at?: string }) {
+  const open = useContext(SourceContext);
+  if (!at) return null;
+  const [, file, line] = at.match(/^(.*?)(?::(\d+))?$/)!;
+  return (
+    <a
+      href="#"
+      className="small mono"
+      title="Show source"
+      onClick={(e) => {
+        e.preventDefault();
+        open(file, line ? Number(line) : undefined);
+      }}
+    >
+      {at}
+    </a>
+  );
+}
+
+export function SourcePanel({ file, line, root, onClose }: { file: string; line?: number; root?: string; onClose: () => void }) {
+  const { data, error } = useApi(() => api.source(file), [file]);
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const hl = body.current?.querySelector<HTMLElement>('.hl');
+    if (hl && body.current) body.current.scrollTop = hl.offsetTop - 120;
+  }, [data, line]);
+  return (
+    <aside className="source-panel">
+      <div className="sp-head">
+        <span className="mono">
+          {file}
+          {line ? `:${line}` : ''}
+        </span>
+        <span className="sp-actions">
+          {root && (
+            <a className="btn btn-sm" href={`vscode://file/${root.replaceAll('\\', '/')}/${file}${line ? `:${line}` : ''}`}>
+              VS Code
+            </a>
+          )}
+          <button className="btn btn-sm" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </span>
+      </div>
+      <div className="sp-body" ref={body}>
+        {data == null ? (
+          <p className="none" style={{ padding: 16 }}>
+            {error ? `Source is available while running frontdex serve (${error}).` : 'Loading…'}
+          </p>
+        ) : (
+          <pre className="source">
+            {data.split('\n').map((l, i) => (
+              <span key={i} className={`ln${i + 1 === line ? ' hl' : ''}`} data-n={i + 1}>
+                {l || ' '}
+              </span>
+            ))}
+          </pre>
+        )}
+      </div>
+    </aside>
+  );
+}
 
 export function Issues({ items }: { items: Issue[] }) {
   if (!items.length) return <div className="all-good">No issues found.</div>;

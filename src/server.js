@@ -77,6 +77,19 @@ export function subgraph(catalogue, { focus, depth = 2, dir, max = 400, force = 
   };
 }
 
+/** A file of the React UI (ui-react, pre-built at publish time); `pathname` is relative to where the UI is mounted. */
+function serveV2(pathname, res) {
+  // resolve() drops the trailing separator a directory URL carries, so the containment check below holds.
+  const dist = path.resolve(fileURLToPath(V2_DIR));
+  const rel = decodeURIComponent(pathname).replace(/^\/+/, '') || 'index.html';
+  const file = path.resolve(dist, rel);
+  if (!file.startsWith(dist + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return res.writeHead(404).end('Not found (build it with: npm run build:ui)');
+  res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream', 'cache-control': rel === 'index.html' ? 'no-store' : 'max-age=31536000, immutable' });
+  fs.createReadStream(file).pipe(res);
+}
+
+const componentRow = (m) => ({ id: m.id, name: m.name, kind: m.c.kind, file: m.c.file, line: m.c.line, usedBy: m.usedBy, pages: m.pages, issues: m.c.issues?.length ?? 0 });
+
 const historyLog = (config) => (config.history.enabled ? createHistory(path.join(knowledgeDir(config), 'history')).log() : null);
 
 export function buildSite(config, catalogue, outDir) {
@@ -95,8 +108,16 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
 
   const handler = (req, res) => {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/classic') return res.writeHead(301, { location: '/classic/' }).end();
+    // The classic UI lives under /classic/: drop the prefix so its relative URLs (app.js, data.js, api/…) reach the
+    // same handlers as before.
+    const classic = url.pathname.startsWith('/classic/');
+    if (classic) url.pathname = url.pathname.slice('/classic'.length);
     // The API reads source files and runs git: answer only requests addressed to this machine (blocks DNS rebinding).
     if (url.pathname.startsWith('/api/') && !LOCAL_HOST.test(req.headers.host ?? '')) return res.writeHead(403).end('Forbidden');
+    // The React UI is the default at / once built (and stays reachable at /v2/); a checkout without a build gets the classic UI.
+    if (!classic && (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/assets/')) && fs.existsSync(new URL('index.html', V2_DIR))) return serveV2(url.pathname, res);
+    if (url.pathname === '/v2' || url.pathname.startsWith('/v2/')) return serveV2(url.pathname.slice(3), res);
     if (UI_FILES[url.pathname] || url.pathname === '/query.js') {
       const name = UI_FILES[url.pathname] ?? 'query.js';
       const src = url.pathname === '/query.js' ? QUERY_FILE : new URL(name, UI_DIR);
@@ -134,7 +155,27 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
       const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit')) || 50));
       const hits = q ? index.run(q) : index.comps;
-      return json(res, { total: hits.length, offset, limit, items: hits.slice(offset, offset + limit).map((m) => ({ id: m.id, name: m.name, kind: m.c.kind, file: m.c.file, line: m.c.line, usedBy: m.usedBy, pages: m.pages, issues: m.c.issues?.length ?? 0 })) });
+      return json(res, { total: hits.length, offset, limit, items: hits.slice(offset, offset + limit).map(componentRow) });
+    }
+    // One folder level at a time: subfolders with component counts, plus the components directly inside.
+    if (url.pathname === '/api/folders') {
+      const dir = (url.searchParams.get('path') ?? '').replace(/^\/+|\/+$/g, '');
+      const prefix = dir ? `${dir}/` : '';
+      const dirs = new Map();
+      const items = [];
+      for (const m of indexFor(catalogue).comps) {
+        if (!m.c.file.startsWith(prefix)) continue;
+        const rest = m.c.file.slice(prefix.length);
+        const name = rest.includes('/') ? rest.slice(0, rest.indexOf('/')) : null;
+        if (!name) {
+          items.push(componentRow(m));
+          continue;
+        }
+        const d = dirs.get(name) ?? dirs.set(name, { name, path: prefix + name, count: 0, withIssues: 0 }).get(name);
+        d.count++;
+        if (m.c.issues?.length) d.withIssues++;
+      }
+      return json(res, { path: dir, dirs: [...dirs.values()].sort((a, b) => a.name.localeCompare(b.name)), items });
     }
     if (url.pathname === '/api/component') {
       const id = url.searchParams.get('id');
@@ -180,16 +221,6 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       clients.add(res);
       req.on('close', () => clients.delete(res));
       return;
-    }
-    // The React UI (ui-react, pre-built at publish time) under /v2/; it reads everything through /api/*.
-    if (url.pathname === '/v2' || url.pathname.startsWith('/v2/')) {
-      // resolve() drops the trailing separator a directory URL carries, so the containment check below holds.
-      const dist = path.resolve(fileURLToPath(V2_DIR));
-      const rel = decodeURIComponent(url.pathname.slice(3)).replace(/^\/+/, '') || 'index.html';
-      const file = path.resolve(dist, rel);
-      if (!file.startsWith(dist + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return res.writeHead(404).end('Not found (build it with: npm run build:ui)');
-      res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream', 'cache-control': rel === 'index.html' ? 'no-store' : 'max-age=31536000, immutable' });
-      return fs.createReadStream(file).pipe(res);
     }
     res.writeHead(404).end('Not found');
   };

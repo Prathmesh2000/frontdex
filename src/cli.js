@@ -63,6 +63,7 @@ Agents
 Options
   -C, --cwd <dir>          Project root (default: current directory)
   --json                   Machine-readable output (query commands, scan, check, history, diff, doctor)
+  -v, --version            Print the frontdex version
 `;
 
 export async function main(argv) {
@@ -97,9 +98,11 @@ export async function main(argv) {
       strict: { type: 'boolean' },
       quiet: { type: 'boolean', short: 'q' },
       help: { type: 'boolean', short: 'h' },
+      version: { type: 'boolean', short: 'v' },
     },
   });
   const [command, arg] = positionals;
+  if (values.version || command === 'version') return void console.log(JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
   if (values.help || !command) return void console.log(HELP);
 
   const root = path.resolve(values.cwd ?? process.cwd());

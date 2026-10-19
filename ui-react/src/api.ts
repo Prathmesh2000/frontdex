@@ -51,6 +51,12 @@ export const api = {
   tokens: () => get<{ definitions: Record<string, Token>; drift?: Drift[] } | null>('section', { name: 'tokens' }),
   duplicates: () => get<{ components: [string, string]; score: number; reasons?: string[] }[] | null>('section', { name: 'duplicates' }),
   pages: () => get<Record<string, PageInfo>>('pages'),
+  folders: (path: string) => get<{ path: string; dirs: { name: string; path: string; count: number; withIssues: number }[]; items: ComponentRow[] }>('folders', { path }),
+  source: async (file: string) => {
+    const res = await fetch(`../api/source?file=${encodeURIComponent(file)}`);
+    if (!res.ok) throw new Error(res.status === 404 ? 'source not available' : res.statusText);
+    return res.text();
+  },
   stores: () => get<Record<string, Store> | null>('section', { name: 'stores' }),
   graph: (p: { focus?: string; depth?: number; dir?: string; force?: 1 }) => get<Graph>('graph', p),
   diff: (base: string, head?: string) => get<DiffReport>('diff', { base, head }),

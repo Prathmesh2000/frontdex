@@ -566,3 +566,77 @@ export function History() {
     </>
   );
 }
+
+/** Components by folder, one level at a time, like a file explorer. */
+export function Folders({ path }: { path: string }) {
+  const { data, error } = useApi(() => api.folders(path), [path]);
+  const parts = path ? path.split('/') : [];
+  return (
+    <>
+      <nav className="crumbs">
+        <Link to="/folders" search={{ path: '' }}>
+          All folders
+        </Link>
+        {parts.map((p, i) => (
+          <span key={i}>
+            <span className="sep"> / </span>
+            {i === parts.length - 1 ? (
+              <span className="here">{p}</span>
+            ) : (
+              <Link to="/folders" search={{ path: parts.slice(0, i + 1).join('/') }}>
+                {p}
+              </Link>
+            )}
+          </span>
+        ))}
+      </nav>
+      <Header title={parts.at(-1) ?? 'Folders'} sub="Browse components by where they live." />
+      {!data ? (
+        <Loading error={error} />
+      ) : (
+        <>
+          {data.dirs.length > 0 && (
+            <Card title="Folders" count={data.dirs.length}>
+              <div className="folder-tiles">
+                {data.dirs.map((d) => (
+                  <Link key={d.path} className="folder-tile" to="/folders" search={{ path: d.path }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="fn">{d.name}</div>
+                      <div className="fm">
+                        {d.count} components{d.withIssues ? ` · ${d.withIssues} with issues` : ''}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Card>
+          )}
+          {data.items.length > 0 && (
+            <Card title="Components" count={data.items.length}>
+              <table>
+                <tbody>
+                  {data.items.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <CompLink id={r.id} />
+                      </td>
+                      <td>
+                        <span className="badge">{r.kind}</span>
+                      </td>
+                      <td>
+                        <FileRef at={`${r.file}${r.line ? `:${r.line}` : ''}`} />
+                      </td>
+                      <td className="muted small">
+                        used by {r.usedBy} · {r.pages} pages{r.issues ? ` · ${r.issues} issues` : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </>
+      )}
+    </>
+  );
+}
