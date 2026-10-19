@@ -158,6 +158,8 @@ export function writeAgentKnowledge(dir, cat, written = null) {
     ) + '\n',
   );
 
+  // A warm memo already knows every card on disk, so stale ones are removed from it instead of walking the folder.
+  const warm = written?.size > 0;
   let count = 0;
   for (const [rel, content] of outputs) {
     const file = path.join(dir, rel);
@@ -170,12 +172,19 @@ export function writeAgentKnowledge(dir, cat, written = null) {
     written?.set(rel, content);
     count++;
   }
-  const keep = new Set([...outputs.keys()].map((rel) => path.join(dir, rel)));
-  const componentsDir = path.join(dir, 'components');
-  for (const file of fs.existsSync(componentsDir) ? fs.readdirSync(componentsDir, { recursive: true }) : []) {
-    const abs = path.join(componentsDir, file);
-    if (abs.endsWith('.md') && !keep.has(abs)) fs.rmSync(abs);
+  if (warm) {
+    for (const rel of written.keys()) {
+      if (outputs.has(rel)) continue;
+      fs.rmSync(path.join(dir, rel), { force: true });
+      written.delete(rel);
+    }
+  } else {
+    const keep = new Set([...outputs.keys()].map((rel) => path.join(dir, rel)));
+    const componentsDir = path.join(dir, 'components');
+    for (const file of fs.existsSync(componentsDir) ? fs.readdirSync(componentsDir, { recursive: true }) : []) {
+      const abs = path.join(componentsDir, file);
+      if (abs.endsWith('.md') && !keep.has(abs)) fs.rmSync(abs);
+    }
   }
-  if (written) for (const rel of written.keys()) if (!outputs.has(rel)) written.delete(rel);
   return { written: count, total: outputs.size };
 }

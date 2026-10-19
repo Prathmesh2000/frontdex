@@ -68,19 +68,31 @@ export function scan(config, { full = false, dryRun = false, message, session, c
   const cacheFile = path.join(kb, 'cache', 'files.json');
   const mirrorFile = path.join(kb, 'cache', 'catalogue.json');
   const file = path.resolve(config.root, config.output);
+  let mark = performance.now();
+  const lap = (stage) => {
+    const now = performance.now();
+    timings[stage] = Math.round(now - mark);
+    mark = now;
+  };
+  const timings = {};
   const warm = !!session?.cache;
   const prev = session?.catalogue ?? readPrevious(file, mirrorFile);
   const cache = full ? null : warm ? session.cache : readJson(cacheFile);
-  const known = warm && !full && changedPaths ? { files: session.files, changed: changedPaths } : undefined;
+  const known = warm && !full && changedPaths ? { files: session.files, changed: changedPaths, resolver: session.resolver } : undefined;
+  lap('read');
   const result = scanProject(config, { cache, known });
+  Object.assign(timings, result.timings);
+  mark = performance.now();
   const { catalogue, delta } = result;
   mergeManual(catalogue, prev);
   const changed = !prev || stableJson(prev) !== stableJson(catalogue);
   if (!changed) catalogue.info.generatedAt = prev.info.generatedAt;
-  const out = { ...result, file, changed, commit: null, agent: null };
+  lap('compare');
+  const out = { ...result, file, changed, commit: null, agent: null, timings };
   delete out.cache;
   delete out.cacheDirty;
   delete out.files;
+  delete out.resolver;
   if (dryRun) return out;
 
   ensureKnowledgeDir(kb);
@@ -88,25 +100,23 @@ export function scan(config, { full = false, dryRun = false, message, session, c
     // YAML serialisation is the slowest step of a warm rescan, so it waits for flushSession() with the cache.
     session.dirty = (warm && session.dirty) || result.cacheDirty || changed;
     session.yamlDirty = (warm && session.yamlDirty) || changed;
-    Object.assign(session, { cache: result.cache, files: result.files, catalogue });
+    Object.assign(session, { cache: result.cache, files: result.files, resolver: result.resolver, catalogue });
     if (!warm) flushSession(config, session);
   } else {
     if (changed) writeCatalogue(file, catalogue);
     if (result.cacheDirty) writeCache(cacheFile, result.cache);
     if (changed || !fs.existsSync(mirrorFile)) writeMirror(mirrorFile, file, catalogue);
   }
-  const agentDir = path.join(kb, 'agent');
-  // Regenerate when the catalogue changed or the card format did (a new agent-kb.js with an unchanged catalogue must still reach agents).
-  const agentStamp = path.join(kb, 'cache', 'agent-format');
-  if (config.agents.enabled && (changed || readText(agentStamp) !== AGENT_FORMAT || !fs.existsSync(path.join(agentDir, 'INDEX.md')))) {
-    out.agent = writeAgentKnowledge(agentDir, catalogue, session && (session.agentFiles ??= new Map()));
-    fs.mkdirSync(path.dirname(agentStamp), { recursive: true });
-    fs.writeFileSync(agentStamp, AGENT_FORMAT);
-  }
+  lap('write');
+  // A warm session leaves the agent cards to flushSession() as well; a burst of saves then regenerates them once.
+  if (warm) session.agentDirty ||= changed;
+  else out.agent = refreshAgentKnowledge(config, catalogue, changed, session && (session.agentFiles ??= new Map()));
+  lap('agent');
   if (config.history.enabled) {
     const history = createHistory(path.join(kb, 'history'));
     if (changed || !history.log().length) out.commit = history.commit(catalogue, { root: config.root, message, limit: config.history.limit });
   }
+  lap('history');
   return out;
 }
 
@@ -122,8 +132,22 @@ export function flushSession(config, session) {
   if (wroteYaml) writeCatalogue(file, session.catalogue);
   writeCache(path.join(kb, 'cache', 'files.json'), session.cache);
   writeMirror(path.join(kb, 'cache', 'catalogue.json'), file, session.catalogue);
-  session.dirty = session.yamlDirty = false;
+  if (session.agentDirty) refreshAgentKnowledge(config, session.catalogue, true, session.agentFiles);
+  session.dirty = session.yamlDirty = session.agentDirty = false;
   return wroteYaml;
+}
+
+/** Rewrites agent cards when the catalogue changed or the card format did (a new agent-kb.js must reach agents even when the catalogue did not change). */
+function refreshAgentKnowledge(config, catalogue, changed, memo) {
+  if (!config.agents.enabled) return null;
+  const kb = knowledgeDir(config);
+  const agentDir = path.join(kb, 'agent');
+  const stamp = path.join(kb, 'cache', 'agent-format');
+  if (!changed && readText(stamp) === AGENT_FORMAT && fs.existsSync(path.join(agentDir, 'INDEX.md'))) return null;
+  const written = writeAgentKnowledge(agentDir, catalogue, memo);
+  fs.mkdirSync(path.dirname(stamp), { recursive: true });
+  fs.writeFileSync(stamp, AGENT_FORMAT);
+  return written;
 }
 
 function writeCache(cacheFile, cache) {

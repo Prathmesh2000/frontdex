@@ -16,18 +16,20 @@ const SCANNER_HASH = createHash('sha1')
   .slice(0, 12);
 export const CACHE_VERSION = `${PKG.version}/${SCANNER_HASH}`;
 
-const deserialize = (data, file) => ({ ...structuredClone(data), file, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, new Map(data[k])])) });
+// Linking and insights mutate component records (ids, resolved schemas, store reads, issues), so those are cloned to keep
+// the cache pristine; every other module field is only read and is shared with the cache entry.
+const deserialize = (data, file) => ({ ...data, components: structuredClone(data.components), file, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, new Map(data[k])])) });
 
 /**
  * Parses every source file, reusing cached parse results for files whose mtime/size or content hash is unchanged.
  * Linking (imports, renders, pages) always runs over the full module set because it is cheap and cross-file.
- * `known = { files, changed }` is the watcher fast path: `files` is the previous result's file list and `changed` the
- * absolute paths reported since, so unchanged files skip the directory walk and the stat.
+ * `known = { files, changed, resolver }` is the watcher fast path: `files` and `resolver` come from the previous result
+ * and `changed` lists the absolute paths reported since, so unchanged files skip the directory walk and the stat.
+ * The reused resolver does not see tsconfig edits; the watcher ignores .json files, so restart it after changing paths.
  */
 export function scanProject(config, { cache, known } = {}) {
   const root = config.root;
   const rel = (f) => path.relative(root, f).split(path.sep).join('/');
-  const resolveImport = createResolver(root);
   const modules = new Map();
   const warnings = [];
   const prevFiles = cache?.version === CACHE_VERSION ? cache.files : {};
@@ -35,8 +37,20 @@ export function scanProject(config, { cache, known } = {}) {
   const delta = { added: [], changed: [], removed: [], reused: 0, parsed: 0 };
 
   // With `known` (a watcher session), only the paths it reports are re-listed and re-stat'ed; everything else is trusted from the cache.
+  const timings = {};
+  let mark = performance.now();
+  // Stage durations in ms, returned as result.timings (printed by bench/scan.js).
+  const lap = (stage) => {
+    const now = performance.now();
+    timings[stage] = Math.round(now - mark);
+    mark = now;
+  };
   const projectFiles = known ? updateProjectFiles(config, known.files, known.changed) : listProjectFiles(config);
   const touched = known && new Set(known.changed);
+  // Import resolution stats candidate paths, so a session reuses its resolver (and its cache) while no file was added or removed.
+  const sameFiles = known && sameList(projectFiles.sources, known.files.sources) && sameList(projectFiles.styles, known.files.styles);
+  const resolveImport = (sameFiles && known.resolver) || createResolver(root);
+  lap('list');
   // Pass 1: keep cached parses whose mtime/size or content hash still match; queue the rest.
   const pending = [];
   const slots = projectFiles.sources.map((file) => {
@@ -52,6 +66,7 @@ export function scanProject(config, { cache, known } = {}) {
     return slot;
   });
 
+  lap('stat');
   // Pass 2: parse the queue (across worker threads when it is large, e.g. a cold scan).
   parseMany(pending.map((s) => [s.file, s.code])).forEach((parsed, i) => {
     const { key, prev, stat, hash } = pending[i];
@@ -67,6 +82,7 @@ export function scanProject(config, { cache, known } = {}) {
     }
   });
 
+  lap('parse');
   for (const { file, key, prev, entry } of slots) {
     if (entry.mod === prev?.mod) delta.reused++;
     nextFiles[key] = entry;
@@ -76,6 +92,7 @@ export function scanProject(config, { cache, known } = {}) {
   }
   delta.removed = Object.keys(prevFiles).filter((k) => !nextFiles[k]);
 
+  lap('load');
   const entries = [...modules.values()].flatMap((mod) => mod.components.map((c) => ({ mod, c })));
   const nameCount = new Map();
   entries.forEach(({ c }) => nameCount.set(c.name, (nameCount.get(c.name) ?? 0) + 1));
@@ -341,6 +358,7 @@ export function scanProject(config, { cache, known } = {}) {
     pages[route] = compact(page);
   }
 
+  lap('link');
   const { stores, styles, health, styleCache, styleCacheDirty } = buildProjectInsights({
     modules,
     entries,
@@ -354,6 +372,7 @@ export function scanProject(config, { cache, known } = {}) {
   });
   for (const comp of Object.values(components)) if (comp.styles === undefined) delete comp.styles;
 
+  lap('insights');
   const routers = [...new Set(Object.values(pages).map((p) => p.router))];
   const catalogue = {
     catalogue: '1.1',
@@ -375,6 +394,8 @@ export function scanProject(config, { cache, known } = {}) {
     catalogue,
     warnings,
     files: projectFiles,
+    timings,
+    resolver: resolveImport,
     stats: { files: modules.size, components: entries.length, pages: Object.keys(pages).length },
     delta,
     cache: { version: CACHE_VERSION, files: nextFiles, styles: styleCache },
@@ -393,6 +414,10 @@ function followAlias(mod, local) {
 
 function paramsOf(segments) {
   return segments.map((s) => s.match(/^\[{1,2}(?:\.\.\.)?([^\]]+)\]{1,2}$/)?.[1]).filter(Boolean);
+}
+
+function sameList(a, b) {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
 function isDir(p) {

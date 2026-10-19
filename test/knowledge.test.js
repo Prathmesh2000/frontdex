@@ -112,6 +112,8 @@ test('watch session: reported edits, additions and deletions match a cold scan; 
   const strip = (c) => ({ ...c, info: { ...c.info, generatedAt: undefined } });
   const cold = scan({ ...config }, { full: true, dryRun: true }).catalogue;
   assert.deepEqual(strip(warm.catalogue), strip(cold));
+  // Repeated warm scans reuse the same cache entries; linking must not leave traces in them.
+  assert.deepEqual(strip(scan(config, { session, changed: [] }).catalogue), strip(cold));
 
   assert.equal(flushSession(config, session), true);
   assert.deepEqual(strip(readCatalogue(at(config.output))), strip(cold));
