@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { buildReport, catalogueAtRef } from './ci.js';
 import { createHistory } from './history.js';
@@ -17,7 +18,8 @@ const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 const indexFor = (cat) => indexes.get(cat) ?? indexes.set(cat, createIndex(cat)).get(cat);
 const QUERY_FILE = new URL('./query.cjs', import.meta.url);
 const UI_FILES = { '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/styles.css': 'styles.css' };
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' };
+const V2_DIR = new URL('../ui-react/dist/', import.meta.url);
 
 export function dataScript(catalogue, { root = null, history = null, live = false, preview = null } = {}) {
   return `window.__CATALOGUE__ = ${JSON.stringify(catalogue)};\nwindow.__CATALOGUE_ROOT__ = ${JSON.stringify(root)};\nwindow.__CATALOGUE_HISTORY__ = ${JSON.stringify(history)};\nwindow.__CATALOGUE_LIVE__ = ${live};\nwindow.__CATALOGUE_PREVIEW__ = ${JSON.stringify(preview)};\n`;
@@ -88,12 +90,50 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       return c ? json(res, { id, ...c }) : json(res, { error: `No component "${id}"` }, 404);
     }
     if (url.pathname === '/api/pages') return json(res, catalogue.pages);
+    if (url.pathname === '/api/info') {
+      const count = (x) => (Array.isArray(x) ? x.length : x ? Object.keys(x).length : 0);
+      return json(res, {
+        info: catalogue.info,
+        root: config.root,
+        preview: config.preview,
+        counts: { components: count(catalogue.components), pages: count(catalogue.pages), stores: count(catalogue.stores), hooks: count(catalogue.hooks), endpoints: count(catalogue.endpoints), tokens: count(catalogue.tokens?.definitions), duplicates: count(catalogue.duplicates) },
+        issues: catalogue.health?.issues ?? {},
+      });
+    }
+    // Whole sections that stay small (tokens, hooks, stores …); components and issues are paged instead.
+    const SECTIONS = { tokens: 1, duplicates: 1, hooks: 1, stores: 1, endpoints: 1, styles: 1, health: 1 };
+    if (url.pathname === '/api/section') {
+      const name = url.searchParams.get('name');
+      return SECTIONS[name] ? json(res, catalogue[name] ?? null) : json(res, { error: `Unknown section "${name}"` }, 400);
+    }
+    if (url.pathname === '/api/issues') {
+      const severity = url.searchParams.get('severity');
+      const type = url.searchParams.get('type');
+      const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
+      const limit = Math.min(500, Math.max(1, Number(url.searchParams.get('limit')) || 100));
+      const order = ['high', 'medium', 'low', 'info'];
+      const all = Object.entries(catalogue.components)
+        .flatMap(([id, c]) => (c.issues ?? []).map((i) => ({ component: id, file: c.file, ...i })))
+        .filter((i) => (!severity || i.severity === severity) && (!type || i.type === type))
+        .sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
+      return json(res, { total: all.length, offset, limit, items: all.slice(offset, offset + limit) });
+    }
     if (url.pathname === '/api/events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
       res.write(': connected\n\n');
       clients.add(res);
       req.on('close', () => clients.delete(res));
       return;
+    }
+    // The React UI (ui-react, pre-built at publish time) under /v2/; it reads everything through /api/*.
+    if (url.pathname === '/v2' || url.pathname.startsWith('/v2/')) {
+      // resolve() drops the trailing separator a directory URL carries, so the containment check below holds.
+      const dist = path.resolve(fileURLToPath(V2_DIR));
+      const rel = decodeURIComponent(url.pathname.slice(3)).replace(/^\/+/, '') || 'index.html';
+      const file = path.resolve(dist, rel);
+      if (!file.startsWith(dist + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return res.writeHead(404).end('Not found (build it with: npm run build:ui)');
+      res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream', 'cache-control': rel === 'index.html' ? 'no-store' : 'max-age=31536000, immutable' });
+      return fs.createReadStream(file).pipe(res);
     }
     res.writeHead(404).end('Not found');
   };

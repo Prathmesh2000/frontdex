@@ -22,10 +22,15 @@
     "src",
     "ui",
     "spec",
-    "docs"
+    "docs",
+    "ui-react/dist"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "build:ui": "vite build --config ui-react/vite.config.mjs",
+    "dev:ui": "vite --config ui-react/vite.config.mjs",
+    "prepack": "npm run build:ui",
+    "typecheck:ui": "tsc --noEmit --strict --jsx react-jsx --module esnext --moduleResolution bundler --target es2023 --skipLibCheck --types vite/client ui-react/src/main.tsx"
   },
   "engines": {
     "node": ">=18.17"
@@ -58,7 +63,16 @@
   },
   "devDependencies": {
     "@astrojs/compiler": "^4.0.0",
+    "@tanstack/react-router": "^1.170.45",
+    "@tanstack/react-virtual": "^3.14.21",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "svelte": "^5.57.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
     "vue": "^3.5.44"
   }
 }

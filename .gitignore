@@ -3,3 +3,4 @@ frontdex-site/
 catalogue-site/
 .DS_Store
 *.log
+ui-react/dist/
