@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
-import { MAP_FIELDS, parseMany } from './parse-pool.js';
+import { loadMany, MAP_FIELDS } from './parse-pool.js';
 import { buildProjectInsights } from './project.js';
 
 const PKG = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
@@ -51,26 +51,23 @@ export function scanProject(config, { cache, known } = {}) {
   const sameFiles = known && sameList(projectFiles.sources, known.files.sources) && sameList(projectFiles.styles, known.files.styles);
   const resolveImport = (sameFiles && known.resolver) || createResolver(root);
   lap('list');
-  // Pass 1: keep cached parses whose mtime/size or content hash still match; queue the rest.
+  // Pass 1: keep cached parses whose mtime/size still match; queue the rest for reading.
   const pending = [];
   const slots = projectFiles.sources.map((file) => {
     const key = rel(file);
     const prev = prevFiles[key];
     const stat = touched && prev && !touched.has(file) ? null : fs.statSync(file);
     if (prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size))) return { file, key, prev, entry: prev };
-    const code = fs.readFileSync(file, 'utf8');
-    const hash = createHash('sha1').update(code).digest('hex');
-    if (prev?.hash === hash) return { file, key, prev, entry: { ...prev, mtimeMs: stat.mtimeMs, size: stat.size } };
-    const slot = { file, key, prev, stat, hash, code };
+    const slot = { file, key, prev, stat };
     pending.push(slot);
     return slot;
   });
 
   lap('stat');
-  // Pass 2: parse the queue (across worker threads when it is large, e.g. a cold scan).
-  parseMany(pending.map((s) => [s.file, s.code])).forEach((parsed, i) => {
-    const { key, prev, stat, hash } = pending[i];
-    delete pending[i].code;
+  // Pass 2: read, hash and parse the queue (across worker threads when it is large, e.g. a cold scan).
+  loadMany(pending.map((s) => [s.file, s.prev?.hash])).forEach(({ hash, mod: parsed }, i) => {
+    const { key, prev, stat } = pending[i];
+    if (!parsed) return void (pending[i].entry = { ...prev, mtimeMs: stat.mtimeMs, size: stat.size });
     delta.parsed++;
     if (parsed.error && prev?.mod && !prev.mod.error) {
       // Keep the last good parse while the file is broken mid-edit, so components don't flicker out of the catalogue and history.

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import fs from 'node:fs';
 import os from 'node:os';
 import { MessageChannel, receiveMessageOnPort, Worker } from 'node:worker_threads';
 import { parseFile } from './parse-file.js';
@@ -12,6 +14,13 @@ export function parseOne(file, code) {
   return { ...mod, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, [...mod[k]]])) };
 }
 
+/** Reads and hashes a file; parses it only when the hash differs from `prevHash` (a touch or checkout keeps its parse). */
+export function loadOne(file, prevHash) {
+  const code = fs.readFileSync(file, 'utf8');
+  const hash = createHash('sha1').update(code).digest('hex');
+  return hash === prevHash ? { hash } : { hash, mod: parseOne(file, code) };
+}
+
 // Each worker loads Babel (~100 ms) and starts with cold JIT, so small batches parse faster on the main thread.
 const MIN_FILES = 400;
 const FILES_PER_WORKER = 200;
@@ -24,13 +33,14 @@ const MAX_THREADS = Math.max(2, Math.floor(os.availableParallelism() / 2) - 1);
 const WORKER_LIMITS = { maxYoungGenerationSizeMb: 16, maxOldGenerationSizeMb: 256 };
 
 /**
- * Parses [file, code] jobs, returning results in job order. Large batches are split across a few worker threads.
+ * Runs loadOne() over [file, prevHash] jobs, returning results in job order. Large batches (cold scans) are split across
+ * a few worker threads, which then read and hash in parallel too.
  * Stays synchronous so scan() keeps its sync API: the main thread blocks on a shared counter and pulls each worker's
  * result with receiveMessageOnPort. Anything a worker fails to deliver is parsed on the main thread instead.
  */
-export function parseMany(jobs) {
+export function loadMany(jobs) {
   const threads = Math.min(MAX_THREADS, Math.floor(jobs.length / FILES_PER_WORKER));
-  if (jobs.length < MIN_FILES || threads < 2) return jobs.map(([file, code]) => parseOne(file, code));
+  if (jobs.length < MIN_FILES || threads < 2) return jobs.map(([file, prevHash]) => loadOne(file, prevHash));
 
   const done = new Int32Array(new SharedArrayBuffer(4));
   const size = Math.ceil(jobs.length / threads);
@@ -50,6 +60,6 @@ export function parseMany(jobs) {
     const message = receiveMessageOnPort(port)?.message;
     port.close();
     worker.terminate();
-    return Array.isArray(message) ? message : slice.map(([file, code]) => parseOne(file, code));
+    return Array.isArray(message) ? message : slice.map(([file, prevHash]) => loadOne(file, prevHash));
   });
 }
