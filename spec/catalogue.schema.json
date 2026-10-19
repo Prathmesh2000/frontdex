@@ -36,6 +36,13 @@
         "$ref": "#/definitions/Page"
       }
     },
+    "endpoints": {
+      "type": "object",
+      "description": "Server entry points defined by the frontend: route handlers, API routes, resource routes, middleware, server actions.",
+      "additionalProperties": {
+        "$ref": "#/definitions/Endpoint"
+      }
+    },
     "stores": {
       "type": "object",
       "additionalProperties": {
@@ -108,7 +115,13 @@
             "enum": [
               "next-app",
               "next-pages",
-              "react-router"
+              "react-router",
+              "react-router-v7",
+              "remix",
+              "tanstack",
+              "gatsby",
+              "solid-start",
+              "qwik-city"
             ]
           }
         },
@@ -160,6 +173,13 @@
             "named",
             "none"
           ]
+        },
+        "rendering": {
+          "enum": [
+            "client",
+            "server"
+          ],
+          "description": "App Router only: client when its module, or a component that renders it, has 'use client'."
         },
         "description": {
           "type": "string"
@@ -422,7 +442,13 @@
           "enum": [
             "next-app",
             "next-pages",
-            "react-router"
+            "react-router",
+            "react-router-v7",
+            "remix",
+            "tanstack",
+            "gatsby",
+            "solid-start",
+            "qwik-city"
           ]
         },
         "file": {
@@ -440,6 +466,13 @@
         },
         "layouts": {
           "$ref": "#/definitions/StringList"
+        },
+        "metadata": {
+          "enum": [
+            "static",
+            "dynamic"
+          ],
+          "description": "Next.js metadata export: a metadata object or generateMetadata."
         },
         "components": {
           "$ref": "#/definitions/StringList"
@@ -917,6 +950,50 @@
               "name"
             ]
           }
+        }
+      }
+    },
+    "Endpoint": {
+      "type": "object",
+      "required": [
+        "kind",
+        "file"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "kind": {
+          "enum": [
+            "route-handler",
+            "api-route",
+            "resource-route",
+            "middleware",
+            "server-action"
+          ]
+        },
+        "file": {
+          "type": "string"
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workspace": {
+          "type": "string"
+        },
+        "importedBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files importing a server action."
+        },
+        "description": {
+          "type": "string"
         }
       }
     }

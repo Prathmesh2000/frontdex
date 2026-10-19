@@ -3,7 +3,7 @@
 14 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## CardHeader
-`src/components/ui/Card.tsx:1` · function · none export · trivial
+`src/components/ui/Card.tsx:1` · function · client component · none export · trivial
 
 - Props: `title: string`, `action?: React.ReactNode`
 - Props from OrderTimeline: title=`Order ${order.id}`, action=<Badge tone={TONE[order.status]}>{order.status}</…
@@ -16,7 +16,7 @@
 - Impact: changing the props/export affects 13 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Spinner
-`src/components/ui/Spinner.tsx:2` · function · named export · trivial
+`src/components/ui/Spinner.tsx:2` · function · client component · named export · trivial
 
 Inline loading indicator.
 
@@ -34,7 +34,7 @@ Inline loading indicator.
 - Impact: changing the props/export affects 41 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Badge
-`src/components/ui/Badge.tsx:3` · function · named export · trivial
+`src/components/ui/Badge.tsx:3` · function · client component · named export · trivial
 
 - Props: `tone?: Tone` = `'neutral'`, `children: React.ReactNode`
 - Props from OrderTimeline: tone=TONE[order.status]
@@ -47,7 +47,7 @@ Inline loading indicator.
 - Impact: changing the props/export affects 17 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Tooltip
-`src/components/ui/Tooltip.tsx:4` · function · named export · moderate
+`src/components/ui/Tooltip.tsx:4` · function · client component · named export · moderate
 
 - Props: `text: string`, `children: React.ReactElement`
 - State: `visible` (useState, init `false`, set via `setVisible`); `position` (useState, init `{ top: 0, left: 0 }`, set via `setPosition`)
@@ -60,7 +60,7 @@ Inline loading indicator.
 - Impact: changing the props/export affects 9 component(s) and 4 page(s); update every caller listed under "Used by".
 
 ## CardBody
-`src/components/ui/Card.tsx:5` · function · none export · trivial
+`src/components/ui/Card.tsx:5` · function · client component · none export · trivial
 
 - Props: `children: React.ReactNode`
 - CSS classes: card-body (app/globals.css:20)
@@ -69,7 +69,7 @@ Inline loading indicator.
 - Impact: changing the props/export affects 13 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Card
-`src/components/ui/Card.tsx:10` · function · named export · trivial
+`src/components/ui/Card.tsx:10` · function · client component · named export · trivial
 
 Surface container. Compose with <Card.Header> and <Card.Body>.
 
@@ -82,7 +82,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 - Impact: changing the props/export affects 22 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Input
-`src/components/ui/Input.tsx:10` · forwardRef · named export · simple
+`src/components/ui/Input.tsx:10` · forwardRef · client component · named export · simple
 
 - Props: `label: string`, `error?: string`, `hint?: string`
 - Hooks: useId
@@ -100,7 +100,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 - Impact: changing the props/export affects 20 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## TabsRoot
-`src/components/ui/Tabs.tsx:11` · function · named export · simple
+`src/components/ui/Tabs.tsx:11` · function · client component · named export · simple
 
 - Props: `defaultValue: string`, `children: React.ReactNode`
 - State: `active` (useState, init `defaultValue`, set via `setActive`)
@@ -112,7 +112,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## Button
-`src/components/ui/Button.tsx:14` · forwardRef · named export · simple
+`src/components/ui/Button.tsx:14` · forwardRef · client component · named export · simple
 
 Design-system button. Use instead of raw <button> everywhere.
 
@@ -141,7 +141,7 @@ Design-system button. Use instead of raw <button> everywhere.
 - Impact: changing the props/export affects 30 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Modal
-`src/components/ui/Modal.tsx:16` · function · named export · moderate
+`src/components/ui/Modal.tsx:16` · function · client component · named export · moderate
 
 Accessible dialog rendered into document.body. Locks page scroll and closes on Escape.
 
@@ -159,7 +159,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 - Impact: changing the props/export affects 5 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## TabsList
-`src/components/ui/Tabs.tsx:16` · function · none export · trivial
+`src/components/ui/Tabs.tsx:16` · function · client component · none export · trivial
 
 - Props: `children: React.ReactNode`
 - Used by: FeaturedCollections
@@ -167,7 +167,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## TabsTrigger
-`src/components/ui/Tabs.tsx:20` · function · none export · trivial
+`src/components/ui/Tabs.tsx:20` · function · client component · none export · trivial
 
 - Props: `value: string`, `children: React.ReactNode`
 - Hooks: useTabs
@@ -178,7 +178,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## DataTable
-`src/components/ui/DataTable.tsx:23` · function · named export · complex
+`src/components/ui/DataTable.tsx:23` · function · client component · named export · complex
 
 Generic sortable, paginated table used by every admin list.
 
@@ -194,7 +194,7 @@ Generic sortable, paginated table used by every admin list.
 - Impact: changing the props/export affects 3 component(s) and 2 page(s); update every caller listed under "Used by".
 
 ## TabsPanel
-`src/components/ui/Tabs.tsx:25` · function · none export · trivial
+`src/components/ui/Tabs.tsx:25` · function · client component · none export · trivial
 
 - Props: `value: string`, `children: React.ReactNode`
 - Hooks: useTabs

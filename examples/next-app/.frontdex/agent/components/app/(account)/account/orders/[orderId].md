@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## OrderDetailPage
-`app/(account)/account/orders/[orderId]/page.tsx:3` · function · default export · trivial
+`app/(account)/account/orders/[orderId]/page.tsx:3` · function · server component · default export · trivial
 
 - Props: `params: Promise<{ orderId: string }>`
 - Variables: orderId

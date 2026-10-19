@@ -834,13 +834,14 @@
   "HomePage": {
    "name": "HomePage",
    "file": "app/page.tsx",
-   "line": 5,
+   "line": 8,
    "kind": "function",
    "props": [],
    "state": [],
    "renders": [
     "HeroBanner",
-    "FeaturedCollections"
+    "FeaturedCollections",
+    "NewsletterForm"
    ],
    "usedBy": [],
    "pages": [
@@ -980,6 +981,21 @@
     "/products/[id]",
     "/products",
     "/search"
+   ]
+  },
+  "NewsletterForm": {
+   "name": "NewsletterForm",
+   "file": "src/features/newsletter/NewsletterForm.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "HomePage"
+   ],
+   "pages": [
+    "/"
    ]
   },
   "OldPromoBanner": {
@@ -1934,6 +1950,7 @@
     "ToastViewport",
     "HeroBanner",
     "FeaturedCollections",
+    "NewsletterForm",
     "SearchBar",
     "Button",
     "CartBadge",

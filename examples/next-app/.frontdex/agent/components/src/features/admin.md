@@ -3,7 +3,7 @@
 10 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## Card
-`src/features/admin/Card.tsx:2` · function · named export · simple
+`src/features/admin/Card.tsx:2` · function · server component · named export · simple
 
 Admin-only metric card (different from the design-system Card).
 
@@ -16,7 +16,7 @@ Admin-only metric card (different from the design-system Card).
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## LiveVisitors
-`src/features/admin/LiveVisitors.tsx:4` · class · named export · moderate
+`src/features/admin/LiveVisitors.tsx:4` · class · server component · named export · moderate
 
 Live visitor counter fed by a server-sent events stream.
 
@@ -30,12 +30,13 @@ Live visitor counter fed by a server-sent events stream.
 - CSS classes: live, offline
 - ⚠ HIGH memory-leak L9: new EventSource started in componentDidMount with no matching release in componentWillUnmount. Fix: release it in componentWillUnmount
 - ⚠ HIGH memory-leak L12: window.addEventListener('online') started in componentDidMount with no matching release in componentWillUnmount. Fix: release it in componentWillUnmount
+- ⚠ HIGH client-code-in-server-component: LiveVisitors is a class component but renders as a Server Component. Fix: add 'use client' at the top of its file, or render it from a client component
 - Used by: AdminDashboard
 - Pages: /admin
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## StatCard
-`src/features/admin/StatCard.tsx:5` · function · named export · simple
+`src/features/admin/StatCard.tsx:5` · function · server component · named export · simple
 
 Dashboard KPI tile: design-system Card shell around the admin metric card.
 
@@ -48,7 +49,7 @@ Dashboard KPI tile: design-system Card shell around the admin metric card.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## ProductEditor
-`src/features/admin/ProductEditor.tsx:8` · function · named export · moderate
+`src/features/admin/ProductEditor.tsx:8` · function · client component · named export · moderate
 
 Create or edit a product. `productId` undefined means "new".
 
@@ -70,7 +71,7 @@ Create or edit a product. `productId` undefined means "new".
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## SalesChart
-`src/features/admin/SalesChart.tsx:8` · class · named export · heavy
+`src/features/admin/SalesChart.tsx:8` · class · client component · named export · heavy
 
 Canvas revenue chart. Class component with the full lifecycle for imperative drawing.
 
@@ -95,7 +96,7 @@ Canvas revenue chart. Class component with the full lifecycle for imperative dra
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## SalesPanel
-`src/features/admin/SalesPanel.tsx:8` · function · named export · moderate
+`src/features/admin/SalesPanel.tsx:8` · function · client component · named export · moderate
 
 Sizes the chart to the window and loads the revenue series.
 
@@ -113,7 +114,7 @@ Sizes the chart to the window and loads the revenue series.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## ErrorBoundary
-`src/features/admin/ErrorBoundary.tsx:9` · class · named export · moderate
+`src/features/admin/ErrorBoundary.tsx:9` · class · client component · named export · moderate
 
 Catches render errors in the admin area and reports them.
 
@@ -130,7 +131,7 @@ Catches render errors in the admin area and reports them.
 - Impact: changing the props/export affects 1 component(s) and 3 page(s); update every caller listed under "Used by".
 
 ## OrderEditor
-`src/features/admin/OrderEditor.tsx:12` · function · named export · moderate
+`src/features/admin/OrderEditor.tsx:12` · function · client component · named export · moderate
 
 Modal to change an order's status or delete it.
 
@@ -151,7 +152,7 @@ Modal to change an order's status or delete it.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## AdminSidebar
-`src/features/admin/AdminSidebar.tsx:14` · function · named export · moderate
+`src/features/admin/AdminSidebar.tsx:14` · function · client component · named export · moderate
 
 Left navigation for the admin area.
 
@@ -168,7 +169,7 @@ Left navigation for the admin area.
 - Impact: changing the props/export affects 1 component(s) and 3 page(s); update every caller listed under "Used by".
 
 ## RecentOrders
-`src/features/admin/RecentOrders.tsx:16` · function · named export · moderate
+`src/features/admin/RecentOrders.tsx:16` · function · client component · named export · moderate
 
 Latest orders table on the dashboard; also reused by the orders page.
 

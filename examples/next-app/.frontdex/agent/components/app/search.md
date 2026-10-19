@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## SearchPage
-`app/search/page.tsx:8` · function · default export · simple
+`app/search/page.tsx:8` · function · client component · default export · simple
 
 Live search: SearchBar reports debounced terms, SearchResults fetches them.
 

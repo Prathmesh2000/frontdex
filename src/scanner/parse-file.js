@@ -6,7 +6,12 @@ import { extractClassComponent, extractFunctionComponent, isReactClass, memberTe
 import { analyzeComponent, analyzeModule } from './insights.js';
 
 const traverse = _traverse.default ?? _traverse;
-const WRAPPER = /(^|\.)(memo|forwardRef)$/;
+// Qwik's component$ wraps a plain function component the same way memo does; it is recorded as kind `function`.
+const WRAPPER = /(^|\.)(memo|forwardRef)$|^component\$$/;
+// TanStack Router route declarations: createFileRoute('/posts/$id')({ component }), createRootRoute({ component }), …
+const TANSTACK_ROUTE = /^create(Lazy)?(File|Root)Route(WithContext)?$|^createRoute$/;
+// React Router v7 framework-mode route config helpers (app/routes.ts).
+const RR_CONFIG = new Set(['route', 'index', 'layout', 'prefix']);
 const LAZY = /^(React\.)?lazy$|^dynamic$|^loadable$/;
 const NEXT_SPECIAL = { page: 'Page', layout: 'Layout', template: 'Template', loading: 'Loading', error: 'Error', 'not-found': 'NotFound', default: 'Default', index: 'Page' };
 
@@ -37,9 +42,13 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8')) {
   try {
     traverse(ast, {
       Program(p) {
+        // 'use client' marks a React Server Components client boundary; 'use server' makes every export a server action.
+        const directive = p.node.directives?.map((d) => d.value.value).find((v) => v === 'use client' || v === 'use server');
+        if (directive) mod.directive = directive;
         scanDeclarations(p, mod);
         analyzeModule(p, mod);
         scanComponents(p, mod);
+        scanRouteModule(p, mod);
         p.stop();
       },
     });
@@ -62,6 +71,85 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8')) {
   delete mod.statics;
   delete mod.styleModules;
   return mod;
+}
+
+/**
+ * Route declarations that live in a module rather than in JSX:
+ *   mod.fileRoute   TanStack Router: { path, component, root } from `export const Route = createFileRoute(...)({ component })`
+ *   mod.routeConfig React Router v7 framework mode: the tree exported by app/routes.ts (route/index/layout/prefix calls)
+ */
+function scanRouteModule(programPath, mod) {
+  for (const stmt of programPath.node.body) {
+    const decl = stmt.type === 'ExportNamedDeclaration' ? stmt.declaration : null;
+    if (decl?.type === 'VariableDeclaration') {
+      for (const d of decl.declarations) {
+        const route = d.id.name === 'Route' && tanstackRoute(d.init);
+        if (route) mod.fileRoute = route;
+      }
+    }
+    if (stmt.type === 'ExportDefaultDeclaration' && [...mod.imports.values()].some((i) => i.source === '@react-router/dev/routes')) {
+      let node = stmt.declaration;
+      while (node.type === 'TSSatisfiesExpression' || node.type === 'TSAsExpression') node = node.expression;
+      if (node.type === 'ArrayExpression') mod.routeConfig = routeConfigList(node, mod);
+    }
+  }
+}
+
+function tanstackRoute(node) {
+  let path;
+  let component;
+  let root = false;
+  let seen = false;
+  // Walk the curried call chain outward-in: createFileRoute('/x')({ component: X }).
+  for (let n = node; n?.type === 'CallExpression'; n = n.callee) {
+    const name = memberText(n.callee);
+    if (name && TANSTACK_ROUTE.test(name)) {
+      seen = true;
+      root = /Root/.test(name);
+      if (n.arguments[0]?.type === 'StringLiteral') path = n.arguments[0].value;
+    }
+    const opts = n.arguments.find((a) => a.type === 'ObjectExpression');
+    const comp = opts?.properties.find((p) => p.type === 'ObjectProperty' && keyName(p.key) === 'component');
+    if (comp?.value.type === 'Identifier') component ??= comp.value.name;
+    if (n.callee.type !== 'CallExpression' && !(name && TANSTACK_ROUTE.test(name))) return null;
+  }
+  return seen ? { ...(path && { path }), ...(component && { component }), ...(root && { root }) } : null;
+}
+
+/** Statically evaluates route()/index()/layout()/prefix() calls; `...(await flatRoutes())` becomes { flat: true }. */
+function routeConfigList(array, mod) {
+  const out = [];
+  for (const el of array.elements) {
+    if (!el) continue;
+    if (el.type === 'SpreadElement') {
+      let arg = el.argument;
+      if (arg.type === 'AwaitExpression') arg = arg.argument;
+      if (arg.type === 'CallExpression' && memberText(arg.callee) === 'flatRoutes') out.push({ flat: true });
+      else if (arg.type === 'CallExpression' && importedName(mod, arg.callee) === 'prefix') {
+        const [p, children] = arg.arguments;
+        if (p?.type === 'StringLiteral' && children?.type === 'ArrayExpression') out.push({ prefix: p.value, children: routeConfigList(children, mod) });
+      }
+      continue;
+    }
+    if (el.type !== 'CallExpression') continue;
+    const kind = importedName(mod, el.callee);
+    if (!RR_CONFIG.has(kind)) continue;
+    const args = el.arguments;
+    const str = (n) => (n?.type === 'StringLiteral' ? n.value : undefined);
+    const kids = (n) => (n?.type === 'ArrayExpression' ? routeConfigList(n, mod) : undefined);
+    if (kind === 'route') out.push({ path: str(args[0]), file: str(args[1]), children: kids(args[2]) ?? kids(args[3]) });
+    else if (kind === 'index') out.push({ index: true, file: str(args[0]) });
+    else if (kind === 'layout') out.push({ layout: true, file: str(args[0]), children: kids(args[1]) ?? kids(args[2]) });
+    else if (kind === 'prefix') out.push({ prefix: str(args[0]), children: kids(args[1]) });
+  }
+  return out;
+}
+
+/** The exported name a callee refers to when imported from @react-router/dev/routes (handles `route as r`). */
+function importedName(mod, callee) {
+  if (callee.type !== 'Identifier') return null;
+  const imp = mod.imports.get(callee.name);
+  return imp?.source === '@react-router/dev/routes' ? imp.imported : null;
 }
 
 function keyName(node) {
@@ -144,7 +232,7 @@ function unwrap(p) {
   let typeHint;
   while (p.isCallExpression() && WRAPPER.test(memberText(p.node.callee) ?? '')) {
     const wrapper = memberText(p.node.callee).split('.').pop();
-    kind ??= wrapper;
+    kind ??= wrapper === 'component$' ? 'function' : wrapper;
     const params = p.node.typeParameters?.params ?? p.node.typeArguments?.params;
     typeHint ??= wrapper === 'forwardRef' ? params?.[1] : params?.[0];
     p = p.get('arguments.0');

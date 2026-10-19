@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## StoreProvider
-`src/store/StoreProvider.tsx:7` · function · named export · trivial
+`src/store/StoreProvider.tsx:7` · function · client component · named export · trivial
 
 Creates the Redux store once per request/tab and provides it to client components.
 

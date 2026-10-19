@@ -3,7 +3,7 @@
 2 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## AdminLayout
-`app/(admin)/admin/layout.tsx:6` · function · default export · trivial
+`app/(admin)/admin/layout.tsx:6` · function · server component · default export · trivial
 
 Admin shell: role-gated, with sidebar and an error boundary around content.
 
@@ -15,7 +15,7 @@ Admin shell: role-gated, with sidebar and an error boundary around content.
 - Impact: changing the props/export affects 0 component(s) and 3 page(s); update every caller listed under "Used by".
 
 ## AdminDashboard
-`app/(admin)/admin/page.tsx:7` · function · default export · trivial
+`app/(admin)/admin/page.tsx:7` · function · server component · default export · trivial
 
 Admin dashboard: KPIs, revenue chart, live visitors and recent orders.
 

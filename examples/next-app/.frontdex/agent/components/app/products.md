@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ProductsPage
-`app/products/page.tsx:7` · function · default export · trivial
+`app/products/page.tsx:7` · function · server component · default export · trivial
 
 Catalogue listing with sidebar filters. Filters and grid are siblings.
 

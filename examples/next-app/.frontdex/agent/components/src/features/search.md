@@ -3,7 +3,7 @@
 2 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## SearchResults
-`src/features/search/SearchResults.tsx:9` · function · named export · simple
+`src/features/search/SearchResults.tsx:9` · function · client component · named export · simple
 
 Results list for a search term; re-fetches as the term changes.
 
@@ -19,7 +19,7 @@ Results list for a search term; re-fetches as the term changes.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## SearchBar
-`src/features/search/SearchBar.tsx:16` · function · named export · complex
+`src/features/search/SearchBar.tsx:16` · function · client component · named export · complex
 
 Debounced search input with recent-term suggestions.
 

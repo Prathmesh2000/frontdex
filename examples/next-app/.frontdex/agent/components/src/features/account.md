@@ -3,7 +3,7 @@
 3 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ProfileForm
-`src/features/account/ProfileForm.tsx:10` · function · named export · complex
+`src/features/account/ProfileForm.tsx:10` · function · client component · named export · complex
 
 Edit name/email with native HTML validation.
 
@@ -25,7 +25,7 @@ Edit name/email with native HTML validation.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## OrderTimeline
-`src/features/account/OrderTimeline.tsx:12` · function · named export · moderate
+`src/features/account/OrderTimeline.tsx:12` · function · client component · named export · moderate
 
 Order status with live polling until the order ships.
 
@@ -42,7 +42,7 @@ Order status with live polling until the order ships.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## AccountNav
-`src/features/account/AccountNav.tsx:13` · function · named export · trivial
+`src/features/account/AccountNav.tsx:13` · function · client component · named export · trivial
 
 Account section tabs; highlights the active route.
 

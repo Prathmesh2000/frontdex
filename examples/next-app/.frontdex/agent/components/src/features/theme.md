@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ThemeProvider
-`src/features/theme/ThemeContext.tsx:8` · function · named export · moderate
+`src/features/theme/ThemeContext.tsx:8` · function · client component · named export · moderate
 
 Follows the OS colour scheme until the user picks one.
 

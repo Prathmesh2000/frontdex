@@ -125,8 +125,12 @@ export function createTools(config) {
           (map.get(key) ?? map.set(key, []).get(key)).push(`${m.name} (${a.via}, ${a.in}) \`${m.c.file}${a.line ? `:${a.line}` : ''}\``);
         }
       }
-      if (!map.size) return 'No API calls match.';
-      return [...map].sort(([a], [b]) => a.localeCompare(b)).map(([k, list]) => `- \`${k}\`\n${list.map((l) => `    - ${l}`).join('\n')}`).join('\n');
+      const { cat } = refresh().state;
+      const match = (k) => !endpoint || k.toLowerCase().includes(String(endpoint).toLowerCase());
+      const defined = Object.entries(cat.endpoints ?? {}).filter(([k]) => match(k)).map(([k, e]) => `- \`${k}\` ${e.kind}${e.methods?.length ? ` ${e.methods.join(', ')}` : ''} \`${e.file}\`${e.importedBy ? ` (imported by ${e.importedBy.join(', ')})` : ''}`);
+      if (!map.size && !defined.length) return 'No API calls match.';
+      const calls = [...map].sort(([a], [b]) => a.localeCompare(b)).map(([k, list]) => `- \`${k}\`\n${list.map((l) => `    - ${l}`).join('\n')}`);
+      return [...(defined.length ? ['Server endpoints defined in this project:', ...defined, ''] : []), ...(calls.length ? ['Calls made by components:', ...calls] : [])].join('\n').trim();
     },
     catalogue_styles({ className, name } = {}) {
       const { cat, idx } = refresh().state;

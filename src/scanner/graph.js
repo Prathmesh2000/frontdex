@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
+import { collectEndpoints } from './endpoints.js';
+import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
 import { loadMany, MAP_FIELDS } from './parse-pool.js';
 import { buildProjectInsights } from './project.js';
@@ -309,12 +311,14 @@ export function scanProject(config, { cache, known } = {}) {
         if (id) layouts.push(id);
       }
       const routeSegs = segments.filter((s) => !/^\(.*\)$/.test(s) && !s.startsWith('@'));
+      const pageExports = modules.get(file).exports;
       addPage('/' + routeSegs.join('/'), {
         router: 'next-app',
         file: rel(file),
         component: idOf(resolveExport(file, 'default')),
         params: paramsOf(routeSegs),
         layouts,
+        metadata: pageExports.has('generateMetadata') ? 'dynamic' : pageExports.has('metadata') ? 'static' : undefined,
       });
     }
   }
@@ -350,6 +354,24 @@ export function scanProject(config, { cache, known } = {}) {
     }
   }
 
+  // File-system routers other than Next.js (Remix, React Router v7, TanStack, Gatsby, SolidStart, Qwik City), per app root.
+  const appRoots = [{ dir: root, deps: config.deps }, ...config.workspaces.map((w) => ({ dir: w.dir, deps: { ...w.pkg.dependencies, ...w.pkg.devDependencies } }))];
+  const refId = (ref) => idOf(ref.local ? resolveLocal(ref.file, ref.local) : resolveExport(ref.file, ref.export));
+  const resourceRoutes = [];
+  for (const app of appRoots) {
+    for (const r of fileSystemRoutes(app, [...modules.keys()], modules)) {
+      const component = refId(r.page);
+      // Route modules without a component but with a loader/action are resource routes: endpoints, not pages.
+      if (!component) {
+        const exported = modules.get(r.file)?.exports ?? new Map();
+        const methods = [exported.has('loader') && 'GET', exported.has('action') && 'POST'].filter(Boolean);
+        if (methods.length) resourceRoutes.push([r.route, { kind: 'resource-route', file: r.file, methods }]);
+        continue;
+      }
+      addPage(r.route, { router: r.router, file: rel(r.file), component, params: r.params, layouts: r.layouts.map(refId).filter(Boolean) });
+    }
+  }
+
   for (const [route, page] of Object.entries(pages)) {
     const seen = new Set();
     const queue = [...page.layouts, page.component, ...(page.extras ?? [])].filter(Boolean);
@@ -363,6 +385,32 @@ export function scanProject(config, { cache, known } = {}) {
     page.components = [...seen];
     seen.forEach((id) => (components[id].pages = [...(components[id].pages ?? []), route]));
     pages[route] = compact(page);
+  }
+
+  // React Server Components: in App Router projects, a component is client-rendered when its module says 'use client'
+  // or a client component renders it; everything else on an app-router page renders on the server.
+  const appRouterIds = new Set(Object.values(pages).filter((p) => p.router === 'next-app').flatMap((p) => p.components ?? []));
+  if (appRouterIds.size) {
+    const client = new Set(entries.filter(({ mod }) => mod.directive === 'use client').map(({ c }) => c.id));
+    for (const queue = [...client]; queue.length; ) for (const child of components[queue.shift()]?.renders ?? []) if (!client.has(child)) client.add(child), queue.push(child);
+    for (const id of appRouterIds) {
+      const comp = components[id];
+      if (!comp) continue;
+      comp.rendering = client.has(id) ? 'client' : 'server';
+      // Server Components cannot hold state or run hooks (only `use`) and cannot be classes; Next fails the build.
+      const hooks = (comp.hooks ?? []).filter((h) => h.name !== 'use').map((h) => h.name);
+      if (comp.rendering === 'server' && (comp.kind === 'class' || hooks.length)) {
+        const what = comp.kind === 'class' ? 'is a class component' : `calls ${hooks.slice(0, 3).join(', ')}`;
+        (comp.issues ??= []).push({ type: 'client-code-in-server-component', severity: 'high', message: `${comp.name} ${what} but renders as a Server Component`, fix: "add 'use client' at the top of its file, or render it from a client component" });
+      }
+    }
+  }
+
+  const workspaceName = (file) => workspaceOf(config.workspaces, file)?.name;
+  const endpoints = collectEndpoints({ nextRoots, modules, rel, resolveImport, workspaceName });
+  for (const [route, entry] of resourceRoutes) {
+    const workspace = workspaceName(entry.file);
+    endpoints[endpoints[route] ? `${route} (${workspace ?? entry.kind})` : route] = compact({ ...entry, file: rel(entry.file), workspace });
   }
 
   lap('link');
@@ -395,6 +443,7 @@ export function scanProject(config, { cache, known } = {}) {
     }),
     components: sortKeys(components),
     pages: sortKeys(pages),
+    ...(Object.keys(endpoints).length && { endpoints: sortKeys(endpoints) }),
     stores: sortKeys(stores),
     styles: sortKeys(styles),
     health,

@@ -75,6 +75,7 @@ export function loadConfig(root, overrides = {}) {
   config.title ??= pkg.name ?? path.basename(root);
   config.version ??= pkg.version;
   const deps = { ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies };
+  config.deps = deps;
   config.packageManager ??= detectPackageManager(root, pkg);
   // Monorepo packages, detected from the package manager's workspace config; a `workspaces` array of globs in the config overrides it.
   config.workspaces = detectWorkspaces(root, Array.isArray(fromFile.workspaces) ? { workspaces: fromFile.workspaces } : pkg);

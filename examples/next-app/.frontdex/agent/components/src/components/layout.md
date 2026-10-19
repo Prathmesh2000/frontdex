@@ -3,7 +3,7 @@
 6 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## Footer
-`src/components/layout/Footer.jsx:5` · function · named export · simple
+`src/components/layout/Footer.jsx:5` · function · server component · named export · simple
 
 Site footer with legal links. Plain JS component kept from the v1 codebase.
 
@@ -16,7 +16,7 @@ Site footer with legal links. Plain JS component kept from the v1 codebase.
 - Impact: changing the props/export affects 1 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## LegacyButton
-`src/components/layout/LegacyButton.jsx:7` · class · default export · simple · DEPRECATED
+`src/components/layout/LegacyButton.jsx:7` · class · server component · default export · simple · DEPRECATED
 
 Button from the old design system.
 
@@ -24,6 +24,7 @@ Button from the old design system.
 - Props from BlogPage: kind="primary"
 - Handler `handleClick(event)` L10 → event.preventDefault, this.props.onPress
 - CSS classes: legacy-btn (app/globals.css:37), legacy-btn--
+- ⚠ HIGH client-code-in-server-component: LegacyButton is a class component but renders as a Server Component. Fix: add 'use client' at the top of its file, or render it from a client component
 - Used by: BlogPage
 - Pages: /blog/[[...slug]]
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -40,7 +41,7 @@ Promo strip from the 2024 redesign.
 - Used by: nothing (unused or entry point)
 
 ## CartBadge
-`src/components/layout/CartBadge.tsx:14` · class · default export · moderate
+`src/components/layout/CartBadge.tsx:14` · class · client component · default export · moderate
 
 Legacy class component wired to Redux with connect(). Pulses when the count changes.
 
@@ -58,7 +59,7 @@ Legacy class component wired to Redux with connect(). Pulses when the count chan
 - Impact: changing the props/export affects 2 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## HeroBanner
-`src/components/layout/HeroBanner.tsx:14` · function · named export · moderate
+`src/components/layout/HeroBanner.tsx:14` · function · client component · named export · moderate
 
 Homepage hero with a live promo countdown.
 
@@ -78,7 +79,7 @@ Homepage hero with a live promo countdown.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## Header
-`src/components/layout/Header.tsx:21` · function · named export · moderate
+`src/components/layout/Header.tsx:21` · function · client component · named export · moderate
 
 Sticky top navigation: search, account, theme toggle and the cart drawer trigger.
 

@@ -3,17 +3,17 @@
 2 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## HomePage
-`app/page.tsx:5` · function · default export · trivial
+`app/page.tsx:8` · function · server component · default export · trivial
 
 Landing page: promo hero + tabbed collections.
 
-- Renders: HeroBanner(headline, endsAt), FeaturedCollections(defaultTab)
+- Renders: HeroBanner(headline, endsAt), FeaturedCollections(defaultTab), NewsletterForm
 - Used by: nothing (unused or entry point)
 - Pages: /
 - Impact: changing the props/export affects 0 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## RootLayout
-`app/layout.tsx:19` · function · default export · simple
+`app/layout.tsx:19` · function · server component · default export · simple
 
 App shell: Redux store, auth, theme and toasts wrap every page.
 

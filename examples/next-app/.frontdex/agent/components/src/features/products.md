@@ -3,7 +3,7 @@
 9 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ProductGallery
-`src/features/products/ProductGallery.tsx:6` · function · named export · moderate
+`src/features/products/ProductGallery.tsx:6` · function · client component · named export · moderate
 
 Image carousel with arrow-key navigation.
 
@@ -20,7 +20,7 @@ Image carousel with arrow-key navigation.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## ProductInfo
-`src/features/products/ProductInfo.tsx:7` · function · named export · simple
+`src/features/products/ProductInfo.tsx:7` · function · server component · named export · simple
 
 Title, price, stock and the add-to-cart controls.
 
@@ -35,7 +35,7 @@ Title, price, stock and the add-to-cart controls.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## RelatedProducts
-`src/features/products/RelatedProducts.tsx:8` · function · named export · moderate
+`src/features/products/RelatedProducts.tsx:8` · function · client component · named export · moderate
 
 "You may also like" strip.
 
@@ -53,7 +53,7 @@ Title, price, stock and the add-to-cart controls.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## Reviews
-`src/features/products/Reviews.tsx:8` · function · default export · moderate
+`src/features/products/Reviews.tsx:8` · function · client component · default export · moderate
 
 Customer reviews, loaded lazily below the fold.
 
@@ -72,7 +72,7 @@ Customer reviews, loaded lazily below the fold.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## AddToCartButton
-`src/features/products/AddToCartButton.tsx:11` · function · named export · moderate
+`src/features/products/AddToCartButton.tsx:11` · function · client component · named export · moderate
 
 Quantity picker + add button for the product page.
 
@@ -94,7 +94,7 @@ Quantity picker + add button for the product page.
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## FeaturedCollections
-`src/features/products/FeaturedCollections.tsx:12` · function · named export · simple
+`src/features/products/FeaturedCollections.tsx:12` · function · client component · named export · simple
 
 Tabbed product collections on the homepage (compound Tabs).
 
@@ -106,7 +106,7 @@ Tabbed product collections on the homepage (compound Tabs).
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## Filters
-`src/features/products/Filters.tsx:17` · function · named export · simple
+`src/features/products/Filters.tsx:17` · function · client component · named export · simple
 
 Sidebar filters; applies them to the URL query string.
 
@@ -124,7 +124,7 @@ Sidebar filters; applies them to the URL query string.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## ProductGrid
-`src/features/products/ProductGrid.tsx:19` · function · named export · moderate
+`src/features/products/ProductGrid.tsx:19` · function · client component · named export · moderate
 
 Responsive grid of products for a category. Column count follows the container width.
 
@@ -147,7 +147,7 @@ Responsive grid of products for a category. Column count follows the container w
 - Impact: changing the props/export affects 3 component(s) and 2 page(s); update every caller listed under "Used by".
 
 ## ProductCard
-`src/features/products/ProductCard.tsx:20` · memo · named export · simple
+`src/features/products/ProductCard.tsx:20` · memo · client component · named export · simple
 
 Product tile used in grids, search results and related products.
 

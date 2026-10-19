@@ -10,7 +10,7 @@
 - Used by: nothing (unused or entry point)
 
 ## Card
-`packages/ui/src/card.tsx:3` · function · named export · trivial
+`packages/ui/src/card.tsx:3` · function · server component · named export · trivial
 
 - Props: `title: string`, `children: ReactNode`
 - Props from Dashboard: title="Dashboard"
@@ -22,7 +22,7 @@
 - Impact: changing the props/export affects 3 component(s) and 3 page(s); update every caller listed under "Used by".
 
 ## Button
-`packages/ui/src/button.tsx:4` · function · named export · simple
+`packages/ui/src/button.tsx:4` · function · server component · named export · simple
 
 Primary action button shared by every Acme app.
 

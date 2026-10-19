@@ -3,7 +3,7 @@
 3 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ToastItem
-`src/features/toast/ToastViewport.tsx:6` · function · none export · simple
+`src/features/toast/ToastViewport.tsx:6` · function · client component · none export · simple
 
 - Props: `toast: Toast`, `onDismiss: (id: number) => void`
 - Hooks: useEffect
@@ -17,7 +17,7 @@
 - Impact: changing the props/export affects 2 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## ToastProvider
-`src/features/toast/ToastContext.tsx:19` · function · named export · simple
+`src/features/toast/ToastContext.tsx:19` · function · client component · named export · simple
 
 Global notification queue (max 5 visible).
 
@@ -31,7 +31,7 @@ Global notification queue (max 5 visible).
 - Impact: changing the props/export affects 1 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## ToastViewport
-`src/features/toast/ToastViewport.tsx:23` · function · named export · trivial
+`src/features/toast/ToastViewport.tsx:23` · function · client component · named export · trivial
 
 Renders queued toasts in the corner of the screen.
 

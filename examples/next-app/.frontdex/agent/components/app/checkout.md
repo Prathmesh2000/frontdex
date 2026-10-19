@@ -3,7 +3,7 @@
 2 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## CheckoutLayout
-`app/checkout/layout.tsx:4` · function · default export · trivial
+`app/checkout/layout.tsx:4` · function · server component · default export · trivial
 
 Distraction-free checkout chrome.
 
@@ -15,7 +15,7 @@ Distraction-free checkout chrome.
 - Impact: changing the props/export affects 0 component(s) and 2 page(s); update every caller listed under "Used by".
 
 ## CheckoutPage
-`app/checkout/page.tsx:6` · function · default export · trivial
+`app/checkout/page.tsx:6` · function · client component · default export · trivial
 
 - Hooks: useAuth
 - Reads context:AuthContext via useAuth

@@ -24,6 +24,7 @@ The machine-readable definition is [`spec/catalogue.schema.json`](../spec/catalo
 | `pages` | map<Route, [Page](#page)> | yes | Every routable page. |
 | `stores` | map<StoreId, [Store](#store)> | no | Global state: Redux slices, React contexts, zustand stores. |
 | `styles` | map<file, [Stylesheet](#stylesheet)> | no | Every stylesheet in the project. |
+| `endpoints` | map<key, Endpoint> | no | Server entry points the frontend defines. Key: the URL for route handlers, API routes and resource routes; `middleware`; `action:<name>` for server actions. Endpoint: `kind` (`route-handler` \| `api-route` \| `resource-route` \| `middleware` \| `server-action`), `file`, `methods`, `workspace`, `importedBy` (server actions). |
 | `health` | [Health](#health) | no | Issue totals and dead code. |
 
 Keys starting with `x-` are allowed on the root, `info`, every Component, Prop and Page. They are never touched by the generator (same convention as OpenAPI extensions).
@@ -43,7 +44,7 @@ Keys starting with `x-` are allowed on the root, `info`, every Component, Prop a
 | `framework` | `react` \| `next` | Detected from dependencies (any workspace package counts). |
 | `packageManager` | `npm` \| `pnpm` \| `yarn` \| `yarn-berry` \| `yarn-pnp` \| `bun` | From the `packageManager` field or the lockfile. |
 | `workspaces` | string[] | Workspace package names (monorepos only). |
-| `routers` | array of `next-app` \| `next-pages` \| `react-router` | Routers found in the code. |
+| `routers` | array of `next-app` \| `next-pages` \| `react-router` \| `react-router-v7` \| `remix` \| `tanstack` \| `gatsby` \| `solid-start` \| `qwik-city` | Routers found in the code. |
 | `generator` | string | Tool and version that produced the file. |
 | `generatedAt` | date-time | |
 
@@ -55,7 +56,8 @@ Keys starting with `x-` are allowed on the root, `info`, every Component, Prop a
 | `file` | string | gen | Path relative to project root. |
 | `workspace` | string | gen | Workspace package containing the component (monorepos only). |
 | `line` | integer | gen | Declaration line. |
-| `kind` | `function` \| `class` \| `memo` \| `forwardRef` | gen | How it is declared. `memo(forwardRef(...))` is `memo`. |
+| `kind` | `function` \| `class` \| `memo` \| `forwardRef` | gen | How it is declared. `memo(forwardRef(...))` is `memo`; Qwik `component$()` is `function`. |
+| `rendering` | `client` \| `server` | gen | Next.js App Router pages only: `client` when the module, or a component that renders it, has `'use client'`. |
 | `export` | `default` \| `named` \| `none` | gen | How the defining file exports it. |
 | `description` | string | both | From the JSDoc block above the declaration; a hand-written value wins. |
 | `status` | `experimental` \| `stable` \| `deprecated` | both | `@deprecated` in JSDoc sets `deprecated`. |
@@ -199,12 +201,13 @@ flowchart LR
 
 | Field | Type | Owner | Description |
 |---|---|---|---|
-| `router` | `next-app` \| `next-pages` \| `react-router` | gen | |
+| `router` | see `info.routers` | gen | Params keep the router's syntax: `[id]` (Next, Gatsby, SolidStart, Qwik), `:id` (React Router, Remix), `$id` (TanStack). |
 | `file` | string | gen | File that declares the route (page file, or the file containing `<Route>`). |
 | `workspace` | string | gen | Workspace package serving the page (monorepos only). When two apps serve the same route, the second page is keyed `<route> (<workspace>)`. |
 | `component` | ComponentId | gen | Root component. Absent if unresolved. |
 | `params` | string[] | gen | Dynamic segments. |
-| `layouts` | ComponentId[] | gen | Outermost first: `layout.tsx` chain or `_app`. |
+| `layouts` | ComponentId[] | gen | Outermost first: `layout.tsx` chain, `_app`, `root.tsx` + parent routes (Remix/React Router), `__root` + parent routes (TanStack). |
+| `metadata` | `static` \| `dynamic` | gen | Next.js: the page exports `metadata` (static) or `generateMetadata` (dynamic). |
 | `components` | ComponentId[] | gen | Every project component in the page tree, layouts included. |
 | `description` | string | manual | |
 | `tags` | string[] | manual | |

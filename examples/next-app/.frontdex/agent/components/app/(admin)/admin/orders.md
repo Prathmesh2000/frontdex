@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## AdminOrdersPage
-`app/(admin)/admin/orders/page.tsx:7` · function · default export · simple
+`app/(admin)/admin/orders/page.tsx:7` · function · client component · default export · simple
 
 - State: `selected` (useState, init `null`, set via `setSelected`); `version` (useState, init `0`, set via `setVersion`)
 - Hooks: useState×2

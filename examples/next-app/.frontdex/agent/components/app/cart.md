@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## CartPage
-`app/cart/page.tsx:10` · function · default export · simple
+`app/cart/page.tsx:10` · function · client component · default export · simple
 
 Full cart page. Reads lines and coupon from Redux and passes them down as props.
 

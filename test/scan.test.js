@@ -157,3 +157,18 @@ test('package manager detection: packageManager field, then lockfiles; Yarn berr
   assert.equal(project(['package-lock.json'], { packageManager: 'pnpm@10.0.0' }), 'pnpm');
   assert.equal(project([]), null);
 });
+
+test('Next.js server side: route handlers, middleware, server actions, metadata, client/server rendering', () => {
+  assert.deepEqual(shop.endpoints['/api/orders'], { kind: 'route-handler', file: 'app/api/orders/route.ts', methods: ['GET', 'POST'] });
+  assert.deepEqual(shop.endpoints.middleware, { kind: 'middleware', file: 'src/middleware.ts' });
+  assert.deepEqual(shop.endpoints['action:subscribe'].importedBy, ['src/features/newsletter/NewsletterForm.tsx']);
+  assert.equal(shop.pages['/'].metadata, 'static');
+  // ProfileForm's module says 'use client'; Button has no directive but is rendered by client components.
+  assert.equal(C.ProfileForm.rendering, 'client');
+  assert.equal(C.Button.rendering, 'client');
+  assert.equal(C.NewsletterForm.rendering, 'server');
+  assert.equal(C.RootLayout.rendering, 'server');
+  // demo: LiveVisitors is a class component imported straight into a server page.
+  assert.ok(issuesOf('LiveVisitors', 'client-code-in-server-component').length);
+  assert.equal(issuesOf('ProfileForm', 'client-code-in-server-component').length, 0);
+});

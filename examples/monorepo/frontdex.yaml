@@ -12,7 +12,7 @@ info:
     - next-app
     - react-router
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T12:34:02.399Z
+  generatedAt: 2026-10-19T12:48:49.106Z
 components:
   Badge:
     name: Badge
@@ -59,6 +59,7 @@ components:
       - /
       - /settings
       - / (@acme/admin)
+    rendering: server
   Card:
     name: Card
     file: packages/ui/src/card.tsx
@@ -84,6 +85,7 @@ components:
       - /
       - / (@acme/admin)
       - /users
+    rendering: server
   Dashboard:
     name: Dashboard
     file: apps/admin/src/pages/Dashboard.tsx
@@ -123,6 +125,7 @@ components:
       - HomePage
     pages:
       - /
+    rendering: server
   HomePage:
     name: HomePage
     file: apps/web/app/page.tsx
@@ -149,6 +152,7 @@ components:
           line: 10
     pages:
       - /
+    rendering: server
   RootLayout:
     name: RootLayout
     file: apps/web/app/layout.tsx
@@ -163,6 +167,7 @@ components:
     pages:
       - /
       - /settings
+    rendering: server
   SettingsPage:
     name: SettingsPage
     file: apps/web/app/settings/page.tsx
@@ -179,6 +184,7 @@ components:
           line: 4
     pages:
       - /settings
+    rendering: server
   Users:
     name: Users
     file: apps/admin/src/pages/Users.tsx

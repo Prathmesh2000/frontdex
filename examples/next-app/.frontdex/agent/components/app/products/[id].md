@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ProductDetailPage
-`app/products/[id]/page.tsx:16` · function · default export · simple
+`app/products/[id]/page.tsx:16` · function · server component · default export · simple
 
 Product detail: gallery, info, lazy reviews and related items.
 

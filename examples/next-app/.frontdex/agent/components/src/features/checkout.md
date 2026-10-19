@@ -3,7 +3,7 @@
 5 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## AddressStep
-`src/features/checkout/AddressStep.tsx:5` · function · named export · simple
+`src/features/checkout/AddressStep.tsx:5` · function · client component · named export · simple
 
 Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo).
 
@@ -16,7 +16,7 @@ Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo)
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## StepIndicator
-`src/features/checkout/StepIndicator.tsx:6` · function · named export · trivial
+`src/features/checkout/StepIndicator.tsx:6` · function · client component · named export · trivial
 
 "1 — 2 — 3" progress header for the checkout wizard.
 
@@ -28,7 +28,7 @@ Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo)
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## AddressForm
-`src/features/checkout/AddressForm.tsx:15` · function · named export · moderate
+`src/features/checkout/AddressForm.tsx:15` · function · client component · named export · moderate
 
 Shipping address fields validated with the zod addressSchema.
 
@@ -51,7 +51,7 @@ Shipping address fields validated with the zod addressSchema.
 - Impact: changing the props/export affects 3 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## PaymentForm
-`src/features/checkout/PaymentForm.tsx:21` · class · named export · heavy
+`src/features/checkout/PaymentForm.tsx:21` · class · client component · named export · heavy
 
 Card entry. Class component because it wraps the imperative payments SDK.
 
@@ -76,7 +76,7 @@ Card entry. Class component because it wraps the imperative payments SDK.
 - Impact: changing the props/export affects 2 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## CheckoutWizard
-`src/features/checkout/CheckoutWizard.tsx:45` · function · named export · complex
+`src/features/checkout/CheckoutWizard.tsx:45` · function · client component · named export · complex
 
 Three-step checkout state machine: address → payment → review. Persists a draft in sessionStorage.
 

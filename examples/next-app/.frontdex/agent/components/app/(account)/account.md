@@ -3,7 +3,7 @@
 2 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## AccountLayout
-`app/(account)/account/layout.tsx:5` · function · default export · trivial
+`app/(account)/account/layout.tsx:5` · function · server component · default export · trivial
 
 Signed-in area wrapper.
 
@@ -15,7 +15,7 @@ Signed-in area wrapper.
 - Impact: changing the props/export affects 0 component(s) and 2 page(s); update every caller listed under "Used by".
 
 ## AccountPage
-`app/(account)/account/page.tsx:7` · function · default export · trivial
+`app/(account)/account/page.tsx:7` · function · client component · default export · trivial
 
 - Hooks: useAuth, useSearchParams
 - Variables: wantsLogin

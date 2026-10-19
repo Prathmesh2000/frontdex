@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## Hero
-`apps/web/src/components/Hero.tsx:1` · function · named export · trivial
+`apps/web/src/components/Hero.tsx:1` · function · server component · named export · trivial
 
 - Props: `title: string`
 - Props from HomePage: title="Acme"

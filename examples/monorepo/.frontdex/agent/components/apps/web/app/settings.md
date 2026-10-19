@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## SettingsPage
-`apps/web/app/settings/page.tsx:3` · function · default export · trivial
+`apps/web/app/settings/page.tsx:3` · function · server component · default export · trivial
 
 - Renders: Button(variant)
 - Used by: nothing (unused or entry point)

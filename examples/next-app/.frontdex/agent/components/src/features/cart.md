@@ -3,7 +3,7 @@
 3 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## CartDrawer
-`src/features/cart/CartDrawer.tsx:10` · function · named export · simple
+`src/features/cart/CartDrawer.tsx:10` · function · client component · named export · simple
 
 Slide-over cart opened from the header. Visibility lives in Redux (ui.drawerOpen).
 
@@ -21,7 +21,7 @@ Slide-over cart opened from the header. Visibility lives in Redux (ui.drawerOpen
 - Impact: changing the props/export affects 2 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## CartItem
-`src/features/cart/CartItem.tsx:10` · memo · named export · simple
+`src/features/cart/CartItem.tsx:10` · memo · client component · named export · simple
 
 One cart line with quantity stepper and remove button.
 
@@ -43,7 +43,7 @@ One cart line with quantity stepper and remove button.
 - Impact: changing the props/export affects 8 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## OrderSummary
-`src/features/cart/OrderSummary.tsx:21` · memo · named export · moderate
+`src/features/cart/OrderSummary.tsx:21` · memo · client component · named export · moderate
 
 Totals, shipping and coupon entry.
 

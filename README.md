@@ -209,12 +209,13 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | Props | TS param types, `FC<Props>`, `forwardRef<Ref, Props>`, interfaces with `extends`, intersections, `PropsWithChildren`, destructuring defaults, `propTypes`, `defaultProps`, `props.x` usage |
 | State | `useState`, `useReducer`, class `state` / `this.state` |
 | Lifecycle | effect hooks (deps → mount/update, cleanup → unmount) and all class lifecycle methods, with the functions each one calls |
-| Routing | Next.js App Router (groups, parallel slots, dynamic segments, nested layouts), Pages Router (`_app`), React Router JSX and object routes |
+| Routing | Next.js App Router (groups, parallel slots, dynamic segments, nested layouts), Pages Router (`_app`), React Router JSX and object routes, React Router v7 framework mode (`app/routes.ts`, `flatRoutes()`), Remix v2 flat routes, TanStack Router file routes, Gatsby, SolidStart, Qwik City |
+| Server side | Next.js route handlers (with their HTTP methods), Pages Router API routes, middleware, server actions (and who imports them), Remix/React Router resource routes, page `metadata`, and each App Router component's client/server rendering |
 | Imports | relative paths, tsconfig aliases (per-folder configs, `extends`), workspace packages, barrels, namespace imports, `lazy()` / `next/dynamic`, compound components (`<Tabs.List>`, `Card.Header = …`, `Object.assign`) |
 | Global state | Redux Toolkit (`createSlice`, `configureStore`, thunks, `useSelector`/`useAppSelector`, `dispatch`, `connect`), React context (incl. through custom hooks), zustand |
 | Data & validation | `fetch`, axios-style clients, SWR, React Query, service modules; zod, yup, react-hook-form, HTML constraints, custom validators |
 | Styles | `className` strings, template literals, `clsx`/`cn`, CSS modules, global stylesheets (class → `file:line`) |
-| Diagnostics | memory leaks, render loops, side effects in render, unsafe async updates, missing deps, unused variables/functions/props/state/imports/exports/files/components, deprecated usage |
+| Diagnostics | memory leaks, render loops, side effects in render, unsafe async updates, missing deps, unused variables/functions/props/state/imports/exports/files/components, deprecated usage, hooks or class components rendered as Server Components |
 
 ## Performance
 

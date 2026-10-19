@@ -3,7 +3,7 @@
 3 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## ProtectedRoute
-`src/features/auth/ProtectedRoute.tsx:8` · function · named export · simple
+`src/features/auth/ProtectedRoute.tsx:8` · function · client component · named export · simple
 
 Redirects to the login page when there is no session; optionally requires a role.
 
@@ -19,7 +19,7 @@ Redirects to the login page when there is no session; optionally requires a role
 - Impact: changing the props/export affects 3 component(s) and 6 page(s); update every caller listed under "Used by".
 
 ## LoginForm
-`src/features/auth/LoginForm.tsx:14` · function · named export · simple
+`src/features/auth/LoginForm.tsx:14` · function · client component · named export · simple
 
 Email + password sign-in, validated with react-hook-form.
 
@@ -40,7 +40,7 @@ Email + password sign-in, validated with react-hook-form.
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
 
 ## AuthProvider
-`src/features/auth/AuthContext.tsx:18` · function · named export · moderate
+`src/features/auth/AuthContext.tsx:18` · function · client component · named export · moderate
 
 Loads the session once and mirrors auth changes into Redux (user.profile).
 

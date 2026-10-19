@@ -7,7 +7,7 @@ info:
   routers:
     - next-app
   generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T12:27:13.778Z
+  generatedAt: 2026-10-19T12:48:42.193Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -29,6 +29,7 @@ components:
     pages:
       - /account/orders/[orderId]
       - /account
+    rendering: server
   AccountNav:
     name: AccountNav
     file: src/features/account/AccountNav.tsx
@@ -54,6 +55,7 @@ components:
     pages:
       - /account/orders/[orderId]
       - /account
+    rendering: client
   AccountPage:
     name: AccountPage
     file: app/(account)/account/page.tsx
@@ -88,6 +90,7 @@ components:
           line: 10
     pages:
       - /account
+    rendering: client
   AddressForm:
     name: AddressForm
     file: src/features/checkout/AddressForm.tsx
@@ -288,6 +291,7 @@ components:
       - AddressStep
     pages:
       - /checkout
+    rendering: client
   AddressStep:
     name: AddressStep
     file: src/features/checkout/AddressStep.tsx
@@ -328,6 +332,7 @@ components:
       - CheckoutWizard
     pages:
       - /checkout
+    rendering: client
   AddToCartButton:
     name: AddToCartButton
     file: src/features/products/AddToCartButton.tsx
@@ -458,6 +463,7 @@ components:
       - ProductInfo
     pages:
       - /products/[id]
+    rendering: client
   AdminDashboard:
     name: AdminDashboard
     file: app/(admin)/admin/page.tsx
@@ -497,6 +503,7 @@ components:
           line: 13
     pages:
       - /admin
+    rendering: server
   AdminLayout:
     name: AdminLayout
     file: app/(admin)/admin/layout.tsx
@@ -528,6 +535,7 @@ components:
       - /admin/orders
       - /admin
       - /admin/products/[...slug]
+    rendering: server
   AdminOrdersPage:
     name: AdminOrdersPage
     file: app/(admin)/admin/orders/page.tsx
@@ -574,6 +582,7 @@ components:
           line: 13
     pages:
       - /admin/orders
+    rendering: client
   AdminProductPage:
     name: AdminProductPage
     file: app/(admin)/admin/products/[...slug]/page.tsx
@@ -605,6 +614,7 @@ components:
           line: 7
     pages:
       - /admin/products/[...slug]
+    rendering: server
   AdminSidebar:
     name: AdminSidebar
     file: src/features/admin/AdminSidebar.tsx
@@ -667,6 +677,7 @@ components:
       - /admin/orders
       - /admin
       - /admin/products/[...slug]
+    rendering: client
   AuthProvider:
     name: AuthProvider
     file: src/features/auth/AuthContext.tsx
@@ -791,6 +802,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   Badge:
     name: Badge
     file: src/components/ui/Badge.tsx
@@ -830,6 +842,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   BlogPage:
     name: BlogPage
     file: app/blog/[[...slug]]/page.tsx
@@ -864,6 +877,7 @@ components:
           line: 18
     pages:
       - /blog/[[...slug]]
+    rendering: server
     issues:
       - type: deprecated-usage
         severity: medium
@@ -944,6 +958,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   Card@src/components/ui/Card.tsx:
     name: Card
     file: src/components/ui/Card.tsx
@@ -985,6 +1000,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   Card@src/features/admin/Card.tsx:
     name: Card
     file: src/features/admin/Card.tsx
@@ -1023,6 +1039,7 @@ components:
       - StatCard
     pages:
       - /admin
+    rendering: server
   CardBody:
     name: CardBody
     file: src/components/ui/Card.tsx
@@ -1056,6 +1073,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   CardHeader:
     name: CardHeader
     file: src/components/ui/Card.tsx
@@ -1092,6 +1110,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   CartBadge:
     name: CartBadge
     file: src/components/layout/CartBadge.tsx
@@ -1179,6 +1198,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   CartDrawer:
     name: CartDrawer
     file: src/features/cart/CartDrawer.tsx
@@ -1298,6 +1318,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   CartItem:
     name: CartItem
     file: src/features/cart/CartItem.tsx
@@ -1388,6 +1409,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   CartPage:
     name: CartPage
     file: app/cart/page.tsx
@@ -1463,6 +1485,7 @@ components:
       - next/link#Link
     pages:
       - /cart
+    rendering: client
   CheckoutLayout:
     name: CheckoutLayout
     file: app/checkout/layout.tsx
@@ -1486,6 +1509,7 @@ components:
     pages:
       - /checkout
       - /checkout/success
+    rendering: server
   CheckoutPage:
     name: CheckoutPage
     file: app/checkout/page.tsx
@@ -1512,6 +1536,7 @@ components:
           line: 10
     pages:
       - /checkout
+    rendering: client
   CheckoutWizard:
     name: CheckoutWizard
     file: src/features/checkout/CheckoutWizard.tsx
@@ -1691,6 +1716,7 @@ components:
       - CheckoutPage
     pages:
       - /checkout
+    rendering: client
   DataTable:
     name: DataTable
     file: src/components/ui/DataTable.tsx
@@ -1768,6 +1794,7 @@ components:
     pages:
       - /admin/orders
       - /admin
+    rendering: client
   ErrorBoundary:
     name: ErrorBoundary
     file: src/features/admin/ErrorBoundary.tsx
@@ -1822,6 +1849,7 @@ components:
       - /admin/orders
       - /admin
       - /admin/products/[...slug]
+    rendering: client
   FeaturedCollections:
     name: FeaturedCollections
     file: src/features/products/FeaturedCollections.tsx
@@ -1870,6 +1898,7 @@ components:
       - HomePage
     pages:
       - /
+    rendering: client
   Filters:
     name: Filters
     file: src/features/products/Filters.tsx
@@ -1971,6 +2000,7 @@ components:
       - ProductsPage
     pages:
       - /products
+    rendering: client
   Footer:
     name: Footer
     file: src/components/layout/Footer.jsx
@@ -2013,6 +2043,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: server
   Header:
     name: Header
     file: src/components/layout/Header.tsx
@@ -2154,6 +2185,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   HeroBanner:
     name: HeroBanner
     file: src/components/layout/HeroBanner.tsx
@@ -2245,30 +2277,33 @@ components:
       - HomePage
     pages:
       - /
+    rendering: client
   HomePage:
     name: HomePage
     file: app/page.tsx
-    line: 5
+    line: 8
     kind: function
     export: default
     description: "Landing page: promo hero + tabbed collections."
     renders:
       - HeroBanner
       - FeaturedCollections
+      - NewsletterForm
     passes:
       HeroBanner:
         - name: headline
           value: '"Autumn sale — up to 40% off"'
-          line: 8
+          line: 11
         - name: endsAt
           value: '"2026-11-01T00:00:00Z"'
-          line: 8
+          line: 11
       FeaturedCollections:
         - name: defaultTab
           value: '"bestsellers"'
-          line: 9
+          line: 12
     pages:
       - /
+    rendering: server
   Input:
     name: Input
     file: src/components/ui/Input.tsx
@@ -2318,6 +2353,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   LegacyButton:
     name: LegacyButton
     file: src/components/layout/LegacyButton.jsx
@@ -2357,6 +2393,12 @@ components:
       - BlogPage
     pages:
       - /blog/[[...slug]]
+    rendering: server
+    issues:
+      - type: client-code-in-server-component
+        severity: high
+        message: LegacyButton is a class component but renders as a Server Component
+        fix: add 'use client' at the top of its file, or render it from a client component
   LiveVisitors:
     name: LiveVisitors
     file: src/features/admin/LiveVisitors.tsx
@@ -2420,10 +2462,15 @@ components:
         message: window.addEventListener('online') started in componentDidMount with no matching release in componentWillUnmount
         line: 12
         fix: release it in componentWillUnmount
+      - type: client-code-in-server-component
+        severity: high
+        message: LiveVisitors is a class component but renders as a Server Component
+        fix: add 'use client' at the top of its file, or render it from a client component
     usedBy:
       - AdminDashboard
     pages:
       - /admin
+    rendering: server
   LoginForm:
     name: LoginForm
     file: src/features/auth/LoginForm.tsx
@@ -2536,6 +2583,7 @@ components:
       - AccountPage
     pages:
       - /account
+    rendering: client
   Modal:
     name: Modal
     file: src/components/ui/Modal.tsx
@@ -2623,6 +2671,29 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
+  NewsletterForm:
+    name: NewsletterForm
+    file: src/features/newsletter/NewsletterForm.tsx
+    line: 4
+    kind: function
+    export: named
+    description: Server component form that posts straight to a server action.
+    validation:
+      - via: html
+        field: email
+        rules:
+          - required
+          - type=email
+        line: 7
+    styles:
+      classes:
+        - name: newsletter
+    usedBy:
+      - HomePage
+    pages:
+      - /
+    rendering: server
   OldPromoBanner:
     name: OldPromoBanner
     file: src/components/layout/OldPromoBanner.tsx
@@ -2675,6 +2746,7 @@ components:
           line: 5
     pages:
       - /account/orders/[orderId]
+    rendering: server
   OrderEditor:
     name: OrderEditor
     file: src/features/admin/OrderEditor.tsx
@@ -2807,6 +2879,7 @@ components:
       - AdminOrdersPage
     pages:
       - /admin/orders
+    rendering: client
   OrderSummary:
     name: OrderSummary
     file: src/features/cart/OrderSummary.tsx
@@ -2955,6 +3028,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   OrderTimeline:
     name: OrderTimeline
     file: src/features/account/OrderTimeline.tsx
@@ -3042,6 +3116,7 @@ components:
       - OrderDetailPage
     pages:
       - /account/orders/[orderId]
+    rendering: client
   PaymentForm:
     name: PaymentForm
     file: src/features/checkout/PaymentForm.tsx
@@ -3225,6 +3300,7 @@ components:
       - CheckoutWizard
     pages:
       - /checkout
+    rendering: client
   ProductCard:
     name: ProductCard
     file: src/features/products/ProductCard.tsx
@@ -3312,6 +3388,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   ProductDetailPage:
     name: ProductDetailPage
     file: app/products/[id]/page.tsx
@@ -3370,6 +3447,7 @@ components:
           line: 25
     pages:
       - /products/[id]
+    rendering: server
   ProductEditor:
     name: ProductEditor
     file: src/features/admin/ProductEditor.tsx
@@ -3521,6 +3599,7 @@ components:
       - AdminProductPage
     pages:
       - /admin/products/[...slug]
+    rendering: client
   ProductGallery:
     name: ProductGallery
     file: src/features/products/ProductGallery.tsx
@@ -3584,6 +3663,7 @@ components:
       - ProductDetailPage
     pages:
       - /products/[id]
+    rendering: client
   ProductGrid:
     name: ProductGrid
     file: src/features/products/ProductGrid.tsx
@@ -3707,6 +3787,7 @@ components:
     pages:
       - /
       - /products
+    rendering: client
   ProductInfo:
     name: ProductInfo
     file: src/features/products/ProductInfo.tsx
@@ -3757,6 +3838,7 @@ components:
       - ProductDetailPage
     pages:
       - /products/[id]
+    rendering: server
   ProductsPage:
     name: ProductsPage
     file: app/products/page.tsx
@@ -3800,6 +3882,7 @@ components:
           line: 12
     pages:
       - /products
+    rendering: server
   ProfileForm:
     name: ProfileForm
     file: src/features/account/ProfileForm.tsx
@@ -3948,6 +4031,7 @@ components:
       - AccountPage
     pages:
       - /account
+    rendering: client
   ProtectedRoute:
     name: ProtectedRoute
     file: src/features/auth/ProtectedRoute.tsx
@@ -4016,6 +4100,7 @@ components:
       - /admin
       - /admin/products/[...slug]
       - /checkout
+    rendering: client
   RecentOrders:
     name: RecentOrders
     file: src/features/admin/RecentOrders.tsx
@@ -4093,6 +4178,7 @@ components:
     pages:
       - /admin/orders
       - /admin
+    rendering: client
   RelatedProducts:
     name: RelatedProducts
     file: src/features/products/RelatedProducts.tsx
@@ -4173,6 +4259,7 @@ components:
       - ProductDetailPage
     pages:
       - /products/[id]
+    rendering: client
   Reviews:
     name: Reviews
     file: src/features/products/Reviews.tsx
@@ -4243,6 +4330,7 @@ components:
       - ProductDetailPage
     pages:
       - /products/[id]
+    rendering: client
   RootLayout:
     name: RootLayout
     file: app/layout.tsx
@@ -4291,6 +4379,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: server
   SalesChart:
     name: SalesChart
     file: src/features/admin/SalesChart.tsx
@@ -4417,6 +4506,7 @@ components:
       - SalesPanel
     pages:
       - /admin
+    rendering: client
   SalesPanel:
     name: SalesPanel
     file: src/features/admin/SalesPanel.tsx
@@ -4484,6 +4574,7 @@ components:
       - AdminDashboard
     pages:
       - /admin
+    rendering: client
   SearchBar:
     name: SearchBar
     file: src/features/search/SearchBar.tsx
@@ -4619,6 +4710,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   SearchPage:
     name: SearchPage
     file: app/search/page.tsx
@@ -4662,6 +4754,7 @@ components:
           line: 14
     pages:
       - /search
+    rendering: client
   SearchResults:
     name: SearchResults
     file: src/features/search/SearchResults.tsx
@@ -4719,6 +4812,7 @@ components:
       - SearchPage
     pages:
       - /search
+    rendering: client
   Spinner:
     name: Spinner
     file: src/components/ui/Spinner.tsx
@@ -4762,6 +4856,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   StatCard:
     name: StatCard
     file: src/features/admin/StatCard.tsx
@@ -4807,6 +4902,7 @@ components:
       - AdminDashboard
     pages:
       - /admin
+    rendering: server
   StepIndicator:
     name: StepIndicator
     file: src/features/checkout/StepIndicator.tsx
@@ -4833,6 +4929,7 @@ components:
       - CheckoutWizard
     pages:
       - /checkout
+    rendering: client
   StoreProvider:
     name: StoreProvider
     file: src/store/StoreProvider.tsx
@@ -4867,6 +4964,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   SuccessPage:
     name: SuccessPage
     file: app/checkout/success/page.tsx
@@ -4909,6 +5007,7 @@ components:
       - next/link#Link
     pages:
       - /checkout/success
+    rendering: client
   TabsList:
     name: TabsList
     file: src/components/ui/Tabs.tsx
@@ -4923,6 +5022,7 @@ components:
       - FeaturedCollections
     pages:
       - /
+    rendering: client
   TabsPanel:
     name: TabsPanel
     file: src/components/ui/Tabs.tsx
@@ -4950,6 +5050,7 @@ components:
       - FeaturedCollections
     pages:
       - /
+    rendering: client
   TabsRoot:
     name: TabsRoot
     file: src/components/ui/Tabs.tsx
@@ -4978,6 +5079,7 @@ components:
       - FeaturedCollections
     pages:
       - /
+    rendering: client
   TabsTrigger:
     name: TabsTrigger
     file: src/components/ui/Tabs.tsx
@@ -5005,6 +5107,7 @@ components:
       - FeaturedCollections
     pages:
       - /
+    rendering: client
   ThemeProvider:
     name: ThemeProvider
     file: src/features/theme/ThemeContext.tsx
@@ -5094,6 +5197,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   ToastItem:
     name: ToastItem
     file: src/features/toast/ToastViewport.tsx
@@ -5159,6 +5263,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   ToastProvider:
     name: ToastProvider
     file: src/features/toast/ToastContext.tsx
@@ -5222,6 +5327,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   ToastViewport:
     name: ToastViewport
     file: src/features/toast/ToastViewport.tsx
@@ -5275,6 +5381,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
   Tooltip:
     name: Tooltip
     file: src/components/ui/Tooltip.tsx
@@ -5326,6 +5433,7 @@ components:
       - /products/[id]
       - /products
       - /search
+    rendering: client
 pages:
   /:
     router: next-app
@@ -5333,6 +5441,7 @@ pages:
     component: HomePage
     layouts:
       - RootLayout
+    metadata: static
     components:
       - RootLayout
       - HomePage
@@ -5345,6 +5454,7 @@ pages:
       - ToastViewport
       - HeroBanner
       - FeaturedCollections
+      - NewsletterForm
       - SearchBar
       - Button
       - CartBadge
@@ -5796,6 +5906,21 @@ pages:
       - CardHeader
       - CardBody
       - Input
+endpoints:
+  /api/orders:
+    kind: route-handler
+    file: app/api/orders/route.ts
+    methods:
+      - GET
+      - POST
+  action:subscribe:
+    kind: server-action
+    file: src/features/newsletter/actions.ts
+    importedBy:
+      - src/features/newsletter/NewsletterForm.tsx
+  middleware:
+    kind: middleware
+    file: src/middleware.ts
 stores:
   context:AuthContext:
     kind: context
@@ -5951,13 +6076,14 @@ styles:
       - src/features/products/ProductCard.tsx
 health:
   issues:
-    high: 6
+    high: 8
     medium: 2
     low: 7
     info: 1
   byType:
     deprecated-usage: 1
     memory-leak: 5
+    client-code-in-server-component: 2
     state-never-updated: 1
     unused-variable: 2
     render-loop: 1

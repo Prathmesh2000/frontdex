@@ -3,7 +3,7 @@
 1 component(s). Index: `.frontdex/agent/INDEX.md`
 
 ## SuccessPage
-`app/checkout/success/page.tsx:7` · function · default export · simple
+`app/checkout/success/page.tsx:7` · function · client component · default export · simple
 
 - Hooks: useSearchParams, useEffect
 - Effect `useEffect` L9: mount+update (deps [orderId]) → trackEvent

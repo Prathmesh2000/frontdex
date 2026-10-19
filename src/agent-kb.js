@@ -22,7 +22,7 @@ const code = (s) => `\`${String(s).replace(/`/g, "'")}\``;
 
 export function componentCard(idx, m, { heading = '##' } = {}) {
   const c = m.c;
-  const lines = [`${heading} ${c.name}`, `${code(`${c.file}${c.line ? `:${c.line}` : ''}`)} · ${c.kind} · ${c.export ?? 'none'} export · ${LEVELS[m.level]}${c.status ? ` · ${c.status.toUpperCase()}` : ''}${c.owner ? ` · owner ${c.owner}` : ''}`];
+  const lines = [`${heading} ${c.name}`, `${code(`${c.file}${c.line ? `:${c.line}` : ''}`)} · ${c.kind}${c.rendering ? ` · ${c.rendering} component` : ''} · ${c.export ?? 'none'} export · ${LEVELS[m.level]}${c.status ? ` · ${c.status.toUpperCase()}` : ''}${c.owner ? ` · owner ${c.owner}` : ''}`];
   if (c.description) lines.push('', c.description);
   lines.push('');
   const props = Object.entries(c.props ?? {});
@@ -104,6 +104,13 @@ ${Object.entries(cat.stores ?? {}).map(([id, s]) => `| ${id} | ${s.kind} | ${cod
 ## API endpoints
 
 ${apiMap(idx).join('\n') || '_No API calls detected._'}
+${cat.endpoints ? `
+## Server endpoints (defined in this project)
+
+| Key | Kind | Methods | File |
+|---|---|---|---|
+${Object.entries(cat.endpoints).map(([k, e]) => `| ${code(k)} | ${e.kind} | ${(e.methods ?? []).join(', ') || '-'} | ${code(e.file)} |`).join('\n')}
+` : ''}
 
 ## Health
 
