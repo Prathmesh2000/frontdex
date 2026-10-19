@@ -125,7 +125,8 @@
               "nuxt",
               "vue-router",
               "sveltekit",
-              "astro"
+              "astro",
+              "html"
             ]
           }
         },
@@ -170,6 +171,10 @@
             "memo",
             "forwardRef"
           ]
+        },
+        "tag": {
+          "type": "string",
+          "description": "Custom element tag (customElements.define / @customElement)."
         },
         "export": {
           "enum": [
@@ -353,7 +358,9 @@
             "computed",
             "data",
             "$state",
-            "let"
+            "let",
+            "field",
+            "x-data"
           ]
         },
         "initial": {
@@ -462,7 +469,8 @@
             "nuxt",
             "vue-router",
             "sveltekit",
-            "astro"
+            "astro",
+            "html"
           ]
         },
         "file": {

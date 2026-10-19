@@ -31,7 +31,7 @@ export function listProjectFiles(config) {
 
   const addFile = (abs) => {
     const ext = path.extname(abs);
-    if (SOURCE_EXT.includes(ext)) sources.add(abs);
+    if (SOURCE_EXT.includes(ext) || (config.html && ext === '.html')) sources.add(abs);
     else if (STYLE_EXT.includes(ext)) styles.add(abs);
   };
   const walkDir = (dir, relDir) => {
@@ -73,7 +73,7 @@ export function updateProjectFiles(config, previous, changed) {
   for (const abs of changed) {
     const rel = path.relative(config.root, abs).split(path.sep).join('/');
     const ext = path.extname(abs);
-    const list = SOURCE_EXT.includes(ext) ? sources : STYLE_EXT.includes(ext) ? styles : null;
+    const list = SOURCE_EXT.includes(ext) || (config.html && ext === '.html') ? sources : STYLE_EXT.includes(ext) ? styles : null;
     const stat = fs.statSync(abs, { throwIfNoEntry: false });
     if (stat?.isDirectory() || (!stat && !list)) return listProjectFiles(config);
     if (!list) continue;

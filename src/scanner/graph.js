@@ -221,6 +221,7 @@ export function scanProject(config, { cache, known } = {}) {
     return name && tmod.schemas?.[name] ? { ...tmod.schemas[name], file: rel(target) } : null;
   };
 
+  const byTag = new Map(entries.filter(({ c }) => c.tag).map(({ c }) => [c.tag, c]));
   const components = {};
   for (const { mod, c } of entries) {
     for (const v of c.validation ?? []) {
@@ -241,7 +242,8 @@ export function scanProject(config, { cache, known } = {}) {
     const externals = new Set();
     const passes = {};
     for (const j of c.jsx) {
-      const r = resolveLocal(mod.file, j.name);
+      // Custom element tags (<x-card>) are global once defined, so they resolve by tag rather than by import.
+      const r = resolveLocal(mod.file, j.name) ?? (j.name.includes('-') ? byTag.get(j.name) : null);
       if (r?.id && r.id !== c.id) {
         renders.add(r.id);
         if (j.props?.length && !j.soft) (passes[r.id] ??= []).push(...j.props.map((p) => ({ ...p, line: j.line })));
@@ -254,6 +256,7 @@ export function scanProject(config, { cache, known } = {}) {
       workspace: workspaceOf(config.workspaces, mod.file)?.name,
       line: c.line,
       kind: c.kind,
+      tag: c.tag,
       export: exportNames.includes('default') ? 'default' : exportNames.length ? 'named' : 'none',
       description: c.description,
       status: c.status,
@@ -360,7 +363,7 @@ export function scanProject(config, { cache, known } = {}) {
   }
 
   // File-system routers other than Next.js (Remix, React Router v7, TanStack, Gatsby, SolidStart, Qwik City), per app root.
-  const appRoots = [{ dir: root, deps: config.deps }, ...config.workspaces.map((w) => ({ dir: w.dir, deps: { ...w.pkg.dependencies, ...w.pkg.devDependencies } }))];
+  const appRoots = [{ dir: root, deps: config.deps, html: config.html }, ...config.workspaces.map((w) => ({ dir: w.dir, deps: { ...w.pkg.dependencies, ...w.pkg.devDependencies } }))];
   const refId = (ref) => idOf(ref.local ? resolveLocal(ref.file, ref.local) : resolveExport(ref.file, ref.export));
   const resourceRoutes = [];
   for (const app of appRoots) {

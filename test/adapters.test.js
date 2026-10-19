@@ -205,3 +205,61 @@ test('Astro: frontmatter props and fetches, child components and framework islan
   assert.equal(cat.pages['/'].router, 'astro');
   assert.deepEqual(cat.endpoints['/api/search'].methods, ['GET']);
 });
+
+test('Plain HTML site with Lit and vanilla custom elements, Alpine, htmx and Stimulus', () => {
+  const cat = scanFixture({ lit: '3', alpinejs: '3', 'htmx.org': '2' }, {
+    'index.html': [
+      '<!doctype html>',
+      '<html><head>',
+      '  <link rel="stylesheet" href="/css/site.css">',
+      '  <script type="module" src="./js/components.js"></script>',
+      '</head><body class="home">',
+      '  <!-- <old-banner> is commented out and must not count -->',
+      '  <user-card name="Ada" data-controller="tooltip"></user-card>',
+      '  <div x-data="{ open: false, count: 0 }"><button @click="open = !open">Menu</button></div>',
+      '  <nav x-data="dropdown()"></nav>',
+      '  <button hx-post="/api/like" hx-target="#likes">Like</button>',
+      '  <form action="/subscribe" method="post"><input name="email"></form>',
+      '  <script>document.body.innerHTML += "<fake-el></fake-el>";</script>',
+      '</body></html>',
+    ].join('\n'),
+    'about.html': '<h1 class="title">About</h1><user-card name="Grace"></user-card>\n',
+    'blog/index.html': '<h1>Blog</h1>\n',
+    'css/site.css': '.home { color: red }\n.title { font-weight: bold }\n',
+    'js/components.js': "import './user-card.js';\nimport './like-counter.js';\n",
+    'js/user-card.js': [
+      "import { LitElement, html } from 'lit';",
+      'export class UserCard extends LitElement {',
+      '  static properties = { name: { type: String }, expanded: { state: true } };',
+      '  connectedCallback() { super.connectedCallback(); }',
+      '  render() { return html`<div class="card">${this.name}<like-counter .count=${3}></like-counter></div>`; }',
+      '}',
+      "customElements.define('user-card', UserCard);",
+    ].join('\n'),
+    'js/like-counter.js': [
+      'class LikeCounter extends HTMLElement {',
+      "  static observedAttributes = ['count'];",
+      '  connectedCallback() { this.render(); }',
+      '  disconnectedCallback() {}',
+      '}',
+      "customElements.define('like-counter', LikeCounter);",
+    ].join('\n'),
+  });
+  const C = cat.components;
+  assert.equal(C.UserCard.tag, 'user-card');
+  assert.deepEqual(C.UserCard.props, { name: { type: 'String', required: false } });
+  assert.equal(C.UserCard.state.expanded.source, 'field');
+  assert.deepEqual(C.UserCard.renders, ['LikeCounter']);
+  assert.deepEqual(C.LikeCounter.props, { count: { type: 'string', required: false } });
+  assert.deepEqual(C.LikeCounter.lifecycle.map((e) => e.phases[0]), ['mount', 'unmount']);
+  const home = Object.values(C).find((c) => c.file === 'index.html');
+  assert.deepEqual(home.renders, ['UserCard']);
+  assert.deepEqual(Object.keys(home.state), ['open', 'count']);
+  assert.deepEqual(home.hooks.map((h) => h.name).sort(), ['alpine:dropdown', 'stimulus:tooltip']);
+  assert.deepEqual(home.apiCalls.map((a) => `${a.via} ${a.method} ${a.target}`), ['htmx POST /api/like', 'form POST /subscribe']);
+  assert.deepEqual(home.styles.classes, [{ name: 'home', at: 'css/site.css:1' }]);
+  assert.deepEqual(C.UserCard.usedBy.sort(), [home.name, Object.values(C).find((c) => c.file === 'about.html').name].sort());
+  assert.deepEqual(Object.keys(cat.pages).sort(), ['/', '/about.html', '/blog']);
+  assert.equal(cat.pages['/'].router, 'html');
+  assert.ok(cat.pages['/'].components.includes('LikeCounter'), 'nested custom elements are part of the page tree');
+});

@@ -1,6 +1,6 @@
 # frontdex
 
-A living knowledge base for frontends (React, Next.js, Remix, TanStack, Vue, Nuxt, Svelte, SvelteKit, Astro and more), like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
+A living knowledge base for frontends (React, Next.js, Remix, TanStack, Vue, Nuxt, Svelte, SvelteKit, Astro, Web Components and plain HTML), like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
 
 - **For developers:** `frontdex.yaml` (the [CatalogueSpec](docs/SPEC.md) format) plus a page-first UI:
   - **Navigation:** URL → layouts → component → its state, props, functions, timers, API calls, global state, validation and styles. Every item links to its `file:line`.
@@ -209,6 +209,8 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | Vue | `.vue` single-file components via the project's own `vue/compiler-sfc`: `<script setup>` (`defineProps` type or runtime form, `withDefaults`, `ref`/`reactive`/`computed`, lifecycle hooks, `watch`, composables, `fetch`/`$fetch`/`useFetch`) and the Options API (`props`, `data`, lifecycle, `components`); template children with their props, listeners and `v-model`; static classes. Vue Router route objects (including lazy `() => import()`), Nuxt `pages/` with `app.vue` and `layouts/default.vue` |
 | Svelte | `.svelte` components via the project's own `svelte/compiler`: Svelte 5 runes (`$props` with types and defaults, `$state`, `$derived`, `$effect` with cleanup) and Svelte 4 (`export let`, top-level `let`, `$:`, `onMount`/`onDestroy`); child components with props, `on:` events and `bind:`; static classes. SvelteKit `+page`/`+layout` routes, `+server.ts` handlers, `+page.server.ts` form actions, the `$lib` alias |
 | Astro | `.astro` via the project's own `@astrojs/compiler`: frontmatter imports, `Astro.props` typed by `interface Props`, frontmatter fetches; child components and framework islands (React/Vue/Svelte components with `client:*` kept as props); `src/pages` routes and `.ts` endpoints |
+| Web Components | Classes extending `HTMLElement`, `LitElement`, `FASTElement` and similar, registered with `customElements.define` or `@customElement`: Lit `static properties` / `@property` / `@state`, `observedAttributes`, lifecycle callbacks, child elements in `html` templates. `<x-tag>` anywhere resolves to its definition |
+| Plain HTML | In projects without a JS framework (or with `"html": true`): every `.html` file is a page; custom elements, `<script src>` (linked as imports), stylesheets (classes resolve), htmx `hx-*` and forms as API calls, Alpine `x-data` state and named components, Stimulus controllers |
 | Props | TS param types, `FC<Props>`, `forwardRef<Ref, Props>`, interfaces with `extends`, intersections, `PropsWithChildren`, destructuring defaults, `propTypes`, `defaultProps`, `props.x` usage |
 | State | `useState`, `useReducer`, class `state` / `this.state` |
 | Lifecycle | effect hooks (deps → mount/update, cleanup → unmount) and all class lifecycle methods, with the functions each one calls |

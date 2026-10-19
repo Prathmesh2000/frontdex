@@ -4,6 +4,7 @@ import { parse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { extractClassComponent, extractFunctionComponent, isReactClass, memberText, readJSDoc } from './component.js';
 import { analyzeComponent, analyzeModule } from './insights.js';
+import { definedTags, extractCustomElement, isElementClass } from './webcomponents.js';
 
 const traverse = _traverse.default ?? _traverse;
 // Qwik's component$ wraps a plain function component the same way memo does; it is recorded as kind `function`.
@@ -288,6 +289,7 @@ function scanComponents(programPath, mod) {
     mod.components.push(record);
   };
 
+  let tags = null;
   for (const stmt of programPath.get('body')) {
     let target = stmt;
     let isDefault = false;
@@ -308,6 +310,14 @@ function scanComponents(programPath, mod) {
       const name = target.node.id?.name ?? deriveName(mod.file);
       if (isDefault) mod.exports.set('default', name);
       add(target, name, 'class', docNode, undefined, true);
+    } else if ((target.isClassDeclaration() || target.isClassExpression()) && isElementClass(target.node.superClass)) {
+      const name = target.node.id?.name ?? deriveName(mod.file);
+      if (isDefault) mod.exports.set('default', name);
+      tags ??= definedTags(programPath);
+      const record = extractCustomElement(target, { name, line: target.node.loc?.start.line, tag: tags.get(name), code: mod.code });
+      const doc = readJSDoc(docNode);
+      if (doc.description) record.description = doc.description;
+      mod.components.push(record);
     } else if (target.isVariableDeclaration()) {
       for (const d of target.get('declarations')) {
         const name = d.node.id.name;

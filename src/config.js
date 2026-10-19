@@ -3,6 +3,7 @@ import path from 'node:path';
 import { detectPackageManager, detectWorkspaces } from './scanner/workspace.js';
 
 export const CONFIG_FILE = 'frontdex.config.json';
+const FRAMEWORK_DEPS = ['react', 'next', 'preact', 'vue', 'nuxt', 'svelte', '@sveltejs/kit', 'astro', '@angular/core', 'solid-js', '@builder.io/qwik', 'gatsby'];
 // Names from the react-catalogue era. A project that still has any of them keeps using them until `frontdex upgrade`.
 export const LEGACY = { configFile: 'catalogue.config.json', output: 'catalogue.yaml', knowledgeDir: '.catalogue' };
 
@@ -87,6 +88,9 @@ export function loadConfig(root, overrides = {}) {
   // Monorepo packages, detected from the package manager's workspace config; a `workspaces` array of globs in the config overrides it.
   config.workspaces = detectWorkspaces(root, Array.isArray(fromFile.workspaces) ? { workspaces: fromFile.workspaces } : pkg);
   config.rootFramework = deps.next ? 'next' : 'react';
+  // .html files are pages only in sites without a JS framework (in a React/Vue app, index.html is just the shell).
+  // `"html": true` in the config forces it, e.g. for a server-rendered site that also uses a framework for widgets.
+  config.html ??= ![{ dependencies: deps }, ...config.workspaces.map((w) => w.pkg)].some((p) => FRAMEWORK_DEPS.some((d) => p.dependencies?.[d] || p.devDependencies?.[d]));
   config.framework ??= config.rootFramework === 'next' || config.workspaces.some((w) => w.framework === 'next') ? 'next' : 'react';
   // Where the running app is served, for the live preview panel.
   config.preview ??= config.framework === 'next' ? 'http://localhost:3000' : deps.vite ? 'http://localhost:5173' : 'http://localhost:3000';

@@ -82,7 +82,7 @@ export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () =
     const rel = path.relative(config.root, abs).split(path.sep).join('/');
     // Extensionless paths may be folders being created, renamed or deleted; scan() works out which.
     const ext = path.extname(rel);
-    if ((ext && !SOURCE_EXT.includes(ext) && !STYLE_EXT.includes(ext)) || excludes.some((re) => re.test(rel) || re.test(rel + '/'))) return;
+    if ((ext && !SOURCE_EXT.includes(ext) && !STYLE_EXT.includes(ext) && !(config.html && ext === '.html')) || excludes.some((re) => re.test(rel) || re.test(rel + '/'))) return;
     changedFiles.add(rel);
     schedule();
   };

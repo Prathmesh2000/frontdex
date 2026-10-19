@@ -277,7 +277,24 @@ function astro(app, files) {
   return out;
 }
 
-/** Runs every router whose package is a dependency of the app root. `app = { dir, deps }`. */
+/**
+ * Plain HTML sites: every .html file is a page at its own path (`about.html` → `/about.html`, `blog/index.html` →
+ * `/blog`). URLs are relative to the folder holding the top-most index.html (often the project root or public/).
+ */
+function htmlPages(app, files) {
+  const pages = [...files].filter((f) => f.endsWith('.html') && f.startsWith(app.dir + path.sep));
+  const indexes = pages.filter((f) => path.basename(f) === 'index.html').sort((a, b) => a.split(path.sep).length - b.split(path.sep).length);
+  const base = indexes.length ? path.dirname(indexes[0]) : app.dir;
+  return pages
+    .filter((f) => f.startsWith(base + path.sep))
+    .map((file) => {
+      const segs = path.relative(base, file).split(path.sep);
+      if (segs[segs.length - 1] === 'index.html') segs.pop();
+      return { route: routeOf(segs), router: 'html', file, params: [], page: { file, export: 'default' }, layouts: [] };
+    });
+}
+
+/** Runs every router whose package is a dependency of the app root. `app = { dir, deps, html }`. */
 export function fileSystemRoutes(app, files, modules) {
   const has = (...names) => names.some((n) => app.deps?.[n]);
   const out = [];
@@ -290,5 +307,6 @@ export function fileSystemRoutes(app, files, modules) {
   if (has('nuxt')) out.push(...nuxt(app, files));
   if (has('@sveltejs/kit')) out.push(...svelteKit(app, files));
   if (has('astro')) out.push(...astro(app, files));
+  if (app.html) out.push(...htmlPages(app, files));
   return out;
 }

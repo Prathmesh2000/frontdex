@@ -4,12 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { MessageChannel, receiveMessageOnPort, Worker } from 'node:worker_threads';
 import { parseAstro } from './adapters/astro.js';
+import { parseHtml } from './adapters/html.js';
 import { parseSvelte } from './adapters/svelte.js';
 import { parseVue } from './adapters/vue.js';
 import { parseFile } from './parse-file.js';
 
 // Non-JS file types and their adapters; everything else is parsed by Babel in parseFile().
-const ADAPTERS = { '.vue': parseVue, '.svelte': parseSvelte, '.astro': parseAstro };
+const ADAPTERS = { '.vue': parseVue, '.svelte': parseSvelte, '.astro': parseAstro, '.html': parseHtml };
 
 // Parsed modules hold Maps; the cache (JSON) and worker messages carry them as entry arrays.
 export const MAP_FIELDS = ['imports', 'exports', 'aliases'];
