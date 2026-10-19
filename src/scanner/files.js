@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const SOURCE_EXT = ['.tsx', '.ts', '.jsx', '.js', '.mjs'];
+export const STYLE_EXT = ['.css', '.scss', '.sass', '.less'];
 
 export function globToRegExp(glob) {
   let re = '';
@@ -17,7 +18,7 @@ export function globToRegExp(glob) {
   return new RegExp(`^${re}$`);
 }
 
-export function listSourceFiles(config) {
+export function listSourceFiles(config, extensions = SOURCE_EXT) {
   const excludes = config.exclude.map(globToRegExp);
   const isExcluded = (rel) => excludes.some((re) => re.test(rel) || re.test(rel + '/'));
   const files = new Set();
@@ -29,7 +30,7 @@ export function listSourceFiles(config) {
     if (!stat) return;
     if (stat.isDirectory()) {
       for (const entry of fs.readdirSync(abs)) walk(path.join(abs, entry));
-    } else if (SOURCE_EXT.includes(path.extname(abs)) && !isExcluded(rel)) {
+    } else if (extensions.includes(path.extname(abs)) && !isExcluded(rel)) {
       files.add(abs);
     }
   };

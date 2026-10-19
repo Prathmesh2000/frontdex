@@ -8,22 +8,38 @@
   </head>
   <body>
     <header class="top">
-      <button id="menu" class="icon-btn" aria-label="Toggle navigation">☰</button>
-      <a href="#/" class="brand"><span class="logo">◆</span><span id="title">Catalogue</span></a>
-      <span id="meta" class="muted small"></span>
-      <a href="#/graph" class="nav-link">Graph</a>
-      <input id="search" type="search" placeholder="Search components, pages, hooks, props…  ( / )" autocomplete="off" />
+      <button id="menu" class="icon-btn only-mobile" aria-label="Toggle navigation"></button>
+      <a href="#/" class="brand"><span class="logo" id="logo"></span><span id="title">Catalogue</span></a>
+      <span id="meta" class="meta hide-mobile"></span>
+      <button id="open-palette" class="search-trigger" aria-label="Search"><span class="st-icon" id="search-icon"></span><span class="st-text">Search pages, components, state, APIs…</span><kbd>Ctrl K</kbd></button>
+      <nav class="top-nav" id="top-nav"></nav>
+      <button id="rescan" class="btn btn-primary" hidden></button>
+      <button id="theme" class="icon-btn" aria-label="Toggle theme" title="Toggle theme"></button>
     </header>
     <div class="layout">
       <aside id="sidebar">
-        <nav class="tabs" role="tablist">
-          <button data-tab="components" class="active" role="tab">Components <span id="count-components" class="count"></span></button>
-          <button data-tab="pages" role="tab">Pages <span id="count-pages" class="count"></span></button>
-        </nav>
-        <ul id="list"></ul>
+        <div class="side-tabs" role="tablist">
+          <button data-side="pages" class="active" role="tab"></button>
+          <button data-side="files" role="tab"></button>
+        </div>
+        <div class="side-filter"><input id="tree-filter" type="search" placeholder="Filter…" autocomplete="off" /></div>
+        <div id="tree" class="tree-view"></div>
       </aside>
       <main id="main"></main>
     </div>
+    <aside id="source-panel" class="source-panel" hidden>
+      <div class="sp-head"><span id="sp-title" class="mono"></span><span class="sp-actions" id="sp-actions"></span></div>
+      <div id="sp-body" class="sp-body"></div>
+    </aside>
+    <div id="palette" class="palette" hidden>
+      <div class="pal-box" role="dialog" aria-label="Search">
+        <input id="pal-input" type="search" placeholder="Jump to… try: /checkout, CartDrawer, redux:cart, api:/orders, issue:memory-leak" autocomplete="off" />
+        <div id="pal-results" class="pal-results"></div>
+        <div class="pal-foot"><span>↑↓ move · ↵ open · Esc close</span><span>Filters: kind: hook: prop: state: api: store: issue: timer: class: var: fn: uses: in: page: has: is:</span></div>
+      </div>
+    </div>
+    <div id="toast" class="toast" hidden></div>
+    <script src="query.js"></script>
     <script src="data.js"></script>
     <script src="app.js"></script>
   </body>

@@ -22,6 +22,10 @@ const DEFAULTS = {
   ],
   output: 'catalogue.yaml',
   port: 4400,
+  autoUpdate: false,
+  knowledgeDir: '.catalogue',
+  history: { enabled: true, limit: 500 },
+  agents: { enabled: true },
 };
 
 export function readJsonc(file) {
@@ -54,11 +58,15 @@ export function loadConfig(root, overrides = {}) {
   const pkgFile = path.join(root, 'package.json');
   const pkg = fs.existsSync(pkgFile) ? JSON.parse(fs.readFileSync(pkgFile, 'utf8')) : {};
   const config = { ...DEFAULTS, ...fromFile, ...stripUndefined(overrides) };
+  config.history = { ...DEFAULTS.history, ...fromFile.history };
+  config.agents = { ...DEFAULTS.agents, ...fromFile.agents };
   config.root = root;
   config.title ??= pkg.name ?? path.basename(root);
   config.version ??= pkg.version;
   const deps = { ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies };
   config.framework ??= deps.next ? 'next' : 'react';
+  // Where the running app is served, for the live preview panel.
+  config.preview ??= config.framework === 'next' ? 'http://localhost:3000' : deps.vite ? 'http://localhost:5173' : 'http://localhost:3000';
   return config;
 }
 
@@ -66,10 +74,11 @@ function stripUndefined(obj) {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
 }
 
-export function initConfig(root) {
+export function initConfig(root, { autoUpdate } = {}) {
   const file = path.join(root, CONFIG_FILE);
   if (fs.existsSync(file)) return { file, created: false };
-  const { title, include, exclude, output, port } = loadConfig(root);
-  fs.writeFileSync(file, JSON.stringify({ title, include, exclude, output, port }, null, 2) + '\n');
+  const { title, include, exclude, output, port, knowledgeDir, history, agents, ...rest } = loadConfig(root);
+  const config = { title, include, exclude, output, port, autoUpdate: autoUpdate ?? rest.autoUpdate, knowledgeDir, history, agents };
+  fs.writeFileSync(file, JSON.stringify(config, null, 2) + '\n');
   return { file, created: true };
 }

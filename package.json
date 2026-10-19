@@ -1,7 +1,7 @@
 {
   "name": "react-catalogue",
-  "version": "0.1.0",
-  "description": "OpenAPI-style catalogue for React and Next.js frontends: components, pages, props, state, hooks and lifecycle.",
+  "version": "0.2.0",
+  "description": "Knowledge base for React and Next.js frontends: components, pages, state, lifecycle, history, and a separate view for coding agents (MCP, rules, hooks).",
   "type": "module",
   "bin": {
     "rcat": "bin/rcat.js",
@@ -10,6 +10,9 @@
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
+    "./next": "./src/plugins/next.cjs",
+    "./vite": "./src/plugins/vite.js",
+    "./query": "./src/query.cjs",
     "./schema.json": "./spec/catalogue.schema.json"
   },
   "files": [
@@ -32,7 +35,12 @@
     "components",
     "documentation",
     "openapi",
-    "storybook-alternative"
+    "storybook-alternative",
+    "mcp",
+    "ai-agents",
+    "cursor",
+    "claude-code",
+    "knowledge-base"
   ],
   "license": "MIT",
   "dependencies": {

@@ -1,26 +1,46 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { generate, initConfig, loadConfig, readCatalogue, validateCatalogue } from './index.js';
+import { installAgents, runHook, TARGETS } from './agents.js';
+import { formatDetail, formatSummary } from './history.js';
+import { createHistory, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
+import { createMcpHandlers, startMcpServer } from './mcp.js';
 import { buildSite, startServer } from './server.js';
+import { startWatcher } from './watch.js';
 
-const HELP = `rcat — catalogue for React / Next.js frontends
+const HELP = `react-catalogue (rcat): knowledge base for React / Next.js frontends
 
 Usage: rcat <command> [options]
 
-Commands
-  init                Create catalogue.config.json in the project
-  generate            Scan the project and write catalogue.yaml
-  validate [file]     Validate a catalogue file against CatalogueSpec 1.0
-  serve               Generate, then serve the catalogue UI
-  build               Export the catalogue UI as a static site
+Setup
+  init [--auto-update]     Create catalogue.config.json
+  agents [--targets a,b]   Wire coding agents (rules, MCP, hooks). Targets: ${TARGETS.join(', ')}
+         [--no-hooks] [--no-mcp] [--remove]
+
+Knowledge base
+  scan [--full] [-m msg]   Incremental rescan (only changed files are re-parsed). --full ignores the cache
+  watch                    Keep the knowledge base updated while you code (what autoUpdate runs)
+  check                    Exit 1 if the catalogue is out of date (CI / pre-commit)
+  history [id] [-n 20]     Git-like log of knowledge-base changes; pass an id for the full diff
+  validate [file]          Validate catalogue.yaml against the CatalogueSpec schema
+
+Explore
+  serve | start [-p 4400]  Open the catalogue UI (auto-updates when autoUpdate is on or with -w)
+  build [-o dir]           Export the UI as a static site
+  query "<filters>"        Search components, e.g. "uses:Button is:shared"
+  show <Component>         Component card (props, state, effects, usage)
+  impact <Component>       Everything that breaks if this component changes
+  dataflow <Component>     Props in (per parent) → state/store/effects → API calls, dispatches, props out
+  health [type] [--severity high] [--strict]   Leaks, render loops, stale deps, dead code (--strict: exit 1 on high)
+  state [store]            Redux slices / contexts / zustand stores with readers and writers
+  api [endpoint]           Every API call grouped by endpoint
+
+Agents
+  mcp                      Run the MCP server over stdio (registered by "rcat agents")
+  hook <post-edit|session-start> [--format claude|cursor]   Agent hook entry point
 
 Options
-  -C, --cwd <dir>     Project root (default: current directory)
-  -o, --out <path>    Output file (generate) or directory (build, default: catalogue-site)
-  -p, --port <n>      Port for serve (default: 4400)
-  -w, --watch         Regenerate when source files change (serve)
-      --no-generate   Serve the existing catalogue file without rescanning
-  -h, --help          Show this help
+  -C, --cwd <dir>          Project root (default: current directory)
 `;
 
 export async function main(argv) {
@@ -32,7 +52,21 @@ export async function main(argv) {
       out: { type: 'string', short: 'o' },
       port: { type: 'string', short: 'p' },
       watch: { type: 'boolean', short: 'w' },
+      'no-watch': { type: 'boolean' },
       'no-generate': { type: 'boolean' },
+      full: { type: 'boolean' },
+      message: { type: 'string', short: 'm' },
+      limit: { type: 'string', short: 'n' },
+      targets: { type: 'string' },
+      'no-hooks': { type: 'boolean' },
+      'no-mcp': { type: 'boolean' },
+      remove: { type: 'boolean' },
+      format: { type: 'string' },
+      'auto-update': { type: 'boolean' },
+      'parent-pid': { type: 'string' },
+      severity: { type: 'string' },
+      strict: { type: 'boolean' },
+      quiet: { type: 'boolean', short: 'q' },
       help: { type: 'boolean', short: 'h' },
     },
   });
@@ -40,18 +74,68 @@ export async function main(argv) {
   if (values.help || !command) return void console.log(HELP);
 
   const root = path.resolve(values.cwd ?? process.cwd());
-  const config = loadConfig(root, command === 'generate' ? { output: values.out } : {});
+  const config = loadConfig(root, command === 'scan' || command === 'generate' ? { output: values.out } : {});
+  const rel = (f) => path.relative(process.cwd(), f) || '.';
 
   switch (command) {
     case 'init': {
-      const { file, created } = initConfig(root);
-      console.log(created ? `✔ created ${path.relative(process.cwd(), file)}` : `• ${file} already exists`);
+      const { file, created } = initConfig(root, { autoUpdate: values['auto-update'] });
+      console.log(created ? `✔ created ${rel(file)}` : `• ${rel(file)} already exists`);
+      if (created) console.log('  next: "rcat scan", then "rcat agents" to wire coding agents');
       return;
     }
+    case 'scan':
     case 'generate': {
-      const { file, stats, warnings, changed } = generate(config);
-      warnings.forEach((w) => console.warn(`⚠ ${w}`));
-      console.log(`✔ ${stats.components} components, ${stats.pages} pages from ${stats.files} files → ${path.relative(process.cwd(), file)}${changed ? '' : ' (unchanged)'}`);
+      const t = performance.now();
+      const r = scan(config, { full: values.full, message: values.message });
+      r.warnings.forEach((w) => console.warn(`⚠ ${w}`));
+      const d = r.delta;
+      console.log(`✔ ${r.stats.components} components, ${r.stats.pages} pages · ${d.parsed} file(s) parsed, ${d.reused} unchanged${d.removed.length ? `, ${d.removed.length} removed` : ''} · ${Math.round(performance.now() - t)} ms`);
+      if (r.commit) {
+        console.log(`  history ${r.commit.id}: ${formatSummary(r.commit.summary)}`);
+        if (r.commit.parent) printChanges(r.commit.changes, 15);
+      } else if (!r.changed) console.log('  no changes');
+      return;
+    }
+    case 'watch': {
+      const log = values.quiet ? () => {} : (m) => console.log(`[catalogue] ${m}`);
+      const first = scan(config);
+      log(`watching ${rel(root)} · ${first.stats.components} components${first.commit ? ` · ${formatSummary(first.commit.summary)}` : ''}`);
+      startWatcher(config, { log });
+      if (values['parent-pid']) {
+        const ppid = Number(values['parent-pid']);
+        setInterval(() => {
+          try {
+            process.kill(ppid, 0);
+          } catch {
+            process.exit(0);
+          }
+        }, 2000).unref();
+      }
+      return;
+    }
+    case 'check': {
+      const r = scan(config, { dryRun: true });
+      if (!r.changed) return void console.log('✔ catalogue is up to date');
+      console.error(`✖ catalogue is out of date (${[...r.delta.added, ...r.delta.changed].length} changed, ${r.delta.removed.length} removed file(s)). Run: npx react-catalogue scan`);
+      process.exitCode = 1;
+      return;
+    }
+    case 'history': {
+      const history = createHistory(path.join(knowledgeDir(config), 'history'));
+      const entries = history.log();
+      if (!entries.length) return void console.log('No history yet. Run "rcat scan".');
+      if (arg) {
+        const e = entries.find((x) => x.id.startsWith(arg));
+        if (!e) throw new Error(`No history entry "${arg}"`);
+        console.log(`${e.id}  ${e.time}${e.git ? `  git ${e.git}` : ''}${e.parent ? `  parent ${e.parent}` : ''}\n${e.message ? `${e.message}\n` : ''}${formatSummary(e.summary)}\n`);
+        printChanges(e.changes, Infinity);
+        if (e.truncated) console.log('  … (list truncated)');
+        return;
+      }
+      for (const e of entries.reverse().slice(0, Number(values.limit ?? 20))) {
+        console.log(`${e.id}  ${e.time.slice(0, 16).replace('T', ' ')}  ${(e.git ?? '').padEnd(8)} ${formatSummary(e.summary)}${e.message ? `  — ${e.message}` : ''}`);
+      }
       return;
     }
     case 'validate': {
@@ -59,27 +143,72 @@ export async function main(argv) {
       const catalogue = readCatalogue(file);
       if (!catalogue) throw new Error(`File not found: ${file}`);
       const { valid, errors } = validateCatalogue(catalogue);
-      if (valid) return void console.log(`✔ ${path.relative(process.cwd(), file)} is valid CatalogueSpec 1.0`);
+      if (valid) return void console.log(`✔ ${rel(file)} is valid CatalogueSpec ${catalogue.catalogue}`);
       errors.forEach((e) => console.error(`✖ ${e}`));
       process.exitCode = 1;
       return;
     }
-    case 'serve': {
+    case 'serve':
+    case 'start': {
       const port = Number(values.port ?? config.port);
-      await startServer(config, { port, watch: values.watch, regenerate: !values['no-generate'] });
-      console.log(`✔ catalogue running at http://localhost:${port}${values.watch ? '  (watching for changes)' : ''}`);
+      const watch = values['no-watch'] ? false : values.watch || config.autoUpdate;
+      await startServer(config, { port, watch, regenerate: !values['no-generate'] });
+      console.log(`✔ catalogue running at http://localhost:${port}${watch ? '  (auto-update on)' : ''}`);
       return;
     }
     case 'build': {
-      const { catalogue } = generate(config);
+      const { catalogue } = scan(config);
       const out = path.resolve(root, values.out ?? 'catalogue-site');
       buildSite(config, catalogue, out);
-      console.log(`✔ static catalogue written to ${path.relative(process.cwd(), out)}/`);
+      console.log(`✔ static catalogue written to ${rel(out)}/`);
       return;
     }
+    case 'query':
+    case 'show':
+    case 'impact':
+    case 'dataflow': {
+      if (!arg) throw new Error(`Usage: rcat ${command} ${command === 'query' ? '"<filters>"' : '<Component>'}`);
+      const { tools } = createMcpHandlers(config);
+      const tool = { query: 'catalogue_search', show: 'catalogue_component', impact: 'catalogue_impact', dataflow: 'catalogue_dataflow' }[command];
+      console.log(tools[tool](command === 'query' ? { query: positionals.slice(1).join(' '), limit: Number(values.limit ?? 50) } : { name: arg }));
+      return;
+    }
+    case 'health':
+    case 'state':
+    case 'api': {
+      const { tools } = createMcpHandlers(config);
+      if (command === 'health') {
+        console.log(tools.catalogue_health({ severity: values.severity, type: arg }));
+        if (values.strict && (scan(config, { dryRun: true }).catalogue.health?.issues?.high ?? 0) > 0) process.exitCode = 1;
+      } else if (command === 'state') console.log(tools.catalogue_state({ store: arg }));
+      else console.log(tools.catalogue_api({ endpoint: arg }));
+      return;
+    }
+    case 'agents': {
+      const targets = values.targets ? values.targets.split(',').map((t) => t.trim()) : TARGETS;
+      const unknown = targets.filter((t) => !TARGETS.includes(t));
+      if (unknown.length) throw new Error(`Unknown target(s): ${unknown.join(', ')}. Use: ${TARGETS.join(', ')}`);
+      if (!values.remove && !fs.existsSync(path.join(knowledgeDir(config), 'agent', 'INDEX.md'))) scan(config);
+      const { results, notes } = installAgents(config, { targets, remove: values.remove, hooks: !values['no-hooks'], mcp: !values['no-mcp'] });
+      for (const r of results) console.log(`${r.status === 'unchanged' ? '•' : '✔'} ${r.status.padEnd(9)} ${r.file}`);
+      notes.forEach((n) => console.log(`\nℹ ${n}`));
+      return;
+    }
+    case 'mcp':
+      return startMcpServer(config);
+    case 'hook':
+      return runHook(config, arg, { format: values.format });
     default:
       console.error(`Unknown command "${command}".\n`);
       console.log(HELP);
       process.exitCode = 1;
   }
+}
+
+function printChanges(changes, max) {
+  for (const c of changes.slice(0, max)) {
+    const sign = { added: '+', removed: '−', changed: '~' }[c.change];
+    console.log(`  ${sign} ${c.kind === 'pages' ? 'page ' : ''}${c.key}${c.details ? `  ${c.details.map(formatDetail).join(' · ')}` : ''}`);
+  }
+  if (changes.length > max) console.log(`  … ${changes.length - max} more (rcat history <id>)`);
 }

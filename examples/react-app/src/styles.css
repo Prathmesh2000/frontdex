@@ -1,0 +1,9 @@
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.nav a { display: block; padding: 0.5rem 1rem; }
+.nav a.active { background: #eef2ff; font-weight: 600; }
+.table { width: 100%; border-collapse: collapse; }
+.form-row { display: grid; gap: 0.25rem; margin-bottom: 1rem; }
+.form-error { color: #dc2626; font-size: 0.85rem; }
+.tabs { display: flex; gap: 1rem; border-bottom: 1px solid #e5e7eb; }
+.tabs a.active { border-bottom: 2px solid #4f46e5; }
+.error-screen { padding: 4rem; text-align: center; }

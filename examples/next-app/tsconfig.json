@@ -1,4 +1,4 @@
 {
-  // comments are allowed here
-  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["./src/*"] }, },
+  // path alias used across the app
+  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["./src/*"] }, "jsx": "preserve", "strict": true },
 }

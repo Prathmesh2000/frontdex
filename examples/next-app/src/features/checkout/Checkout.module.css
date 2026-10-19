@@ -1,0 +1,5 @@
+.wizard { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+.step { padding: 1.5rem; border: 1px solid var(--border); border-radius: 12px; }
+.stepActive { border-color: var(--accent); }
+.actions { display: flex; justify-content: space-between; margin-top: 1rem; }
+.error { color: var(--danger); }

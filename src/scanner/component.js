@@ -40,9 +40,9 @@ const HOOK_CATEGORY = {
   useFormStatus: 'data',
 };
 
-const EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']);
+export const EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']);
 
-const CLASS_LIFECYCLE = {
+export const CLASS_LIFECYCLE = {
   constructor: ['mount'],
   UNSAFE_componentWillMount: ['mount'],
   componentDidMount: ['mount'],
@@ -79,7 +79,7 @@ export function memberText(node) {
   return null;
 }
 
-function hookName(callee) {
+export function hookName(callee) {
   const name =
     callee.type === 'Identifier'
       ? callee.name
@@ -89,7 +89,7 @@ function hookName(callee) {
   return name && /^use(?:[A-Z0-9]|$)/.test(name) ? name : null;
 }
 
-function calleeLabel(callee) {
+export function calleeLabel(callee) {
   const full = memberText(callee);
   if (full) return full;
   if (callee.type === 'MemberExpression' && callee.property.type === 'Identifier') {
@@ -98,7 +98,7 @@ function calleeLabel(callee) {
   return null;
 }
 
-function collectCalls(path, skipNode) {
+export function collectCalls(path, skipNode) {
   const calls = new Set();
   path.traverse({
     Function(p) {
@@ -215,13 +215,18 @@ function newRecord(name, kind, line) {
   return { name, kind, line, props: {}, state: {}, context: [], refs: [], hooks: new Map(), lifecycle: [], jsx: [] };
 }
 
-function addJsx(record, path) {
+function addJsx(record, path, code) {
   path.traverse({
     JSXOpeningElement(p) {
       const n = p.node.name;
       const name = n.type === 'JSXIdentifier' ? n.name : n.type === 'JSXMemberExpression' ? jsxMemberName(n) : null;
       if (!name || !/^[A-Z]/.test(name) || /^(React\.)?Fragment$/.test(name)) return;
-      record.jsx.push({ name, line: p.node.loc?.start.line });
+      const props = p.node.attributes.map((a) =>
+        a.type === 'JSXSpreadAttribute'
+          ? { name: `...${text(code, a.argument, 30)}`, value: 'spread' }
+          : { name: a.name.type === 'JSXNamespacedName' ? `${a.name.namespace.name}:${a.name.name.name}` : a.name.name, value: !a.value ? 'true' : a.value.type === 'StringLiteral' ? JSON.stringify(a.value.value) : text(code, a.value.expression ?? a.value, 50) },
+      );
+      record.jsx.push({ name, line: p.node.loc?.start.line, props });
     },
     JSXAttribute(p) {
       const v = p.node.value;
@@ -312,7 +317,7 @@ export function extractFunctionComponent(fnPath, ctx) {
     },
   });
 
-  addJsx(record, fnPath);
+  addJsx(record, fnPath, code);
   return finish(record);
 }
 
@@ -437,6 +442,6 @@ export function extractClassComponent(classPath, ctx) {
     propTypes: propTypesOf(statics.propTypes, mod),
     defaults: defaultsOf(statics.defaultProps, mod),
   });
-  addJsx(record, classPath);
+  addJsx(record, classPath, code);
   return finish(record);
 }

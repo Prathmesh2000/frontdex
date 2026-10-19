@@ -1,141 +1,897 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://react-catalogue.dev/schema/1.0/catalogue.schema.json",
-  "title": "CatalogueSpec 1.0",
+  "title": "CatalogueSpec 1.1",
   "type": "object",
-  "required": ["catalogue", "info", "components", "pages"],
+  "required": [
+    "catalogue",
+    "info",
+    "components",
+    "pages"
+  ],
   "additionalProperties": false,
-  "patternProperties": { "^x-": {} },
+  "patternProperties": {
+    "^x-": {}
+  },
   "properties": {
-    "catalogue": { "type": "string", "enum": ["1.0"] },
-    "info": { "$ref": "#/definitions/Info" },
+    "catalogue": {
+      "type": "string",
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
+    },
+    "info": {
+      "$ref": "#/definitions/Info"
+    },
     "components": {
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/Component" }
+      "additionalProperties": {
+        "$ref": "#/definitions/Component"
+      }
     },
     "pages": {
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/Page" }
+      "additionalProperties": {
+        "$ref": "#/definitions/Page"
+      }
+    },
+    "stores": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Store"
+      }
+    },
+    "styles": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Stylesheet"
+      }
+    },
+    "health": {
+      "$ref": "#/definitions/Health"
     }
   },
   "definitions": {
-    "StringList": { "type": "array", "items": { "type": "string" } },
+    "StringList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "Info": {
       "type": "object",
-      "required": ["title"],
+      "required": [
+        "title"
+      ],
       "additionalProperties": false,
-      "patternProperties": { "^x-": {} },
+      "patternProperties": {
+        "^x-": {}
+      },
       "properties": {
-        "title": { "type": "string" },
-        "version": { "type": "string" },
-        "description": { "type": "string" },
-        "framework": { "enum": ["react", "next"] },
+        "title": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "framework": {
+          "enum": [
+            "react",
+            "next"
+          ]
+        },
         "routers": {
           "type": "array",
-          "items": { "enum": ["next-app", "next-pages", "react-router"] }
+          "items": {
+            "enum": [
+              "next-app",
+              "next-pages",
+              "react-router"
+            ]
+          }
         },
-        "generator": { "type": "string" },
-        "generatedAt": { "type": "string" }
+        "generator": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        }
       }
     },
     "Component": {
       "type": "object",
-      "required": ["name", "file", "kind"],
+      "required": [
+        "name",
+        "file",
+        "kind"
+      ],
       "additionalProperties": false,
-      "patternProperties": { "^x-": {} },
+      "patternProperties": {
+        "^x-": {}
+      },
       "properties": {
-        "name": { "type": "string" },
-        "file": { "type": "string" },
-        "line": { "type": "integer", "minimum": 1 },
-        "kind": { "enum": ["function", "class", "memo", "forwardRef"] },
-        "export": { "enum": ["default", "named", "none"] },
-        "description": { "type": "string" },
-        "status": { "enum": ["experimental", "stable", "deprecated"] },
-        "tags": { "$ref": "#/definitions/StringList" },
-        "owner": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": [
+            "function",
+            "class",
+            "memo",
+            "forwardRef"
+          ]
+        },
+        "export": {
+          "enum": [
+            "default",
+            "named",
+            "none"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "experimental",
+            "stable",
+            "deprecated"
+          ]
+        },
+        "tags": {
+          "$ref": "#/definitions/StringList"
+        },
+        "owner": {
+          "type": "string"
+        },
         "props": {
           "type": "object",
-          "additionalProperties": { "$ref": "#/definitions/Prop" }
+          "additionalProperties": {
+            "$ref": "#/definitions/Prop"
+          }
         },
         "state": {
           "type": "object",
-          "additionalProperties": { "$ref": "#/definitions/State" }
+          "additionalProperties": {
+            "$ref": "#/definitions/State"
+          }
         },
-        "context": { "$ref": "#/definitions/StringList" },
-        "refs": { "$ref": "#/definitions/StringList" },
-        "hooks": { "type": "array", "items": { "$ref": "#/definitions/Hook" } },
-        "lifecycle": { "type": "array", "items": { "$ref": "#/definitions/LifecycleEvent" } },
-        "renders": { "$ref": "#/definitions/StringList" },
-        "externals": { "$ref": "#/definitions/StringList" },
-        "usedBy": { "$ref": "#/definitions/StringList" },
-        "pages": { "$ref": "#/definitions/StringList" }
+        "context": {
+          "$ref": "#/definitions/StringList"
+        },
+        "refs": {
+          "$ref": "#/definitions/StringList"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Hook"
+          }
+        },
+        "lifecycle": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LifecycleEvent"
+          }
+        },
+        "renders": {
+          "$ref": "#/definitions/StringList"
+        },
+        "externals": {
+          "$ref": "#/definitions/StringList"
+        },
+        "usedBy": {
+          "$ref": "#/definitions/StringList"
+        },
+        "pages": {
+          "$ref": "#/definitions/StringList"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Variable"
+          }
+        },
+        "functions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Function"
+          }
+        },
+        "timers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Timer"
+          }
+        },
+        "apiCalls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiCall"
+          }
+        },
+        "store": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "reads": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/StoreRead"
+              }
+            },
+            "writes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/StoreWrite"
+              }
+            }
+          }
+        },
+        "validation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Validation"
+          }
+        },
+        "styles": {
+          "$ref": "#/definitions/ComponentStyles"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Issue"
+          }
+        },
+        "passes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/PassedProp"
+            }
+          }
+        }
       }
     },
     "Prop": {
       "type": "object",
-      "required": ["type", "required"],
+      "required": [
+        "type",
+        "required"
+      ],
       "additionalProperties": false,
-      "patternProperties": { "^x-": {} },
+      "patternProperties": {
+        "^x-": {}
+      },
       "properties": {
-        "type": { "type": "string" },
-        "required": { "type": "boolean" },
-        "default": { "type": "string" },
-        "description": { "type": "string" }
+        "type": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "default": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "State": {
       "type": "object",
-      "required": ["source"],
+      "required": [
+        "source"
+      ],
       "additionalProperties": false,
       "properties": {
-        "source": { "enum": ["useState", "useReducer", "class"] },
-        "initial": { "type": "string" },
-        "setter": { "type": "string" },
-        "type": { "type": "string" },
-        "reducer": { "type": "string" }
+        "source": {
+          "enum": [
+            "useState",
+            "useReducer",
+            "class"
+          ]
+        },
+        "initial": {
+          "type": "string"
+        },
+        "setter": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "reducer": {
+          "type": "string"
+        }
       }
     },
     "Hook": {
       "type": "object",
-      "required": ["name", "category"],
+      "required": [
+        "name",
+        "category"
+      ],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string" },
-        "category": { "enum": ["state", "effect", "context", "ref", "memo", "router", "data", "custom"] },
-        "count": { "type": "integer", "minimum": 2 }
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "state",
+            "effect",
+            "context",
+            "ref",
+            "memo",
+            "router",
+            "data",
+            "custom"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 2
+        }
       }
     },
     "LifecycleEvent": {
       "type": "object",
-      "required": ["via", "phases"],
+      "required": [
+        "via",
+        "phases"
+      ],
       "additionalProperties": false,
       "properties": {
-        "via": { "type": "string" },
+        "via": {
+          "type": "string"
+        },
         "phases": {
           "type": "array",
           "minItems": 1,
-          "items": { "enum": ["mount", "update", "unmount", "error"] }
+          "items": {
+            "enum": [
+              "mount",
+              "update",
+              "unmount",
+              "error"
+            ]
+          }
         },
-        "deps": { "$ref": "#/definitions/StringList" },
-        "calls": { "$ref": "#/definitions/StringList" },
-        "cleanup": { "$ref": "#/definitions/StringList" },
-        "line": { "type": "integer", "minimum": 1 }
+        "deps": {
+          "$ref": "#/definitions/StringList"
+        },
+        "calls": {
+          "$ref": "#/definitions/StringList"
+        },
+        "cleanup": {
+          "$ref": "#/definitions/StringList"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "Page": {
       "type": "object",
-      "required": ["router", "file"],
+      "required": [
+        "router",
+        "file"
+      ],
       "additionalProperties": false,
-      "patternProperties": { "^x-": {} },
+      "patternProperties": {
+        "^x-": {}
+      },
       "properties": {
-        "router": { "enum": ["next-app", "next-pages", "react-router"] },
-        "file": { "type": "string" },
-        "component": { "type": "string" },
-        "params": { "$ref": "#/definitions/StringList" },
-        "layouts": { "$ref": "#/definitions/StringList" },
-        "components": { "$ref": "#/definitions/StringList" },
-        "description": { "type": "string" },
-        "tags": { "$ref": "#/definitions/StringList" }
+        "router": {
+          "enum": [
+            "next-app",
+            "next-pages",
+            "react-router"
+          ]
+        },
+        "file": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "params": {
+          "$ref": "#/definitions/StringList"
+        },
+        "layouts": {
+          "$ref": "#/definitions/StringList"
+        },
+        "components": {
+          "$ref": "#/definitions/StringList"
+        },
+        "description": {
+          "type": "string"
+        },
+        "tags": {
+          "$ref": "#/definitions/StringList"
+        }
+      }
+    },
+    "Variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "used": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Function": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": [
+            "handler",
+            "helper",
+            "method"
+          ]
+        },
+        "async": {
+          "type": "boolean"
+        },
+        "params": {
+          "type": "string"
+        },
+        "calls": {
+          "$ref": "#/definitions/StringList"
+        },
+        "sets": {
+          "$ref": "#/definitions/StringList"
+        },
+        "used": {
+          "type": "boolean"
+        },
+        "memoized": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Timer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "interval",
+            "timeout",
+            "animation-frame",
+            "idle-callback",
+            "listener",
+            "subscription",
+            "observer",
+            "socket"
+          ]
+        },
+        "call": {
+          "type": "string"
+        },
+        "event": {
+          "type": "string"
+        },
+        "in": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cleared": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "call"
+      ]
+    },
+    "ApiCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        },
+        "in": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "via"
+      ]
+    },
+    "StoreRead": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "redux",
+            "zustand",
+            "context"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "store": {
+          "type": "string"
+        },
+        "storeId": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "via",
+        "kind"
+      ]
+    },
+    "StoreWrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "redux",
+            "zustand",
+            "context"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "in": {
+          "type": "string"
+        },
+        "storeId": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "via",
+        "action"
+      ]
+    },
+    "Validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "fn": {
+          "type": "string"
+        },
+        "rules": {
+          "$ref": "#/definitions/StringList"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "via"
+      ]
+    },
+    "ClassRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "ComponentStyles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "classes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ClassRef"
+          }
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "classes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ClassRef"
+                }
+              }
+            },
+            "required": [
+              "file"
+            ]
+          }
+        },
+        "sheets": {
+          "$ref": "#/definitions/StringList"
+        }
+      }
+    },
+    "Issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fix": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "severity",
+        "message"
+      ]
+    },
+    "PassedProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Store": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "redux-slice",
+            "context",
+            "zustand"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/StringList"
+        },
+        "actions": {
+          "$ref": "#/definitions/StringList"
+        },
+        "thunks": {
+          "$ref": "#/definitions/StringList"
+        },
+        "default": {
+          "type": "string"
+        },
+        "readers": {
+          "$ref": "#/definitions/StringList"
+        },
+        "writers": {
+          "$ref": "#/definitions/StringList"
+        },
+        "providers": {
+          "$ref": "#/definitions/StringList"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "file"
+      ]
+    },
+    "Stylesheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "type": "boolean"
+        },
+        "classes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "importedBy": {
+          "$ref": "#/definitions/StringList"
+        }
+      }
+    },
+    "Health": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "byType": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "unusedComponents": {
+          "$ref": "#/definitions/StringList"
+        },
+        "unusedExports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "file",
+              "name"
+            ]
+          }
+        },
+        "unusedFiles": {
+          "$ref": "#/definitions/StringList"
+        },
+        "unusedImports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "file",
+              "name"
+            ]
+          }
+        }
       }
     }
   }

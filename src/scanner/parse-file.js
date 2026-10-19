@@ -3,14 +3,14 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import _traverse from '@babel/traverse';
 import { extractClassComponent, extractFunctionComponent, isReactClass, memberText, readJSDoc } from './component.js';
+import { analyzeComponent, analyzeModule } from './insights.js';
 
 const traverse = _traverse.default ?? _traverse;
 const WRAPPER = /(^|\.)(memo|forwardRef)$/;
 const LAZY = /^(React\.)?lazy$|^dynamic$|^loadable$/;
 const NEXT_SPECIAL = { page: 'Page', layout: 'Layout', template: 'Template', loading: 'Loading', error: 'Error', 'not-found': 'NotFound', default: 'Default', index: 'Page' };
 
-export function parseFile(file) {
-  const code = fs.readFileSync(file, 'utf8');
+export function parseFile(file, code = fs.readFileSync(file, 'utf8')) {
   const mod = {
     file,
     code,
@@ -23,6 +23,7 @@ export function parseFile(file) {
     routes: [],
     types: new Map(),
     statics: new Map(),
+    typeImports: [],
   };
   const ext = path.extname(file);
   const plugins = ['decorators-legacy', ...(ext === '.ts' ? ['typescript'] : ext === '.tsx' ? ['typescript', 'jsx'] : ['jsx'])];
@@ -33,24 +34,33 @@ export function parseFile(file) {
     mod.error = err.message;
     return mod;
   }
-  traverse(ast, {
-    Program(p) {
-      scanDeclarations(p, mod);
-      scanComponents(p, mod);
-      p.stop();
-    },
-  });
-  traverse(ast, {
-    JSXOpeningElement(p) {
-      jsxRoute(p, mod);
-    },
-    ObjectExpression(p) {
-      objectRoute(p, mod);
-    },
-  });
+  try {
+    traverse(ast, {
+      Program(p) {
+        scanDeclarations(p, mod);
+        analyzeModule(p, mod);
+        scanComponents(p, mod);
+        p.stop();
+      },
+    });
+    traverse(ast, {
+      JSXOpeningElement(p) {
+        jsxRoute(p, mod);
+      },
+      ObjectExpression(p) {
+        objectRoute(p, mod);
+      },
+    });
+  } catch (err) {
+    // Scope errors (e.g. a duplicate declaration while the file is mid-edit) must not abort the whole scan.
+    mod.error = err.message;
+    mod.components = [];
+    mod.routes = [];
+  }
   delete mod.code;
   delete mod.types;
   delete mod.statics;
+  delete mod.styleModules;
   return mod;
 }
 
@@ -61,7 +71,10 @@ function keyName(node) {
 function scanDeclarations(programPath, mod) {
   for (const stmt of programPath.node.body) {
     if (stmt.type === 'ImportDeclaration') {
-      if (stmt.importKind === 'type') continue;
+      if (stmt.importKind === 'type') {
+        mod.typeImports.push(stmt.source.value);
+        continue;
+      }
       for (const s of stmt.specifiers) {
         const imported = s.type === 'ImportDefaultSpecifier' ? 'default' : s.type === 'ImportNamespaceSpecifier' ? '*' : keyName(s.imported);
         mod.imports.set(s.local.name, { source: stmt.source.value, imported });
@@ -74,6 +87,8 @@ function scanDeclarations(programPath, mod) {
     if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression') {
       const m = memberText(stmt.expression.left)?.match(/^(\w+)\.(propTypes|defaultProps)$/);
       if (m) mod.statics.set(m[1], { ...mod.statics.get(m[1]), [m[2]]: stmt.expression.right });
+      const sub = memberText(stmt.expression.left)?.match(/^([A-Z]\w*)\.([A-Z]\w*)$/);
+      if (sub && stmt.expression.right.type === 'Identifier') mod.aliases.set(`${sub[1]}.${sub[2]}`, stmt.expression.right.name);
     }
 
     if (stmt.type === 'ExportAllDeclaration') mod.exportAll.push(stmt.source.value);
@@ -141,6 +156,18 @@ function unwrap(p) {
   return { path: p, kind, typeHint };
 }
 
+/** `const Tabs = Object.assign(TabsRoot, { List: TabsList, Panel })` → Tabs aliases TabsRoot, Tabs.List aliases TabsList. */
+function compoundAssign(name, node, mod) {
+  if (node.type !== 'CallExpression' || memberText(node.callee) !== 'Object.assign') return false;
+  const [base, members] = node.arguments;
+  if (base?.type !== 'Identifier' || members?.type !== 'ObjectExpression') return false;
+  mod.aliases.set(name, base.name);
+  for (const p of members.properties) {
+    if (p.type === 'ObjectProperty' && p.value.type === 'Identifier') mod.aliases.set(`${name}.${keyName(p.key)}`, p.value.name);
+  }
+  return true;
+}
+
 function lazyImport(p) {
   if (!p.isCallExpression() || !LAZY.test(memberText(p.node.callee) ?? '')) return null;
   let found = null;
@@ -162,6 +189,7 @@ function scanComponents(programPath, mod) {
     const line = fnPath.node.loc?.start.line;
     const ctx = { mod, name, kind, line, typeHint };
     const record = isClass ? extractClassComponent(fnPath, ctx) : extractFunctionComponent(fnPath, ctx);
+    analyzeComponent(fnPath, record, mod, { isClass });
     const doc = readJSDoc(docNode);
     if (doc.description) record.description = doc.description;
     if (doc.deprecated) record.status = 'deprecated';
@@ -193,6 +221,7 @@ function scanComponents(programPath, mod) {
         const name = d.node.id.name;
         const init = d.get('init');
         if (!name || !/^[A-Z]/.test(name) || !init.node) continue;
+        if (compoundAssign(name, init.node, mod)) continue;
         const lazy = lazyImport(init);
         if (lazy) {
           mod.imports.set(name, lazy);
@@ -252,9 +281,24 @@ function jsxName(n) {
   return undefined;
 }
 
+const TRANSPARENT = /^(React\.)?(Suspense|Fragment|StrictMode)$/;
+
 function componentOf(value) {
   if (!value || value === true) return undefined;
-  if (value.type === 'JSXElement') return jsxName(value.openingElement.name);
+  if (value.type === 'JSXElement') {
+    const name = jsxName(value.openingElement.name);
+    if (!TRANSPARENT.test(name ?? '')) return name;
+    const child = value.children.find((c) => c.type === 'JSXElement');
+    return child ? componentOf(child) : undefined;
+  }
+  // Helpers such as withSuspense(<Page />) or guard(<Page />, opts)
+  if (value.type === 'CallExpression') {
+    for (const arg of value.arguments) {
+      const found = componentOf(arg);
+      if (found) return found;
+    }
+    return undefined;
+  }
   if (value.type === 'Identifier') return value.name;
   return undefined;
 }
@@ -263,9 +307,12 @@ function jsxRoute(p, mod) {
   if (p.node.name.type !== 'JSXIdentifier' || p.node.name.name !== 'Route') return;
   const attrs = jsxAttrs(p.node);
   if (typeof attrs.path !== 'string' && !attrs.index) return;
+  // A <Route> with nested <Route>s is a layout for them, not a page of its own.
+  if (p.parent.children?.some((c) => c.type === 'JSXElement' && jsxName(c.openingElement.name) === 'Route')) return;
   const component = componentOf(attrs.element) ?? componentOf(attrs.component) ?? componentOf(attrs.Component);
   const paths = [];
   const layouts = [];
+  const extras = [componentOf(attrs.errorElement) ?? componentOf(attrs.ErrorBoundary)].filter(Boolean);
   for (let a = p.parentPath.parentPath; a; a = a.parentPath) {
     if (!a.isJSXElement()) continue;
     const name = a.node.openingElement.name;
@@ -274,8 +321,10 @@ function jsxRoute(p, mod) {
     paths.unshift(typeof outer.path === 'string' ? outer.path : null);
     const layout = componentOf(outer.element) ?? componentOf(outer.Component);
     if (layout) layouts.unshift(layout);
+    const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
+    if (boundary) extras.push(boundary);
   }
-  if (component) mod.routes.push({ path: joinRoute([...paths, attrs.index ? null : attrs.path]), component, layouts, line: p.node.loc?.start.line });
+  if (component) mod.routes.push({ path: joinRoute([...paths, attrs.index ? null : attrs.path]), component, layouts, extras, line: p.node.loc?.start.line });
 }
 
 function objectProps(node) {
@@ -292,10 +341,12 @@ function objectProps(node) {
 function objectRoute(p, mod) {
   const own = objectProps(p.node);
   if (typeof own.path !== 'string' && own.index !== true) return;
+  if ('children' in own) return;
   const component = componentOf(own.element) ?? componentOf(own.Component);
   if (!component) return;
   const paths = [];
   const layouts = [];
+  const extras = [componentOf(own.errorElement) ?? componentOf(own.ErrorBoundary)].filter(Boolean);
   for (let a = p.parentPath; a; a = a.parentPath) {
     if (!a.isObjectExpression()) continue;
     const outer = objectProps(a.node);
@@ -303,6 +354,8 @@ function objectRoute(p, mod) {
     paths.unshift(typeof outer.path === 'string' ? outer.path : null);
     const layout = componentOf(outer.element) ?? componentOf(outer.Component);
     if (layout) layouts.unshift(layout);
+    const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
+    if (boundary) extras.push(boundary);
   }
-  mod.routes.push({ path: joinRoute([...paths, own.index ? null : own.path]), component, layouts, line: p.node.loc?.start.line });
+  mod.routes.push({ path: joinRoute([...paths, own.index ? null : own.path]), component, layouts, extras, line: p.node.loc?.start.line });
 }

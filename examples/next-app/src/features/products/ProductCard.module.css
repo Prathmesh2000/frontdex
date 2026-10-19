@@ -1,0 +1,5 @@
+.card { display: flex; flex-direction: column; gap: 0.5rem; border-radius: 12px; overflow: hidden; }
+.compact { flex-direction: row; align-items: center; }
+.image { aspect-ratio: 1; object-fit: cover; }
+.price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.soldOut { opacity: 0.5; filter: grayscale(1); }
