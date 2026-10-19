@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { detectPackageManager, detectWorkspaces } from './scanner/workspace.js';
 
 export const CONFIG_FILE = 'frontdex.config.json';
 // Names from the react-catalogue era. A project that still has any of them keeps using them until `frontdex upgrade`.
@@ -74,7 +75,11 @@ export function loadConfig(root, overrides = {}) {
   config.title ??= pkg.name ?? path.basename(root);
   config.version ??= pkg.version;
   const deps = { ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies };
-  config.framework ??= deps.next ? 'next' : 'react';
+  config.packageManager ??= detectPackageManager(root, pkg);
+  // Monorepo packages, detected from the package manager's workspace config; a `workspaces` array of globs in the config overrides it.
+  config.workspaces = detectWorkspaces(root, Array.isArray(fromFile.workspaces) ? { workspaces: fromFile.workspaces } : pkg);
+  config.rootFramework = deps.next ? 'next' : 'react';
+  config.framework ??= config.rootFramework === 'next' || config.workspaces.some((w) => w.framework === 'next') ? 'next' : 'react';
   // Where the running app is served, for the live preview panel.
   config.preview ??= config.framework === 'next' ? 'http://localhost:3000' : deps.vite ? 'http://localhost:5173' : 'http://localhost:3000';
   return config;

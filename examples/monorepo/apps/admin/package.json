@@ -1,0 +1,6 @@
+{
+  "name": "@acme/admin",
+  "private": true,
+  "dependencies": { "@acme/ui": "workspace:*", "react": "^19.0.0", "react-dom": "^19.0.0", "react-router-dom": "^7.0.0" },
+  "devDependencies": { "vite": "^6.0.0" }
+}

@@ -173,11 +173,20 @@ is:unused|shared|heavy|page|layout|leaf|deprecated|undocumented|leaky
   "autoUpdate": true,
   "knowledgeDir": ".frontdex",
   "history": { "enabled": true, "limit": 500 },
-  "agents": { "enabled": true }
+  "agents": { "enabled": true },
+  "workspaces": ["apps/*", "packages/*"]
 }
 ```
 
-`preview` is where your dev server runs, for the live Preview tab. The default is `:3000` for Next, `:5173` for Vite. `tsconfig.json` / `jsconfig.json` path aliases are resolved automatically.
+`preview` is where your dev server runs, for the live Preview tab. The default is `:3000` for Next, `:5173` for Vite. `tsconfig.json` / `jsconfig.json` path aliases are resolved automatically, using the config nearest to each file and following `extends`. `workspaces` is only needed to override detection (see Monorepos).
+
+### Monorepos
+
+Workspaces are read from `package.json` `workspaces` (npm, Yarn, Bun), `pnpm-workspace.yaml` or `lerna.json`; nx and Turborepo repos use one of these. Run frontdex from the repo root:
+
+- An import of a workspace package (`@acme/ui`, `@acme/ui/card`) resolves to that package's source, through its `exports` map, `source`/`module`/`main` fields, or `src/` when those point at `dist/`.
+- Every workspace that depends on `next` contributes its `app/` and `pages/` routes. Components and pages carry a `workspace` field. When two apps serve the same URL, the second is keyed `"/ (@acme/admin)"`.
+- `info.packageManager` records npm, pnpm, yarn, yarn-berry, yarn-pnp or bun. Nothing is resolved through `node_modules`, so Yarn Plug'n'Play needs no extra setup.
 
 ## Files it creates
 
@@ -201,7 +210,7 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | State | `useState`, `useReducer`, class `state` / `this.state` |
 | Lifecycle | effect hooks (deps → mount/update, cleanup → unmount) and all class lifecycle methods, with the functions each one calls |
 | Routing | Next.js App Router (groups, parallel slots, dynamic segments, nested layouts), Pages Router (`_app`), React Router JSX and object routes |
-| Imports | relative paths, tsconfig aliases, barrels, namespace imports, `lazy()` / `next/dynamic`, compound components (`<Tabs.List>`, `Card.Header = …`, `Object.assign`) |
+| Imports | relative paths, tsconfig aliases (per-folder configs, `extends`), workspace packages, barrels, namespace imports, `lazy()` / `next/dynamic`, compound components (`<Tabs.List>`, `Card.Header = …`, `Object.assign`) |
 | Global state | Redux Toolkit (`createSlice`, `configureStore`, thunks, `useSelector`/`useAppSelector`, `dispatch`, `connect`), React context (incl. through custom hooks), zustand |
 | Data & validation | `fetch`, axios-style clients, SWR, React Query, service modules; zod, yup, react-hook-form, HTML constraints, custom validators |
 | Styles | `className` strings, template literals, `clsx`/`cn`, CSS modules, global stylesheets (class → `file:line`) |
@@ -226,6 +235,7 @@ Measured on a synthetic project with 1,800 files and 1,577 components (the full 
 |---|---|
 | [examples/next-app](examples/next-app) "Northwind Shop" | Next.js App Router: storefront, checkout, account and admin; Redux Toolkit, contexts, zustand, axios, SWR, zod, react-hook-form, CSS modules |
 | [examples/react-app](examples/react-app) "Acme Admin" | React Router `createBrowserRouter`, Redux + `connect`, yup, class components with every lifecycle method |
+| [examples/monorepo](examples/monorepo) | pnpm workspace: a Next app and a Vite + React Router app sharing `@acme/ui` (exports map pointing at `dist/`), tsconfig `extends` + `paths` |
 
 Both samples contain deliberate memory leaks, a render loop, stale dependencies and dead code, each marked `// demo:`, so every catalogue feature has something to show.
 

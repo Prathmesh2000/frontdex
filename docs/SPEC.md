@@ -40,7 +40,9 @@ Keys starting with `x-` are allowed on the root, `info`, every Component, Prop a
 | `title` | string | **Required.** From `frontdex.config.json` or `package.json` name. |
 | `version` | string | From `package.json`. |
 | `description` | string | Manual. |
-| `framework` | `react` \| `next` | Detected from dependencies. |
+| `framework` | `react` \| `next` | Detected from dependencies (any workspace package counts). |
+| `packageManager` | `npm` \| `pnpm` \| `yarn` \| `yarn-berry` \| `yarn-pnp` \| `bun` | From the `packageManager` field or the lockfile. |
+| `workspaces` | string[] | Workspace package names (monorepos only). |
 | `routers` | array of `next-app` \| `next-pages` \| `react-router` | Routers found in the code. |
 | `generator` | string | Tool and version that produced the file. |
 | `generatedAt` | date-time | |
@@ -51,6 +53,7 @@ Keys starting with `x-` are allowed on the root, `info`, every Component, Prop a
 |---|---|---|---|
 | `name` | string | gen | Display name. |
 | `file` | string | gen | Path relative to project root. |
+| `workspace` | string | gen | Workspace package containing the component (monorepos only). |
 | `line` | integer | gen | Declaration line. |
 | `kind` | `function` \| `class` \| `memo` \| `forwardRef` | gen | How it is declared. `memo(forwardRef(...))` is `memo`. |
 | `export` | `default` \| `named` \| `none` | gen | How the defining file exports it. |
@@ -198,6 +201,7 @@ flowchart LR
 |---|---|---|---|
 | `router` | `next-app` \| `next-pages` \| `react-router` | gen | |
 | `file` | string | gen | File that declares the route (page file, or the file containing `<Route>`). |
+| `workspace` | string | gen | Workspace package serving the page (monorepos only). When two apps serve the same route, the second page is keyed `<route> (<workspace>)`. |
 | `component` | ComponentId | gen | Root component. Absent if unresolved. |
 | `params` | string[] | gen | Dynamic segments. |
 | `layouts` | ComponentId[] | gen | Outermost first: `layout.tsx` chain or `_app`. |

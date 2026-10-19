@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { listProjectFiles, updateProjectFiles } from './files.js';
 import { createResolver } from './resolve.js';
+import { workspaceOf } from './workspace.js';
 import { loadMany, MAP_FIELDS } from './parse-pool.js';
 import { buildProjectInsights } from './project.js';
 
@@ -49,7 +50,7 @@ export function scanProject(config, { cache, known } = {}) {
   const touched = known && new Set(known.changed);
   // Import resolution stats candidate paths, so a session reuses its resolver (and its cache) while no file was added or removed.
   const sameFiles = known && sameList(projectFiles.sources, known.files.sources) && sameList(projectFiles.styles, known.files.styles);
-  const resolveImport = (sameFiles && known.resolver) || createResolver(root);
+  const resolveImport = (sameFiles && known.resolver) || createResolver(root, { workspaces: config.workspaces });
   lap('list');
   // Pass 1: keep cached parses whose mtime/size still match; queue the rest for reading.
   const pending = [];
@@ -248,6 +249,7 @@ export function scanProject(config, { cache, known } = {}) {
     components[c.id] = compact({
       name: c.name,
       file: rel(mod.file),
+      workspace: workspaceOf(config.workspaces, mod.file)?.name,
       line: c.line,
       kind: c.kind,
       export: exportNames.includes('default') ? 'default' : exportNames.length ? 'named' : 'none',
@@ -280,12 +282,20 @@ export function scanProject(config, { cache, known } = {}) {
 
   const pages = {};
   const addPage = (route, page) => {
-    const key = pages[route] ? `${route} (${page.router})` : route;
+    const workspace = workspaceOf(config.workspaces, path.join(root, page.file))?.name;
+    if (workspace) page.workspace = workspace;
+    // Two apps in a monorepo may both have `/`; the second is keyed by its workspace (or by router within one app).
+    const key = pages[route] ? `${route} (${workspace && workspace !== pages[route].workspace ? workspace : page.router})` : route;
     pages[key] = page;
   };
   const idOf = (r) => r?.id;
 
-  const nextDirs = (names) => (config.framework === 'next' ? names.map((d) => path.join(root, d)).filter(isDir) : []);
+  // Next.js app roots: the project root when it is a Next app, plus every workspace package that depends on next.
+  const nextRoots = [
+    ...(config.rootFramework === 'next' || (config.framework === 'next' && !config.workspaces.length) ? [root] : []),
+    ...config.workspaces.filter((w) => w.framework === 'next').map((w) => w.dir),
+  ];
+  const nextDirs = (names) => nextRoots.flatMap((r) => names.map((d) => path.join(r, d))).filter(isDir);
 
   for (const dir of nextDirs(['app', 'src/app'])) {
     for (const file of modules.keys()) {
@@ -377,6 +387,8 @@ export function scanProject(config, { cache, known } = {}) {
       title: config.title,
       version: config.version,
       framework: config.framework,
+      packageManager: config.packageManager,
+      workspaces: config.workspaces.map((w) => w.name),
       routers,
       generator: `frontdex ${PKG.version}`,
       generatedAt: new Date().toISOString(),

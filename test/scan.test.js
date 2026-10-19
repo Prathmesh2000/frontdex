@@ -117,3 +117,43 @@ test('regeneration keeps human-owned fields', () => {
   assert.equal(merged.components.Header['x-figma'], 'https://figma.com/x');
   assert.equal(merged.pages['/'].description, 'Landing');
 });
+
+test('monorepo: workspace packages resolve to source across apps', () => {
+  const mono = example('monorepo');
+  assert.deepEqual(validateCatalogue(mono), { valid: true, errors: [] });
+  assert.equal(mono.info.packageManager, 'pnpm');
+  assert.deepEqual(mono.info.workspaces, ['@acme/admin', '@acme/web', '@acme/ui']);
+  const M = mono.components;
+  // `@acme/ui` (main → dist/index.js) and `@acme/ui/card` (exports map) both land on packages/ui/src.
+  assert.equal(M.Button.file, 'packages/ui/src/button.tsx');
+  assert.equal(M.Button.workspace, '@acme/ui');
+  assert.deepEqual(M.Button.usedBy.sort(), ['Dashboard', 'HomePage', 'SettingsPage']);
+  assert.deepEqual(M.Card.usedBy.sort(), ['Dashboard', 'HomePage', 'Users']);
+  // `@/components/Hero` comes from apps/web/tsconfig.json paths, which extends the root base config.
+  assert.deepEqual(M.Hero.usedBy, ['HomePage']);
+  assert.equal(M.HomePage.externals, undefined);
+  // Both apps serve `/`: the Next app keeps the plain key, the admin app's route is keyed by its workspace.
+  assert.equal(mono.pages['/'].workspace, '@acme/web');
+  assert.equal(mono.pages['/ (@acme/admin)'].component, 'Dashboard');
+  assert.deepEqual(mono.pages['/settings'].layouts, ['RootLayout']);
+  assert.deepEqual(mono.health.unusedComponents, ['Badge']);
+});
+
+test('package manager detection: packageManager field, then lockfiles; Yarn berry and PnP', async () => {
+  const { detectPackageManager } = await import('../src/scanner/workspace.js');
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const project = (files, pkg = {}) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-'));
+    for (const f of files) fs.writeFileSync(path.join(dir, f), '');
+    return detectPackageManager(dir, pkg);
+  };
+  assert.equal(project(['package-lock.json']), 'npm');
+  assert.equal(project(['pnpm-lock.yaml', 'package-lock.json']), 'pnpm');
+  assert.equal(project(['bun.lock']), 'bun');
+  assert.equal(project(['yarn.lock']), 'yarn');
+  assert.equal(project(['yarn.lock', '.yarnrc.yml']), 'yarn-berry');
+  assert.equal(project(['yarn.lock', '.yarnrc.yml', '.pnp.cjs']), 'yarn-pnp');
+  assert.equal(project(['package-lock.json'], { packageManager: 'pnpm@10.0.0' }), 'pnpm');
+  assert.equal(project([]), null);
+});

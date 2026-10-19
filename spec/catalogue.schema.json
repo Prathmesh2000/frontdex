@@ -84,6 +84,24 @@
             "next"
           ]
         },
+        "packageManager": {
+          "enum": [
+            "npm",
+            "pnpm",
+            "yarn",
+            "yarn-berry",
+            "yarn-pnp",
+            "bun"
+          ],
+          "description": "Detected from the packageManager field or the lockfile."
+        },
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Workspace (monorepo) package names."
+        },
         "routers": {
           "type": "array",
           "items": {
@@ -119,6 +137,10 @@
         },
         "file": {
           "type": "string"
+        },
+        "workspace": {
+          "type": "string",
+          "description": "Workspace package that contains the component (monorepos only)."
         },
         "line": {
           "type": "integer",
@@ -405,6 +427,10 @@
         },
         "file": {
           "type": "string"
+        },
+        "workspace": {
+          "type": "string",
+          "description": "Workspace package that serves the page (monorepos only)."
         },
         "component": {
           "type": "string"
