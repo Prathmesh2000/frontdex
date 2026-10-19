@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const SOURCE_EXT = ['.tsx', '.ts', '.jsx', '.js', '.mjs'];
+// .vue files go through the Vue adapter (adapters/vue.js); everything else through Babel.
+export const SOURCE_EXT = ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.vue'];
 export const STYLE_EXT = ['.css', '.scss', '.sass', '.less'];
 
 export function globToRegExp(glob) {

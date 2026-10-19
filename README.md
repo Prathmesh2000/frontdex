@@ -1,6 +1,6 @@
 # frontdex
 
-A living knowledge base for React and Next.js frontends, like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
+A living knowledge base for frontends (React, Next.js, Remix, TanStack, Vue, Nuxt and more), like Swagger/OpenAPI for your UI. It scans the source and keeps two views of the same knowledge up to date:
 
 - **For developers:** `frontdex.yaml` (the [CatalogueSpec](docs/SPEC.md) format) plus a page-first UI:
   - **Navigation:** URL → layouts → component → its state, props, functions, timers, API calls, global state, validation and styles. Every item links to its `file:line`.
@@ -205,7 +205,8 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 
 | Area | Supported |
 |---|---|
-| Components | function declarations, arrow functions, default exports (named or anonymous), `memo`, `forwardRef`, class components |
+| Components | function declarations, arrow functions, default exports (named or anonymous), `memo`, `forwardRef`, class components, Qwik `component$` |
+| Vue | `.vue` single-file components via the project's own `vue/compiler-sfc`: `<script setup>` (`defineProps` type or runtime form, `withDefaults`, `ref`/`reactive`/`computed`, lifecycle hooks, `watch`, composables, `fetch`/`$fetch`/`useFetch`) and the Options API (`props`, `data`, lifecycle, `components`); template children with their props, listeners and `v-model`; static classes. Vue Router route objects (including lazy `() => import()`), Nuxt `pages/` with `app.vue` and `layouts/default.vue` |
 | Props | TS param types, `FC<Props>`, `forwardRef<Ref, Props>`, interfaces with `extends`, intersections, `PropsWithChildren`, destructuring defaults, `propTypes`, `defaultProps`, `props.x` usage |
 | State | `useState`, `useReducer`, class `state` / `this.state` |
 | Lifecycle | effect hooks (deps → mount/update, cleanup → unmount) and all class lifecycle methods, with the functions each one calls |
@@ -249,4 +250,4 @@ node bin/frontdex.js serve -C examples/next-app -w
 
 ## Limits
 
-Static analysis only: components produced by factories and routes built from runtime data are not followed. Custom hooks are recorded on their callers but not catalogued on their own yet.
+Static analysis only: components produced by factories and routes built from runtime data are not followed. Custom hooks are recorded on their callers but not catalogued on their own yet. Vue: Nuxt auto-imported components (used without an import) and Pinia stores are not linked yet, and leak/render-loop diagnostics are React-only.

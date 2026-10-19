@@ -2,7 +2,7 @@ import path from 'node:path';
 
 /*
  * File-system routers other than Next.js (which graph.js handles): Remix v2 flat routes, React Router v7 framework mode
- * (app/routes.ts and flatRoutes), TanStack Router, Gatsby, SolidStart and Qwik City.
+ * (app/routes.ts and flatRoutes), TanStack Router, Gatsby, SolidStart, Qwik City and Nuxt.
  *
  * Each router returns route descriptors that graph.js turns into pages:
  *   { route, router, file, params, page: Ref, layouts: Ref[] }   Ref = { file, export: 'default' } | { file, local }
@@ -10,7 +10,7 @@ import path from 'node:path';
  * Gatsby/Solid/Qwik), the same convention Next.js pages follow with `[id]`.
  */
 
-const SOURCE = /\.(tsx|jsx|ts|js|mjs)$/;
+const SOURCE = /\.(tsx|jsx|ts|js|mjs|vue)$/;
 const stripExt = (f) => f.replace(SOURCE, '');
 
 /** Splits a flat-route file name on dots, except dots escaped in [brackets] (`sitemap[.]xml`). */
@@ -177,12 +177,11 @@ function gatsby(app, files) {
 }
 
 /**
- * SolidStart: src/routes, `index` → folder URL, `(group)` dropped. `users.tsx` next to a `users/` folder is the layout
- * for the routes inside it (and a page itself only when the folder has no index). src/app is the root layout.
+ * Nested file routes (SolidStart src/routes, Nuxt pages/): `index` → folder URL, `(group)` dropped. `users.tsx` next to
+ * a `users/` folder is the layout for the routes inside it (and a page itself only when the folder has no index).
+ * `rootLayouts` wrap every page (SolidStart src/app, Nuxt app.vue + layouts/default.vue).
  */
-function solidStart(app, files) {
-  const routesDir = path.join(app.dir, 'src', 'routes');
-  const appFile = firstExisting(files, path.join(app.dir, 'src', 'app'));
+function nestedFileRoutes(routesDir, files, router, rootLayouts) {
   const routeFiles = [...files].filter((f) => f.startsWith(routesDir + path.sep));
   const out = [];
   for (const file of routeFiles) {
@@ -191,16 +190,33 @@ function solidStart(app, files) {
     const isLayout = routeFiles.some((f) => f.startsWith(folder + path.sep));
     if (isLayout && routeFiles.some((f) => stripExt(f) === path.join(folder, 'index'))) continue;
     const parts = rel.split(path.sep);
-    const layouts = appFile ? [{ file: appFile, export: 'default' }] : [];
+    const layouts = [...rootLayouts];
     for (let k = 1; k < parts.length; k++) {
       const layout = firstExisting(routeFiles, path.join(routesDir, ...parts.slice(0, k)));
       if (layout) layouts.push({ file: layout, export: 'default' });
     }
     const segs = parts.filter((p) => !/^\(.*\)$/.test(p));
     if (segs[segs.length - 1] === 'index') segs.pop();
-    out.push({ route: routeOf(segs), router: 'solid-start', file, params: params(segs), page: { file, export: 'default' }, layouts });
+    out.push({ route: routeOf(segs), router, file, params: params(segs), page: { file, export: 'default' }, layouts });
   }
   return out;
+}
+
+function solidStart(app, files) {
+  const appFile = firstExisting(files, path.join(app.dir, 'src', 'app'));
+  return nestedFileRoutes(path.join(app.dir, 'src', 'routes'), files, 'solid-start', appFile ? [{ file: appFile, export: 'default' }] : []);
+}
+
+/** Nuxt 3 (pages/, layouts/, app.vue) and Nuxt 4 (the same under app/). Only the default layout is applied. */
+function nuxt(app, files) {
+  for (const base of ['app', '.']) {
+    const dir = path.join(app.dir, base);
+    const pagesDir = path.join(dir, 'pages');
+    if (![...files].some((f) => f.startsWith(pagesDir + path.sep))) continue;
+    const roots = [firstExisting(files, path.join(dir, 'app')), firstExisting(files, path.join(dir, 'layouts', 'default'))].filter(Boolean);
+    return nestedFileRoutes(pagesDir, files, 'nuxt', roots.map((file) => ({ file, export: 'default' })));
+  }
+  return [];
 }
 
 /** Qwik City: src/routes/**\/index.tsx are pages; layout.tsx in each ancestor folder wraps them. */
@@ -232,5 +248,6 @@ export function fileSystemRoutes(app, files, modules) {
   if (has('gatsby')) out.push(...gatsby(app, files));
   if (has('@solidjs/start')) out.push(...solidStart(app, files));
   if (has('@builder.io/qwik-city')) out.push(...qwikCity(app, files));
+  if (has('nuxt')) out.push(...nuxt(app, files));
   return out;
 }

@@ -15,7 +15,11 @@ const RR_CONFIG = new Set(['route', 'index', 'layout', 'prefix']);
 const LAZY = /^(React\.)?lazy$|^dynamic$|^loadable$/;
 const NEXT_SPECIAL = { page: 'Page', layout: 'Layout', template: 'Template', loading: 'Loading', error: 'Error', 'not-found': 'NotFound', default: 'Default', index: 'Page' };
 
-export function parseFile(file, code = fs.readFileSync(file, 'utf8')) {
+/**
+ * Parses one JS/TS module. `syntaxFile` picks the Babel plugins (by extension) when `file` is not itself a script, as for
+ * the <script> block of a .vue file, and `startLine` keeps line numbers relative to the real file.
+ */
+export function parseFile(file, code = fs.readFileSync(file, 'utf8'), { syntaxFile = file, startLine = 1 } = {}) {
   const mod = {
     file,
     code,
@@ -30,11 +34,11 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8')) {
     statics: new Map(),
     typeImports: [],
   };
-  const ext = path.extname(file);
+  const ext = path.extname(syntaxFile);
   const plugins = ['decorators-legacy', ...(ext === '.ts' ? ['typescript'] : ext === '.tsx' ? ['typescript', 'jsx'] : ['jsx'])];
   let ast;
   try {
-    ast = parse(code, { sourceType: 'module', plugins, errorRecovery: true });
+    ast = parse(code, { sourceType: 'module', plugins, errorRecovery: true, startLine });
   } catch (err) {
     mod.error = err.message;
     return mod;
@@ -426,11 +430,28 @@ function objectProps(node) {
   return out;
 }
 
+/**
+ * Vue Router's `component` key: an identifier, or a lazy `() => import('./About.vue')`, which is recorded as a synthetic
+ * default import so it resolves like any other.
+ */
+function lowerComponent(value, mod) {
+  if (!value || typeof value !== 'object') return undefined;
+  if (value.type === 'Identifier') return value.name;
+  const body = (value.type === 'ArrowFunctionExpression' || value.type === 'FunctionExpression') && value.body;
+  const call = body?.type === 'CallExpression' ? body : null;
+  if (call?.callee.type === 'Import' && call.arguments[0]?.type === 'StringLiteral') {
+    const local = `__lazyRoute${value.start}`;
+    mod.imports.set(local, { source: call.arguments[0].value, imported: 'default', lazy: true });
+    return local;
+  }
+  return undefined;
+}
+
 function objectRoute(p, mod) {
   const own = objectProps(p.node);
   if (typeof own.path !== 'string' && own.index !== true) return;
   if ('children' in own) return;
-  const component = componentOf(own.element) ?? componentOf(own.Component);
+  const component = componentOf(own.element) ?? componentOf(own.Component) ?? lowerComponent(own.component, mod);
   if (!component) return;
   const paths = [];
   const layouts = [];
@@ -440,7 +461,7 @@ function objectRoute(p, mod) {
     const outer = objectProps(a.node);
     if (!('children' in outer)) continue;
     paths.unshift(typeof outer.path === 'string' ? outer.path : null);
-    const layout = componentOf(outer.element) ?? componentOf(outer.Component);
+    const layout = componentOf(outer.element) ?? componentOf(outer.Component) ?? lowerComponent(outer.component, mod);
     if (layout) layouts.unshift(layout);
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);

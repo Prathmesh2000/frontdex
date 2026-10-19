@@ -121,7 +121,9 @@
               "tanstack",
               "gatsby",
               "solid-start",
-              "qwik-city"
+              "qwik-city",
+              "nuxt",
+              "vue-router"
             ]
           }
         },
@@ -343,7 +345,11 @@
           "enum": [
             "useState",
             "useReducer",
-            "class"
+            "class",
+            "ref",
+            "reactive",
+            "computed",
+            "data"
           ]
         },
         "initial": {
@@ -448,7 +454,9 @@
             "tanstack",
             "gatsby",
             "solid-start",
-            "qwik-city"
+            "qwik-city",
+            "nuxt",
+            "vue-router"
           ]
         },
         "file": {

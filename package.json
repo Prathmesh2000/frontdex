@@ -55,5 +55,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Prathmesh2000/frontdex.git"
+  },
+  "devDependencies": {
+    "vue": "^3.5.44"
   }
 }

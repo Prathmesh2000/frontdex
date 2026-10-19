@@ -14,7 +14,7 @@ const PAGE_FILE = /^page\.(tsx|jsx|ts|js)$/;
 
 // Any change to the scanner's own code invalidates cached parse results.
 const SCANNER_HASH = createHash('sha1')
-  .update(fs.readdirSync(new URL('.', import.meta.url)).sort().map((f) => fs.readFileSync(new URL(f, import.meta.url), 'utf8')).join('\0'))
+  .update(fs.readdirSync(new URL('.', import.meta.url), { recursive: true }).filter((f) => /\.js$/.test(f)).sort().map((f) => fs.readFileSync(new URL(f.split(path.sep).join('/'), import.meta.url), 'utf8')).join('\0'))
   .digest('hex')
   .slice(0, 12);
 export const CACHE_VERSION = `${PKG.version}/${SCANNER_HASH}`;
@@ -341,10 +341,15 @@ export function scanProject(config, { cache, known } = {}) {
     }
   }
 
+  // Route objects/JSX in code: React Router, or Vue Router (same `{ path, component, children }` shape) in Vue apps.
+  const depsFor = (file) => {
+    const w = workspaceOf(config.workspaces, file);
+    return w ? { ...w.pkg.dependencies, ...w.pkg.devDependencies } : config.deps;
+  };
   for (const mod of modules.values()) {
     for (const r of mod.routes) {
       addPage(r.path, {
-        router: 'react-router',
+        router: depsFor(mod.file)?.['vue-router'] ? 'vue-router' : 'react-router',
         file: rel(mod.file),
         component: idOf(resolveLocal(mod.file, r.component)),
         params: [...r.path.matchAll(/:(\w+)/g)].map((m) => m[1]),
