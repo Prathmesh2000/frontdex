@@ -208,30 +208,25 @@ export function createTools(config) {
       return lines.join('\n');
     },
     catalogue_adoption({ name, limit = 20 } = {}) {
-      const { idx } = refresh().state;
-      const r = resolve(idx, name);
+      const r = resolve(refresh().state.idx, name);
       if (r.error) return r.error;
-      const history = createHistory(path.join(knowledgeDir(config), 'history'));
-      const snapshots = history.log().slice(-limit);
-      if (!snapshots.length) return 'No history yet: adoption needs knowledge-base snapshots (history is on by default).';
       // Usage = components rendering it + pages showing it, per snapshot; a deprecated component should trend to 0.
-      const rows = snapshots.map((s) => {
-        const c = history.checkout(s.id)?.catalogue.components[r.m.id];
-        return { when: s.time.slice(0, 10), git: s.git, usedBy: c?.usedBy?.length ?? 0, pages: c?.pages?.length ?? 0, exists: !!c };
-      });
-      const status = r.m.c.status === 'deprecated' ? ' (deprecated: usage should go down)' : '';
-      return [`# Adoption of ${r.m.name}${status}`, '', '| Snapshot | git | Used by | Pages |', '|---|---|---|---|', ...rows.map((x) => `| ${x.when} | ${x.git ?? '-'} | ${x.exists ? x.usedBy : 'absent'} | ${x.exists ? x.pages : '-'} |`)].join('\n');
+      const { deprecated, snapshots } = data.adoption({ name, limit });
+      if (!snapshots.length) return 'No history yet: adoption needs knowledge-base snapshots (history is on by default).';
+      const rows = snapshots.map((x) => `| ${x.time.slice(0, 10)} | ${x.git ?? '-'} | ${x.exists ? x.usedBy : 'absent'} | ${x.exists ? x.pages : '-'} |`);
+      return [`# Adoption of ${r.m.name}${deprecated ? ' (deprecated: usage should go down)' : ''}`, '', '| Snapshot | git | Used by | Pages |', '|---|---|---|---|', ...rows].join('\n');
     },
     catalogue_owners({ name } = {}) {
-      const { idx } = refresh().state;
-      const r = resolve(idx, name);
+      const r = resolve(refresh().state.idx, name);
       if (r.error) return r.error;
-      const lines = [`# ${r.m.name} \`${r.m.c.file}\``, `- CODEOWNERS: ${r.m.c.codeowners?.join(', ') ?? 'none'}`, `- Tests: ${r.m.c.tests?.join(', ') ?? 'none'} · Stories: ${r.m.c.stories?.join(', ') ?? 'none'}`];
       // Git activity is read live: it changes with every commit, so it is not stored in the catalogue.
-      const git = gitActivity(config.root, r.m.c.file);
-      if (git) lines.push(`- Last changed ${git.last} by ${git.lastAuthor}; ${git.recent} commit(s) in the last 90 days; top authors: ${git.authors.join(', ')}`);
-      else lines.push('- Git history: unavailable (not a git checkout, or the file is untracked)');
-      return lines.join('\n');
+      const o = data.owners({ name });
+      return [
+        `# ${r.m.name} \`${o.file}\``,
+        `- CODEOWNERS: ${o.codeowners.join(', ') || 'none'}`,
+        `- Tests: ${o.tests.join(', ') || 'none'} · Stories: ${o.stories.join(', ') || 'none'}`,
+        o.git ? `- Last changed ${o.git.last} by ${o.git.lastAuthor}; ${o.git.recent} commit(s) in the last 90 days; top authors: ${o.git.authors.join(', ')}` : '- Git history: unavailable (not a git checkout, or the file is untracked)',
+      ].join('\n');
     },
     catalogue_hooks({ name } = {}) {
       const { cat } = refresh().state;
@@ -271,5 +266,68 @@ export function createTools(config) {
     },
   };
 
-  return { tools, refresh };
+  // Structured counterparts of the tools: what `--json` prints, and what programmatic callers should use.
+  const one = (name) => {
+    const { idx, cat } = refresh().state;
+    const r = resolve(idx, name);
+    if (r.error) throw new Error(r.error);
+    return { idx, cat, m: r.m };
+  };
+  const includes = (text, q) => !q || String(text).toLowerCase().includes(String(q).toLowerCase());
+  const data = {
+    query: ({ query }) => refresh().state.idx.run(String(query ?? '')).map((m) => ({ id: m.id, name: m.name, kind: m.c.kind, file: m.c.file, line: m.c.line, usedBy: m.usedBy, pages: m.pages })),
+    show: ({ name }) => {
+      const { m } = one(name);
+      return { id: m.id, ...m.c };
+    },
+    impact: ({ name }) => {
+      const { idx, m } = one(name);
+      return { id: m.id, direct: m.c.usedBy ?? [], ...idx.impact(m.id) };
+    },
+    dataflow: ({ name }) => {
+      const { idx, m } = one(name);
+      const from = Object.fromEntries((m.c.usedBy ?? []).map((p) => [p, idx.C[p]?.passes?.[m.id] ?? []]));
+      return { id: m.id, propsFrom: from, props: m.c.props, store: m.c.store, context: m.c.context, state: m.c.state, lifecycle: m.c.lifecycle, apiCalls: m.c.apiCalls, propsTo: m.c.passes };
+    },
+    health: ({ severity, type } = {}) => {
+      const { cat } = refresh().state;
+      const issues = Object.entries(cat.components).flatMap(([id, c]) => (c.issues ?? []).map((i) => ({ component: id, file: c.file, ...i }))).filter((i) => (!severity || i.severity === severity) && (!type || i.type === type));
+      const { issues: totals, ...rest } = cat.health ?? {};
+      return { totals, ...rest, issues };
+    },
+    state: ({ store } = {}) => Object.fromEntries(Object.entries(refresh().state.cat.stores ?? {}).filter(([id, s]) => !store || id === store || s.name === store)),
+    api: ({ endpoint } = {}) => {
+      const { cat } = refresh().state;
+      const calls = Object.entries(cat.components).flatMap(([id, c]) => (c.apiCalls ?? []).map((a) => ({ component: id, file: c.file, ...a }))).filter((a) => includes(`${a.method} ${a.target ?? ''}`, endpoint));
+      return { calls, endpoints: Object.fromEntries(Object.entries(cat.endpoints ?? {}).filter(([k]) => includes(k, endpoint))) };
+    },
+    find: ({ name, props = [] }) => similarTo(refresh().state.cat.components, { name, props: Array.isArray(props) ? props : String(props).split(',').map((p) => p.trim()).filter(Boolean) }),
+    dupes: ({ name } = {}) => {
+      const { cat } = refresh().state;
+      return (cat.duplicates ?? []).filter((d) => !name || d.components.some((id) => id === name || cat.components[id]?.name === name));
+    },
+    tokens: ({ query } = {}) => {
+      const t = refresh().state.cat.tokens ?? { definitions: {}, drift: [] };
+      return { definitions: Object.fromEntries(Object.entries(t.definitions).filter(([k, v]) => includes(`${k} ${v.value}`, query))), drift: (t.drift ?? []).filter((d) => includes(`${d.token} ${d.at} ${d.value}`, query)) };
+    },
+    hooks: ({ name } = {}) => Object.fromEntries(Object.entries(refresh().state.cat.hooks ?? {}).filter(([id]) => !name || id === name || id.startsWith(`${name}@`))),
+    owners: ({ name }) => {
+      const { m } = one(name);
+      return { id: m.id, file: m.c.file, codeowners: m.c.codeowners ?? [], tests: m.c.tests ?? [], stories: m.c.stories ?? [], git: gitActivity(config.root, m.c.file) };
+    },
+    adoption: ({ name, limit = 20 }) => {
+      const { m } = one(name);
+      const history = createHistory(path.join(knowledgeDir(config), 'history'));
+      return {
+        id: m.id,
+        deprecated: m.c.status === 'deprecated',
+        snapshots: history.log().slice(-limit).map((s) => {
+          const c = history.checkout(s.id)?.catalogue.components[m.id];
+          return { id: s.id, time: s.time, git: s.git, exists: !!c, usedBy: c?.usedBy?.length ?? 0, pages: c?.pages?.length ?? 0 };
+        }),
+      };
+    },
+  };
+
+  return { tools, data, refresh };
 }

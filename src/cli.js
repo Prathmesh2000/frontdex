@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { installAgents, runHook, TARGETS } from './agents.js';
 import { buildReport, catalogueAtRef, formatMarkdown, formatText } from './ci.js';
+import { diagnose, formatDiagnosis } from './doctor.js';
 import { formatDetail, formatSummary } from './history.js';
 import { upgradeProject } from './config.js';
 import { createHistory, createTools, initConfig, knowledgeDir, loadConfig, readCatalogue, scan, validateCatalogue } from './index.js';
@@ -17,6 +18,7 @@ Usage: frontdex <command> [options]   (aliases: fdx, rcat)
 
 Setup
   init [--auto-update]     Create frontdex.config.json
+  doctor                   What was detected (frameworks, workspaces, routers, compilers, agents) and what is missing
   upgrade                  Move a react-catalogue project to frontdex file names (config, YAML, knowledge folder)
   agents [--targets a,b]   Wire coding agents (rules, MCP, hooks). Targets: ${TARGETS.join(', ')}
          [--no-hooks] [--no-mcp] [--remove]
@@ -57,6 +59,7 @@ Agents
 
 Options
   -C, --cwd <dir>          Project root (default: current directory)
+  --json                   Machine-readable output (query commands, scan, check, history, diff, doctor)
 `;
 
 export async function main(argv) {
@@ -102,7 +105,36 @@ export async function main(argv) {
     console.error('• This project uses react-catalogue file names. Run "frontdex upgrade" to move to frontdex.config.json, frontdex.yaml and .frontdex/.');
   }
 
+  // --json: the structured form of every query command (the same data the MCP tools render as text).
+  const DATA_ARGS = {
+    query: () => ({ query: positionals.slice(1).join(' ') }),
+    show: () => ({ name: arg }),
+    impact: () => ({ name: arg }),
+    dataflow: () => ({ name: arg }),
+    health: () => ({ severity: values.severity, type: arg }),
+    state: () => ({ store: arg }),
+    api: () => ({ endpoint: arg }),
+    find: () => ({ name: arg, props: values.props ?? '' }),
+    dupes: () => ({ name: arg }),
+    tokens: () => ({ query: arg }),
+    hooks: () => ({ name: arg }),
+    owners: () => ({ name: arg }),
+    adoption: () => ({ name: arg }),
+  };
+  if (values.json && DATA_ARGS[command]) {
+    const out = createTools(config).data[command](DATA_ARGS[command]());
+    console.log(JSON.stringify(out, null, 2));
+    if (command === 'health' && values.strict && (out.issues ?? []).some((i) => i.severity === 'high')) process.exitCode = 1;
+    return;
+  }
+
   switch (command) {
+    case 'doctor': {
+      const checks = diagnose(config);
+      console.log(values.json ? JSON.stringify(checks, null, 2) : formatDiagnosis(checks));
+      if (checks.some((c) => c.status === 'error')) process.exitCode = 1;
+      return;
+    }
     case 'upgrade': {
       const moves = upgradeProject(root);
       if (!moves.length) return void console.log('✔ already using frontdex file names');
@@ -120,6 +152,7 @@ export async function main(argv) {
     case 'generate': {
       const t = performance.now();
       const r = scan(config, { full: values.full, message: values.message });
+      if (values.json) return void console.log(JSON.stringify({ changed: r.changed, stats: r.stats, delta: r.delta, warnings: r.warnings, commit: r.commit, timings: r.timings }, null, 2));
       r.warnings.forEach((w) => console.warn(`⚠ ${w}`));
       const d = r.delta;
       console.log(`✔ ${r.stats.components} components, ${r.stats.pages} pages · ${d.parsed} file(s) parsed, ${d.reused} unchanged${d.removed.length ? `, ${d.removed.length} removed` : ''} · ${Math.round(performance.now() - t)} ms`);
@@ -148,7 +181,9 @@ export async function main(argv) {
     }
     case 'check': {
       const r = scan(config, { dryRun: true });
-      if (!r.changed) return void console.log('✔ catalogue is up to date');
+      if (values.json) console.log(JSON.stringify({ upToDate: !r.changed, changed: [...r.delta.added, ...r.delta.changed], removed: r.delta.removed }, null, 2));
+      else if (!r.changed) return void console.log('✔ catalogue is up to date');
+      if (!r.changed) return;
       console.error(`✖ catalogue is out of date (${[...r.delta.added, ...r.delta.changed].length} changed, ${r.delta.removed.length} removed file(s)). Run: npx frontdex scan`);
       process.exitCode = 1;
       return;
@@ -156,6 +191,7 @@ export async function main(argv) {
     case 'history': {
       const history = createHistory(path.join(knowledgeDir(config), 'history'));
       const entries = history.log();
+      if (values.json) return void console.log(JSON.stringify(arg ? entries.find((x) => x.id.startsWith(arg)) ?? null : entries.reverse().slice(0, Number(values.limit ?? 20)), null, 2));
       if (!entries.length) return void console.log('No history yet. Run "frontdex scan".');
       if (arg) {
         const e = entries.find((x) => x.id.startsWith(arg));

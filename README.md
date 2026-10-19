@@ -48,6 +48,7 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 | Command | What it does |
 |---|---|
 | `frontdex init [--auto-update]` | Creates `frontdex.config.json`. |
+| `frontdex doctor` | What was detected (config, frameworks, workspaces, package manager, files, compilers, routers, agents, git) and how to fix what is missing. |
 | `frontdex scan [--full] [-m msg]` | Incremental rescan: unchanged files (same mtime/size or content hash) reuse their cached parse. `--full` ignores the cache. Records a history snapshot when anything changed. |
 | `frontdex watch` | Keeps everything updated while you code. This is what `autoUpdate` runs. |
 | `frontdex check` | Exits 1 if the catalogue is stale. Use in CI or a pre-commit hook. |
@@ -70,7 +71,7 @@ npx frontdex agents    # replaces the react-catalogue rules block, MCP entry, ho
 | `frontdex mcp` | MCP server over stdio (registered automatically by `frontdex agents`). |
 | `frontdex validate [file]` | Validates against the JSON Schema. |
 
-All commands accept `-C <dir>` to target another project.
+All commands accept `-C <dir>` to target another project, and `--json` for machine-readable output (query commands, `scan`, `check`, `history`, `diff`, `doctor`).
 
 ## Auto-update
 

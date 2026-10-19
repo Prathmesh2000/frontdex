@@ -340,7 +340,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] `fix` for the safe automatic cases.
 
 **Surfaces**
-- [ ] CLI: every command in the table, `--json` on all, help text, `doctor`.
+- [x] CLI: `--json` on query commands, scan, check, history, diff; `doctor`; help text.
 - [ ] HTTP API (paged) + new UI; `frontdex build` static export.
 - [ ] Preview through the user's dev server (Vite virtual route, Next generated dev-only route), props playground, `screenshot`.
 - [ ] Dev-only overlay.
