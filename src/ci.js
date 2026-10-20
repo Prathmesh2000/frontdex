@@ -31,7 +31,8 @@ export function catalogueAtRef(config, ref, { scan = false } = {}) {
   // Refs can come from HTTP (/api/diff): never let one be read as a git option, and use only the resolved commit.
   if (typeof ref !== 'string' || !ref || ref.startsWith('-') || ref.length > 200) throw new Error(`Invalid git ref: ${ref}`);
   const sha = git(gitRoot, ['rev-parse', '--verify', '--quiet', '--end-of-options', `${ref}^{commit}`]);
-  const projectRel = path.relative(gitRoot, config.root);
+  // Ask git, not path.relative: on Windows the root can be an 8.3 short path (C:\Users\RUNNER~1) while git reports the long one.
+  const projectRel = git(config.root, ['rev-parse', '--show-prefix']).replace(/\/$/, '');
   if (!scan) {
     const yamlRel = path.join(projectRel, config.output).split(path.sep).join('/');
     const show = (rel) => YAML.parse(git(gitRoot, ['show', `${sha}:${rel}`]));

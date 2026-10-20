@@ -1,0 +1,66 @@
+name: Release
+
+# Manual: Actions → Release → Run workflow (on main). Tests, bumps the version, dates the CHANGELOG section,
+# publishes to npm with provenance through npm Trusted Publishing (no token stored), then pushes the
+# release commit + tag and creates the GitHub Release from the CHANGELOG section.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump. "none" publishes the version already in package.json.
+        type: choice
+        options: [patch, minor, major, none]
+        default: patch
+
+permissions:
+  contents: write # release commit, tag, GitHub Release
+  id-token: write # npm Trusted Publishing (OIDC) and provenance
+
+concurrency: release
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tests and diffs read git history
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      # Trusted Publishing needs npm 11.5.1 or later.
+      - run: npm install -g npm@^11.5.1
+      - run: npm ci
+      - run: npm test
+
+      - name: Version and changelog
+        id: version
+        run: |
+          if [ "${{ inputs.bump }}" != none ]; then npm version "${{ inputs.bump }}" --no-git-tag-version; fi
+          V=$(node -p "require('./package.json').version")
+          NAME=$(node -p "require('./package.json').name")
+          if [ -n "$(npm view "$NAME@$V" version 2>/dev/null)" ]; then echo "::error::$NAME@$V is already on npm"; exit 1; fi
+          node scripts/release.js "$V" > "$RUNNER_TEMP/notes.md"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - run: npm publish --provenance --access public
+
+      - name: Commit, tag and push
+        env:
+          V: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md
+          git diff --cached --quiet || git commit -m "Release v$V"
+          git tag "v$V"
+          git push origin HEAD:main "v$V"
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.version.outputs.version }}
+        run: gh release create "v$V" --title "v$V" --notes-file "$RUNNER_TEMP/notes.md"

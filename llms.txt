@@ -1,0 +1,28 @@
+# frontdex
+
+> Static analysis that turns a frontend codebase (React, Next.js, Remix, TanStack, Vue, Nuxt, Svelte, SvelteKit, Astro, Angular, Web Components, plain HTML) into a living knowledge base: components, pages, routes, state, API calls, styles, tests, health issues and history. Coding agents read it through always-on rules, Markdown cards and an MCP server (frontdex-mcp). npm package: `frontdex`. License: Apache-2.0.
+
+Set up in a project (run from the frontend root, use the project's package manager):
+
+```bash
+npm install --save-dev frontdex frontdex-mcp
+npx frontdex init --auto-update
+npx frontdex scan
+npx frontdex agents --targets <claude|cursor|opencode|antigravity|hermes|copilot|agents-md>
+```
+
+Then read `.frontdex/agent/INDEX.md` and follow `.frontdex/agent/RULES.md`. Use the `catalogue_*` MCP tools (or `npx frontdex <command>`) before creating, editing or changing the props of a component.
+
+## Docs
+
+- [README](https://github.com/Prathmesh2000/frontdex/blob/main/README.md): what it is, quick start
+- [Coding agents](https://github.com/Prathmesh2000/frontdex/blob/main/docs/AGENTS.md): per-agent setup (Claude Code, Cursor, OpenCode, Antigravity, Hermes, Copilot, others), automatic and copy-paste
+- [Usage reference](https://github.com/Prathmesh2000/frontdex/blob/main/docs/USAGE.md): commands, CI, UI, tests, component docs, configuration, detection
+- [CatalogueSpec](https://github.com/Prathmesh2000/frontdex/blob/main/docs/SPEC.md): the `frontdex.yaml` format
+- [MCP server](https://github.com/Prathmesh2000/frontdex-mcp/blob/main/README.md): tools and manual registration
+
+## Contributing
+
+- [AGENTS.md](https://github.com/Prathmesh2000/frontdex/blob/main/AGENTS.md): instructions for agents changing frontdex itself
+- [Architecture](https://github.com/Prathmesh2000/frontdex/blob/main/docs/ARCHITECTURE.md): pipeline, module map, where to add a router, diagnostic, MCP tool or agent target
+- [CONTRIBUTING](https://github.com/Prathmesh2000/frontdex/blob/main/CONTRIBUTING.md)

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { installAgents } from '../src/agents.js';
+import { installAgents, rulesFor, TARGETS } from '../src/agents.js';
 import { createHistory, createTools, flushSession, knowledgeDir, loadConfig, readCatalogue, scan } from '../src/index.js';
 
 function tempProject() {
@@ -75,11 +75,31 @@ test('agents install is idempotent, preserves user content and can be removed', 
   assert.match(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), /^# Team notes\n[\s\S]*@\.frontdex\/agent\/RULES\.md/);
   const settings = JSON.parse(fs.readFileSync(path.join(dir, '.claude/settings.json'), 'utf8'));
   assert.equal(settings.hooks.PostToolUse.length, 2);
+  assert.match(fs.readFileSync(path.join(dir, '.agents/rules/frontdex.md'), 'utf8'), /^---\ntrigger: always_on\n/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, '.agents/mcp_config.json'), 'utf8')).mcpServers.frontdex.args, ['frontdex', 'mcp']);
 
   installAgents(config, { remove: true });
   assert.equal(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), '# Team notes\n');
   assert.equal(fs.existsSync(path.join(dir, 'AGENTS.md')), false);
+  assert.equal(fs.existsSync(path.join(dir, '.agents/rules/frontdex.md')), false);
+
+  // --user-config edits Hermes' YAML in place, keeping the user's comments and other servers.
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'rcat-home-'));
+  const hermes = path.join(home, '.hermes/config.yaml');
+  fs.mkdirSync(path.dirname(hermes));
+  fs.writeFileSync(hermes, '# mine\nmcp_servers:\n  other:\n    command: x\n');
+  installAgents(config, { targets: ['hermes'], userConfig: true, home });
+  assert.match(fs.readFileSync(hermes, 'utf8'), /^# mine\n[\s\S]*other:[\s\S]*frontdex:\n\s+command: npx/);
+  assert.ok(fs.existsSync(`${hermes}.bak`));
+  installAgents(config, { targets: ['hermes'], userConfig: true, home, remove: true });
+  assert.doesNotMatch(fs.readFileSync(hermes, 'utf8'), /frontdex/);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, '.claude/settings.json'), 'utf8')).hooks.PostToolUse[0].hooks[0].command, 'echo mine');
+});
+
+test('docs/AGENTS.md carries the current rules for copy-paste setup', () => {
+  const docs = fs.readFileSync(path.resolve(import.meta.dirname, '../docs/AGENTS.md'), 'utf8').replace(/\r\n/g, '\n');
+  assert.ok(docs.includes(rulesFor(loadConfig(tempProject()))), 'rules changed: paste the new rulesFor() output into docs/AGENTS.md');
+  for (const t of TARGETS) assert.match(docs, new RegExp(`\`${t}\``), `docs/AGENTS.md does not document the ${t} target`);
 });
 
 test('createTools answers the queries the CLI and frontdex-mcp rely on', () => {
