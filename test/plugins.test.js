@@ -95,3 +95,30 @@ test('vite plugin with overlay: true injects the overlay script, which frontdex 
     await server.close();
   }
 });
+
+test('vite plugin serves a live preview page for React components (Fast Refresh preamble, virtual entry)', async () => {
+  const { createServer } = await import('vite');
+  const { default: react } = await import('@vitejs/plugin-react');
+  const { default: frontdex } = await import('../src/plugins/vite.js');
+  // Inside the repo, so react and react-dom resolve from its node_modules.
+  fs.mkdirSync(path.join(import.meta.dirname, '..', '.claude'), { recursive: true });
+  const dir = fs.mkdtempSync(path.join(import.meta.dirname, '..', '.claude', 'preview-test-'));
+  fs.mkdirSync(path.join(dir, 'src'));
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'p', dependencies: { react: '19', 'react-dom': '19', vite: '8' } }));
+  fs.writeFileSync(path.join(dir, 'src/Badge.tsx'), 'export function Badge({ text }: { text: string }) { return <span>{text}</span>; }\n');
+  const server = await createServer({ root: dir, configFile: false, logLevel: 'silent', plugins: [react(), frontdex({ overlay: true })], server: { port: 0, host: '127.0.0.1' } });
+  await server.listen();
+  try {
+    const base = `http://127.0.0.1:${server.httpServer.address().port}`;
+    assert.equal((await (await fetch(`${base}/__frontdex/api/info`)).json()).livePreview, 'preview');
+    const html = await (await fetch(`${base}/__frontdex/preview?id=Badge`)).text();
+    assert.match(html, /@react-refresh/, 'Vite HTML pipeline ran (React preamble)');
+    assert.match(html, /virtual:frontdex-preview/);
+    assert.doesNotMatch(html, /overlay\.js/, 'no overlay on frontdex pages');
+    const entry = await (await fetch(`${base}/@id/virtual:frontdex-preview`)).text();
+    assert.match(entry, /frontdex:props/);
+  } finally {
+    await server.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

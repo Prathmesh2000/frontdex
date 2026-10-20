@@ -106,7 +106,7 @@ export function buildSite(config, catalogue, outDir) {
  * The UI and HTTP API as a plain (req, res) handler with paths relative to where it is mounted: `frontdex serve` puts it
  * at the root of its own server, the Vite plugin under /__frontdex/ on the dev server. `close()` stops the watcher.
  */
-export function createApp(config, { watch, regenerate = true, log = console.log, allowLan = !!process.env.FRONTDEX_HOST }) {
+export function createApp(config, { watch, regenerate = true, log = console.log, allowLan = !!process.env.FRONTDEX_HOST, livePreview = null }) {
   const output = path.resolve(config.root, config.output);
   const clients = new Set();
   let settling = false;
@@ -235,6 +235,8 @@ export function createApp(config, { watch, regenerate = true, log = console.log,
         counts: { components: count(catalogue.components), pages: count(catalogue.pages), stores: count(catalogue.stores), hooks: count(catalogue.hooks), endpoints: count(catalogue.endpoints), tokens: count(catalogue.tokens?.definitions), duplicates: count(catalogue.duplicates) },
         issues: catalogue.health?.issues ?? {},
         settling,
+        // Path (relative to the app) of the per-component live preview; only the Vite plugin can render one.
+        livePreview,
       });
     }
     // Whole sections that stay small (tokens, hooks, stores …); components and issues are paged instead.

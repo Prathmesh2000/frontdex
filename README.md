@@ -96,6 +96,17 @@ const FrontdexPlugin = require('frontdex/webpack'); // same plugin as 'frontdex/
 module.exports = { plugins: [new FrontdexPlugin()] };
 ```
 
+### Live component preview (Vite + React)
+
+With the Vite plugin, every component page in the catalogue UI (`/__frontdex/`) gets a **Live preview**: the component rendered by your own dev server (its imports, CSS and HMR), with a JSON props editor seeded from its first story's args. Components that need providers (router, theme, store, data) render through a wrapper you point to:
+
+```jsonc
+// frontdex.config.json
+{ "previewWrapper": "src/frontdex.preview.tsx" }   // default export: ({ children }) => <Providers>{children}</Providers>
+```
+
+The preview page is `/__frontdex/preview?id=<component id>&props=<json>`, so agents can load it with a browser tool (Playwright, Chrome DevTools MCP) to look at or screenshot a component. Next.js gets the page-level Preview tab only: a component route there would end up in `next build`.
+
 ### Component overlay (React, development only)
 
 Hold **Alt** and hover any element of your running app: frontdex outlines the component that rendered it and shows its name, `file:line` and props. **Alt+click** opens it in the catalogue UI.
