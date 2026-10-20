@@ -43,7 +43,8 @@
     "spec",
     "ui-react/dist",
     "docs/SPEC.md",
-    "docs/MIGRATING.md"
+    "docs/MIGRATING.md",
+    "NOTICE"
   ],
   "scripts": {
     "test": "node --test test/*.test.js",
@@ -71,7 +72,7 @@
     "claude-code",
     "knowledge-base"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@babel/parser": "^7.29.9",
     "@babel/traverse": "^7.29.10",
@@ -96,5 +97,10 @@
     "vite": "^8.3.4",
     "vue": "^3.5.44"
   },
-  "types": "./src/index.d.ts"
+  "types": "./src/index.d.ts",
+  "author": "Prathmesh Agrawal <prathmeshagrawal2000@gmail.com> (https://github.com/Prathmesh2000)",
+  "homepage": "https://github.com/Prathmesh2000/frontdex#readme",
+  "bugs": {
+    "url": "https://github.com/Prathmesh2000/frontdex/issues"
+  }
 }

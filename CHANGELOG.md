@@ -4,8 +4,16 @@ All notable changes to frontdex (formerly react-catalogue). The format follows [
 
 ## 0.4.0 (unreleased)
 
+### Changed
+
+- **License: Apache-2.0** (was MIT). Free for any use, including commercial; redistributions keep the `LICENSE` and `NOTICE` files, which credit the author. Versions up to 0.3.x stay MIT.
+
 ### Added
 
+- **Antigravity**: `frontdex agents --targets antigravity` writes an always-on rule to `.agents/rules/frontdex.md` and registers the MCP server in `.agents/mcp_config.json`.
+- **`frontdex agents --user-config`**: also registers the MCP server in Hermes' `~/.hermes/config.yaml` (comments kept, backup saved as `config.yaml.bak`).
+- **Docs for users and contributors**: [docs/AGENTS.md](docs/AGENTS.md) (automatic and copy-paste setup per agent), [docs/USAGE.md](docs/USAGE.md) (full reference, moved out of the README), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), `CONTRIBUTING.md`, `AGENTS.md` for agents working on this repo, `llms.txt`.
+- **Releases from GitHub Actions**: CI on every PR; a manual Release workflow publishes to npm with provenance (Trusted Publishing) and creates the GitHub Release from this changelog.
 - **Conditional rendering**: every child records the conditions it renders under (ternary branch, `&&`/`||`, if/else, switch case, earlier early returns, `.map` loops) as `rendersWhen`; screens switched by state (tabs, steps, popups) as `views`. Shown on component pages, in agent cards and in `catalogue_component`. (`fd49956`, `442e747`)
 - **Navigation**: `Link`/`NavLink`/`Navigate`, `<a href>`, `navigate()` and `router.push` targets resolved to pages (`navigatesTo` on components, `linksTo` on pages; "Links to" and "Linked from" in the page view). (`fd49956`)
 - **Registry renders**: components rendered from block registries, column `renderCell` definitions and helper functions are credited to the components that use them. (`fd49956`)

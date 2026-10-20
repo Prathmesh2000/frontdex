@@ -1,6 +1,8 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import YAML from 'yaml';
 import { formatDetail } from './history.js';
 import { knowledgeDir, scan } from './index.js';
 
@@ -15,7 +17,7 @@ const CMD = 'npx frontdex';
 const SERVER_NAME = 'frontdex';
 const LEGACY_SERVER_NAME = 'react-catalogue';
 const HOOK_RE = /(?:react-catalogue|frontdex) hook/;
-export const TARGETS = ['agents-md', 'claude', 'cursor', 'opencode', 'copilot', 'hermes'];
+export const TARGETS = ['agents-md', 'claude', 'cursor', 'opencode', 'copilot', 'hermes', 'antigravity'];
 
 /** Always-on agent rules, pointing at this project's knowledge folder and catalogue file. */
 export const rulesFor = (config) => {
@@ -74,6 +76,38 @@ function updateJson(file, mutate, { remove = false } = {}) {
   return exists ? (remove ? 'removed' : 'updated') : 'created';
 }
 
+/** Writes (or removes) a file frontdex owns entirely, e.g. a per-agent rules file. */
+function writeOwnFile(file, content, { remove = false } = {}) {
+  const existed = fs.existsSync(file);
+  if (remove) return existed ? (fs.rmSync(file), 'removed') : null;
+  if (existed && fs.readFileSync(file, 'utf8') === content) return 'unchanged';
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, content);
+  return existed ? 'updated' : 'created';
+}
+
+/**
+ * Adds or removes the frontdex server in Hermes' user config. Only runs with --user-config, because the file lives
+ * outside the project; the previous version is kept as config.yaml.bak and comments survive (parseDocument).
+ */
+function updateHermesConfig(file, remove) {
+  const exists = fs.existsSync(file);
+  if (!exists && remove) return null;
+  const text = exists ? fs.readFileSync(file, 'utf8') : '';
+  const doc = YAML.parseDocument(text);
+  if (doc.errors.length) return 'skipped (YAML has errors; add the entry by hand)';
+  if (remove && !doc.hasIn(['mcp_servers', SERVER_NAME])) return 'unchanged';
+  if (!doc.contents) doc.contents = doc.createNode({});
+  if (remove) doc.deleteIn(['mcp_servers', SERVER_NAME]);
+  else doc.setIn(['mcp_servers', SERVER_NAME], doc.createNode({ command: 'npx', args: ['frontdex', 'mcp'] }));
+  const next = doc.toString();
+  if (next === text) return 'unchanged';
+  if (exists) fs.copyFileSync(file, `${file}.bak`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, next);
+  return exists ? (remove ? 'removed' : 'updated') : 'created';
+}
+
 const stripOurHooks = (list) => (list ?? []).map((g) => ({ ...g, hooks: (g.hooks ?? []).filter((h) => !HOOK_RE.test(String(h.command))) })).filter((g) => g.hooks.length);
 const setServer = (servers, remove, entry) => {
   delete servers[LEGACY_SERVER_NAME];
@@ -85,7 +119,7 @@ const setServer = (servers, remove, entry) => {
  * Wires coding agents to the knowledge base: always-on rules (AGENTS.md / CLAUDE.md / Cursor rules / Copilot),
  * MCP server registration, and hooks that push impact info back to the agent after every component edit.
  */
-export function installAgents(config, { targets = TARGETS, remove = false, hooks = true, mcp = true } = {}) {
+export function installAgents(config, { targets = TARGETS, remove = false, hooks = true, mcp = true, userConfig = false, home = os.homedir() } = {}) {
   const root = config.root;
   const at = (...p) => path.join(root, ...p);
   const results = [];
@@ -134,17 +168,7 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
     const legacyMdc = at('.cursor', 'rules', 'react-catalogue.mdc');
     if (fs.existsSync(legacyMdc)) fs.rmSync(legacyMdc), record(legacyMdc, 'removed');
     const mdc = at('.cursor', 'rules', 'frontdex.mdc');
-    if (remove) {
-      if (fs.existsSync(mdc)) fs.rmSync(mdc), record(mdc, 'removed');
-    } else {
-      const content = `---\ndescription: Frontend component knowledge base (frontdex)\nalwaysApply: true\n---\n\n${RULES}\n`;
-      const existed = fs.existsSync(mdc);
-      if (!existed || fs.readFileSync(mdc, 'utf8') !== content) {
-        fs.mkdirSync(path.dirname(mdc), { recursive: true });
-        fs.writeFileSync(mdc, content);
-        record(mdc, existed ? 'updated' : 'created');
-      } else record(mdc, 'unchanged');
-    }
+    record(mdc, writeOwnFile(mdc, `---\ndescription: Frontend component knowledge base (frontdex)\nalwaysApply: true\n---\n\n${RULES}\n`, { remove }));
     if (mcp) record(at('.cursor', 'mcp.json'), updateJson(at('.cursor', 'mcp.json'), (d) => setServer((d.mcpServers ??= {}), remove, mcpEntry), { remove }));
     if (hooks) {
       record(
@@ -166,6 +190,13 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
       );
     }
   }
+  if (want('antigravity')) {
+    // Antigravity reads workspace rules from .agents/ (current) or .agent/ (legacy); follow whichever the project already uses.
+    const dir = !fs.existsSync(at('.agents')) && fs.existsSync(at('.agent')) ? '.agent' : '.agents';
+    const rule = at(dir, 'rules', 'frontdex.md');
+    record(rule, writeOwnFile(rule, `---\ntrigger: always_on\ndescription: Frontend component knowledge base (frontdex)\n---\n\n${RULES}\n`, { remove }));
+    if (mcp) record(at(dir, 'mcp_config.json'), updateJson(at(dir, 'mcp_config.json'), (d) => setServer((d.mcpServers ??= {}), remove, { command: 'npx', args: ['frontdex', 'mcp'] }), { remove }));
+  }
   if (want('opencode') && mcp) {
     const file = fs.existsSync(at('opencode.jsonc')) ? at('opencode.jsonc') : at('opencode.json');
     record(
@@ -183,8 +214,14 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
   if (want('copilot')) record(at('.github', 'copilot-instructions.md'), upsertBlock(at('.github', 'copilot-instructions.md'), RULES, { remove }));
 
   const notes = [];
-  if (want('hermes') && !remove) {
-    notes.push(`Hermes reads AGENTS.md automatically. Its MCP servers are user-level only; add to ~/.hermes/config.yaml:\n  mcp_servers:\n    ${SERVER_NAME}:\n      command: "npx"\n      args: ["frontdex", "mcp"]`);
+  if (want('hermes') && mcp && userConfig) {
+    const file = path.join(home, '.hermes', 'config.yaml');
+    record(file, updateHermesConfig(file, remove));
+  } else if (want('hermes') && !remove) {
+    notes.push(`Hermes reads AGENTS.md automatically. Its MCP servers are user-level only; add to ~/.hermes/config.yaml (or rerun with --user-config to do it for you):\n  mcp_servers:\n    ${SERVER_NAME}:\n      command: "npx"\n      args: ["frontdex", "mcp"]`);
+  }
+  if (want('antigravity') && mcp && !remove) {
+    notes.push('Antigravity: if the frontdex MCP server cannot find the project, add "-C", "<absolute project path>" to its args in .agents/mcp_config.json (or register it once in ~/.gemini/config/mcp_config.json the same way).');
   }
   if (want('claude') && mcp && !remove) notes.push('Claude Code asks once to approve the project MCP server from .mcp.json.');
   return { results, notes };

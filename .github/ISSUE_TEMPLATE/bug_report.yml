@@ -1,0 +1,34 @@
+name: Bug report
+description: Something is detected wrong, missing, or crashes
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, what you expected, what you got. Paste the error output if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Smallest code that shows it
+      description: A component, route file or config snippet is usually enough. A link to a public repo is even better.
+      render: tsx
+  - type: input
+    id: version
+    attributes:
+      label: frontdex version
+      placeholder: npx frontdex --version
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `npx frontdex doctor`
+      render: text
+  - type: input
+    id: env
+    attributes:
+      label: Node version and OS
+      placeholder: Node 22, macOS 15

@@ -24,6 +24,7 @@ Setup
                            then migrate the catalogue: stable IDs, aliases for changed IDs, sharding ("shard" option)
   agents [--targets a,b]   Wire coding agents (rules, MCP, hooks). Targets: ${TARGETS.join(', ')}
          [--no-hooks] [--no-mcp] [--remove]
+         [--user-config]   also register MCP in user-level config (Hermes ~/.hermes/config.yaml; backs it up)
 
 Knowledge base
   scan [--full] [-m msg]   Incremental rescan (only changed files are re-parsed). --full ignores the cache
@@ -86,6 +87,7 @@ export async function main(argv) {
       'no-hooks': { type: 'boolean' },
       'no-mcp': { type: 'boolean' },
       remove: { type: 'boolean' },
+      'user-config': { type: 'boolean' },
       format: { type: 'string' },
       'auto-update': { type: 'boolean' },
       'parent-pid': { type: 'string' },
@@ -321,7 +323,7 @@ export async function main(argv) {
       const unknown = targets.filter((t) => !TARGETS.includes(t));
       if (unknown.length) throw new Error(`Unknown target(s): ${unknown.join(', ')}. Use: ${TARGETS.join(', ')}`);
       if (!values.remove && !fs.existsSync(path.join(knowledgeDir(config), 'agent', 'INDEX.md'))) scan(config);
-      const { results, notes } = installAgents(config, { targets, remove: values.remove, hooks: !values['no-hooks'], mcp: !values['no-mcp'] });
+      const { results, notes } = installAgents(config, { targets, remove: values.remove, hooks: !values['no-hooks'], mcp: !values['no-mcp'], userConfig: values['user-config'] });
       for (const r of results) console.log(`${r.status === 'unchanged' ? '•' : '✔'} ${r.status.padEnd(9)} ${r.file}`);
       notes.forEach((n) => console.log(`\nℹ ${n}`));
       return;
