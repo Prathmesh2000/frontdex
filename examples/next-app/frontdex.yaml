@@ -1,0 +1,6467 @@
+# yaml-language-server: $schema=./node_modules/frontdex/spec/catalogue.schema.json
+catalogue: "1.1"
+info:
+  title: Northwind Shop
+  version: 3.4.0
+  framework: next
+  routers:
+    - next-app
+  generator: frontdex 0.3.0
+  generatedAt: 2026-10-19T13:59:53.463Z
+components:
+  AccountLayout:
+    name: AccountLayout
+    file: app/(account)/account/layout.tsx
+    line: 5
+    kind: function
+    export: default
+    description: Signed-in area wrapper.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    styles:
+      classes:
+        - name: account-body
+    renders:
+      - ProtectedRoute
+      - AccountNav
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+    rendering: server
+  AccountNav:
+    name: AccountNav
+    file: src/features/account/AccountNav.tsx
+    line: 13
+    kind: function
+    export: named
+    description: Account section tabs; highlights the active route.
+    hooks:
+      - name: usePathname
+        category: router
+    styles:
+      classes:
+        - name: account-nav
+        - name: flex
+        - name: gap-4
+        - name: tab
+        - name: tab-active
+        - name: underline
+    externals:
+      - next/link#Link
+    usedBy:
+      - AccountLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+    rendering: client
+  AccountPage:
+    name: AccountPage
+    file: app/(account)/account/page.tsx
+    line: 7
+    kind: function
+    export: default
+    hooks:
+      - name: useAuth
+        category: custom
+      - name: useSearchParams
+        category: router
+    variables:
+      - name: wantsLogin
+        kind: const
+        value: useSearchParams().has('login')
+        line: 9
+        used: true
+    store:
+      reads:
+        - via: useAuth
+          kind: context
+          store: AuthContext
+          storeId: context:AuthContext
+      writes: []
+    renders:
+      - ProfileForm
+      - LoginForm
+    passes:
+      LoginForm:
+        - name: onSuccess
+          value: () => window.location.assign('/account')
+          line: 10
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account
+    rendering: client
+  AddressForm:
+    name: AddressForm
+    file: src/features/checkout/AddressForm.tsx
+    line: 15
+    kind: function
+    export: named
+    description: Shipping address fields validated with the zod addressSchema.
+    props:
+      initial:
+        type: Partial<Address>
+        required: true
+      onSubmit:
+        type: "(address: Address) => void"
+        required: true
+      submitLabel:
+        type: string
+        required: false
+        default: "'Continue'"
+    state:
+      values:
+        source: useState
+        initial: initial
+        setter: setValues
+        type: Partial<Address>
+      errors:
+        source: useState
+        initial: "{}"
+        setter: setErrors
+        type: Record<string, string>
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+    functions:
+      - name: update
+        line: 19
+        kind: helper
+        async: false
+        params: "field: keyof Address"
+        calls:
+          - setValues
+        sets:
+          - values
+        used: true
+      - name: handleSubmit
+        line: 21
+        kind: handler
+        async: false
+        params: "e: React.FormEvent"
+        calls:
+          - e.preventDefault
+          - addressSchema.safeParse
+          - setErrors
+          - Object.fromEntries
+          - onSubmit
+        sets:
+          - errors
+        used: true
+    validation:
+      - via: zod
+        schema: addressSchema
+        line: 23
+        rules:
+          - name
+          - street
+          - city
+          - zip
+          - country
+      - via: html
+        field: Full name
+        rules:
+          - required
+          - minLength
+        line: 34
+      - via: html
+        field: Street
+        rules:
+          - required
+        line: 35
+      - via: html
+        field: City
+        rules:
+          - required
+        line: 36
+      - via: html
+        field: ZIP
+        rules:
+          - required
+          - pattern
+        line: 37
+      - via: html
+        field: Country
+        rules:
+          - required
+        line: 38
+    styles:
+      modules:
+        - file: src/features/checkout/Checkout.module.css
+          classes:
+            - name: step
+              at: src/features/checkout/Checkout.module.css:2
+            - name: actions
+              at: src/features/checkout/Checkout.module.css:4
+    renders:
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Full name"'
+          line: 34
+        - name: required
+          value: "true"
+          line: 34
+        - name: minLength
+          value: "2"
+          line: 34
+        - name: value
+          value: values.name ?? ''
+          line: 34
+        - name: error
+          value: errors.name
+          line: 34
+        - name: onChange
+          value: update('name')
+          line: 34
+        - name: label
+          value: '"Street"'
+          line: 35
+        - name: required
+          value: "true"
+          line: 35
+        - name: value
+          value: values.street ?? ''
+          line: 35
+        - name: error
+          value: errors.street
+          line: 35
+        - name: onChange
+          value: update('street')
+          line: 35
+        - name: label
+          value: '"City"'
+          line: 36
+        - name: required
+          value: "true"
+          line: 36
+        - name: value
+          value: values.city ?? ''
+          line: 36
+        - name: error
+          value: errors.city
+          line: 36
+        - name: onChange
+          value: update('city')
+          line: 36
+        - name: label
+          value: '"ZIP"'
+          line: 37
+        - name: required
+          value: "true"
+          line: 37
+        - name: pattern
+          value: '"\\d{5}"'
+          line: 37
+        - name: inputMode
+          value: '"numeric"'
+          line: 37
+        - name: value
+          value: values.zip ?? ''
+          line: 37
+        - name: error
+          value: errors.zip
+          line: 37
+        - name: onChange
+          value: update('zip')
+          line: 37
+        - name: label
+          value: '"Country"'
+          line: 38
+        - name: required
+          value: "true"
+          line: 38
+        - name: value
+          value: values.country ?? 'US'
+          line: 38
+        - name: error
+          value: errors.country
+          line: 38
+        - name: onChange
+          value: update('country')
+          line: 38
+      Button:
+        - name: type
+          value: '"submit"'
+          line: 39
+    usedBy:
+      - AddressStep
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+    rendering: client
+  AddressStep:
+    name: AddressStep
+    file: src/features/checkout/AddressStep.tsx
+    line: 5
+    kind: function
+    export: named
+    description: Wizard step 1. Passes the draft address down to AddressForm (prop drilling demo).
+    props:
+      draft:
+        type: Partial<Address>
+        required: true
+      onNext:
+        type: "(a: Address) => void"
+        required: true
+      onBack:
+        type: () => void
+        required: false
+    issues:
+      - type: unused-prop
+        severity: low
+        message: prop `onBack` is destructured but never used
+        line: 5
+        fix: remove it from the props or use it
+    renders:
+      - AddressForm
+    passes:
+      AddressForm:
+        - name: initial
+          value: draft
+          line: 9
+        - name: onSubmit
+          value: onNext
+          line: 9
+        - name: submitLabel
+          value: '"Continue to payment"'
+          line: 9
+    usedBy:
+      - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+    rendering: client
+  AddToCartButton:
+    name: AddToCartButton
+    file: src/features/products/AddToCartButton.tsx
+    line: 11
+    kind: function
+    export: named
+    description: Quantity picker + add button for the product page.
+    props:
+      product:
+        type: Product
+        required: true
+      maxQuantity:
+        type: number
+        required: false
+        default: "10"
+    state:
+      quantity:
+        source: useState
+        initial: "1"
+        setter: setQuantity
+    hooks:
+      - name: useState
+        category: state
+      - name: useTransition
+        category: memo
+      - name: useAppSelector
+        category: custom
+      - name: useAppDispatch
+        category: custom
+      - name: useToast
+        category: custom
+    functions:
+      - name: handleAdd
+        line: 18
+        kind: handler
+        async: false
+        params: ""
+        calls:
+          - startTransition
+          - dispatch
+          - addItem
+          - updateQuantity
+          - trackEvent
+          - notify
+        used: true
+    apiCalls:
+      - via: service
+        method: CALL
+        target: trackEvent()
+        module: "@/lib/api"
+        in: inline callback
+        line: 22
+    store:
+      reads:
+        - via: useAppSelector
+          kind: redux
+          path: cart.items
+          line: 14
+          storeId: redux:cart
+        - via: useToast
+          kind: context
+          store: ToastContext
+          storeId: context:ToastContext
+      writes:
+        - via: dispatch
+          kind: redux
+          action: addItem
+          in: inline callback
+          line: 20
+          storeId: redux:cart
+        - via: dispatch
+          kind: redux
+          action: updateQuantity
+          in: inline callback
+          line: 21
+          storeId: redux:cart
+    validation:
+      - via: html
+        field: Qty
+        rules:
+          - required
+          - min
+          - max
+          - type=number
+        line: 29
+    styles:
+      classes:
+        - name: flex
+        - name: gap-2
+        - name: items-end
+    renders:
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Qty"'
+          line: 29
+        - name: type
+          value: '"number"'
+          line: 29
+        - name: min
+          value: "1"
+          line: 29
+        - name: max
+          value: maxQuantity
+          line: 29
+        - name: required
+          value: "true"
+          line: 29
+        - name: value
+          value: quantity
+          line: 29
+        - name: onChange
+          value: (e) => setQuantity(Number(e.target.value))
+          line: 29
+      Button:
+        - name: onClick
+          value: handleAdd
+          line: 30
+        - name: loading
+          value: isPending
+          line: 30
+        - name: disabled
+          value: product.stock === 0
+          line: 30
+    usedBy:
+      - ProductInfo
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products/[id]
+    rendering: client
+  AdminDashboard:
+    name: AdminDashboard
+    file: app/(admin)/admin/page.tsx
+    line: 7
+    kind: function
+    export: default
+    description: "Admin dashboard: KPIs, revenue chart, live visitors and recent orders."
+    styles:
+      classes:
+        - name: grid
+          at: app/globals.css:6
+        - name: gap-6
+    renders:
+      - StatCard
+      - LiveVisitors
+      - SalesPanel
+      - RecentOrders
+    passes:
+      StatCard:
+        - name: title
+          value: '"Today"'
+          line: 10
+        - name: metrics
+          value: "[{ label: 'Revenue', value: '$12,480', delta: 8 }…"
+          line: 10
+      LiveVisitors:
+        - name: channel
+          value: '"storefront"'
+          line: 11
+      SalesPanel:
+        - name: range
+          value: '"30d"'
+          line: 12
+      RecentOrders:
+        - name: limit
+          value: "5"
+          line: 13
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /admin
+    rendering: server
+  AdminLayout:
+    name: AdminLayout
+    file: app/(admin)/admin/layout.tsx
+    line: 6
+    kind: function
+    export: default
+    description: "Admin shell: role-gated, with sidebar and an error boundary around content."
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    styles:
+      classes:
+        - name: flex
+    renders:
+      - ProtectedRoute
+      - AdminSidebar
+      - ErrorBoundary
+    passes:
+      ProtectedRoute:
+        - name: role
+          value: '"admin"'
+          line: 8
+      ErrorBoundary:
+        - name: fallbackTitle
+          value: '"The admin panel crashed"'
+          line: 11
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+    rendering: server
+  AdminOrdersPage:
+    name: AdminOrdersPage
+    file: app/(admin)/admin/orders/page.tsx
+    line: 7
+    kind: function
+    export: default
+    state:
+      selected:
+        source: useState
+        initial: "null"
+        setter: setSelected
+        type: Order | null
+      version:
+        source: useState
+        initial: "0"
+        setter: setVersion
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+    renders:
+      - RecentOrders
+      - OrderEditor
+    passes:
+      RecentOrders:
+        - name: key
+          value: version
+          line: 12
+        - name: limit
+          value: "100"
+          line: 12
+        - name: onSelect
+          value: setSelected
+          line: 12
+      OrderEditor:
+        - name: order
+          value: selected
+          line: 13
+        - name: onClose
+          value: () => setSelected(null)
+          line: 13
+        - name: onSaved
+          value: () => { setSelected(null); setVersion((v) => v + …
+          line: 13
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /admin/orders
+    rendering: client
+  AdminProductPage:
+    name: AdminProductPage
+    file: app/(admin)/admin/products/[...slug]/page.tsx
+    line: 4
+    kind: function
+    export: default
+    description: /admin/products/new or /admin/products/<id>/edit
+    props:
+      params:
+        type: "Promise<{ slug: string[] }>"
+        required: true
+    variables:
+      - name: slug
+        kind: const
+        value: from await params
+        line: 5
+        used: true
+      - name: productId
+        kind: const
+        value: "slug[0] === 'new' ? undefined : slug[0]"
+        line: 6
+        used: true
+    renders:
+      - ProductEditor
+    passes:
+      ProductEditor:
+        - name: productId
+          value: productId
+          line: 7
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /admin/products/[...slug]
+    rendering: server
+  AdminSidebar:
+    name: AdminSidebar
+    file: src/features/admin/AdminSidebar.tsx
+    line: 14
+    kind: function
+    export: named
+    description: Left navigation for the admin area.
+    props:
+      collapsed:
+        type: boolean
+        required: false
+        default: "false"
+    state:
+      renders:
+        source: useState
+        initial: "0"
+        setter: setRenders
+    hooks:
+      - name: usePathname
+        category: router
+      - name: useAuth
+        category: custom
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        calls:
+          - setRenders
+        line: 19
+    store:
+      reads:
+        - via: useAuth
+          kind: context
+          store: AuthContext
+          storeId: context:AuthContext
+      writes: []
+    styles:
+      classes:
+        - name: sidebar
+        - name: w-16
+        - name: w-60
+        - name: text-sm
+        - name: active
+    issues:
+      - type: render-loop
+        severity: high
+        message: "useEffect L19 has no dependency array and calls setRenders unconditionally: infinite re-render loop"
+        line: 19
+        fix: add a dependency array or guard the update
+    externals:
+      - next/link#Link
+    usedBy:
+      - AdminLayout
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+    rendering: client
+  AuthProvider:
+    name: AuthProvider
+    file: src/features/auth/AuthContext.tsx
+    line: 18
+    kind: function
+    export: named
+    description: Loads the session once and mirrors auth changes into Redux (user.profile).
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    state:
+      user:
+        source: useState
+        initial: "null"
+        setter: setUser
+        type: User | null
+      loading:
+        source: useState
+        initial: "true"
+        setter: setLoading
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useAppDispatch
+        category: custom
+      - name: useEffect
+        category: effect
+        count: 2
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - dispatch
+        calls:
+          - authClient.getSession
+          - setUser
+          - dispatch
+          - setProfile
+          - setLoading
+        cleanup: []
+        line: 23
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - dispatch
+        calls:
+          - authClient.onAuthStateChanged
+          - setUser
+          - dispatch
+          - setProfile
+        line: 36
+    functions:
+      - name: signIn
+        line: 44
+        kind: helper
+        async: true
+        params: "email: string, password: string"
+        calls:
+          - authClient.signIn
+          - setUser
+        sets:
+          - user
+        used: true
+      - name: signOut
+        line: 48
+        kind: helper
+        async: true
+        params: ""
+        calls:
+          - authClient.signOut
+          - setUser
+        sets:
+          - user
+        used: true
+    timers:
+      - type: subscription
+        call: authClient.onAuthStateChanged
+        in: useEffect L36
+        line: 38
+        cleared: false
+    store:
+      reads: []
+      writes:
+        - via: dispatch
+          kind: redux
+          action: setProfile
+          in: useEffect L23
+          line: 28
+          storeId: redux:user
+        - via: dispatch
+          kind: redux
+          action: setProfile
+          in: useEffect L36
+          line: 40
+          storeId: redux:user
+    issues:
+      - type: memory-leak
+        severity: high
+        message: authClient.onAuthStateChanged started in useEffect L36 without cleanup
+        line: 38
+        fix: keep the unsubscribe function and call it in the effect cleanup
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  Badge:
+    name: Badge
+    file: src/components/ui/Badge.tsx
+    line: 3
+    kind: function
+    export: named
+    props:
+      tone:
+        type: Tone
+        required: false
+        default: "'neutral'"
+      children:
+        type: React.ReactNode
+        required: true
+    styles:
+      classes:
+        - name: badge
+          at: app/globals.css:22
+        - name: badge-
+    usedBy:
+      - OrderTimeline
+      - OrderEditor
+      - ProductCard
+      - ProductInfo
+      - ToastItem
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  BlogPage:
+    name: BlogPage
+    file: app/blog/[[...slug]]/page.tsx
+    line: 10
+    kind: function
+    export: default
+    description: CMS-backed journal; still uses the deprecated LegacyButton.
+    props:
+      params:
+        type: "Promise<{ slug?: string[] }>"
+        required: true
+    variables:
+      - name: slug
+        kind: const
+        value: from await params
+        line: 11
+        used: true
+      - name: post
+        kind: const
+        value: await loadPost(slug)
+        line: 12
+        used: true
+    styles:
+      classes:
+        - name: prose
+    renders:
+      - LegacyButton
+    passes:
+      LegacyButton:
+        - name: kind
+          value: '"primary"'
+          line: 18
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /blog/[[...slug]]
+    rendering: server
+    issues:
+      - type: deprecated-usage
+        severity: medium
+        message: renders deprecated component LegacyButton
+        fix: migrate to its replacement
+  Button:
+    name: Button
+    file: src/components/ui/Button.tsx
+    line: 14
+    kind: forwardRef
+    export: named
+    description: Design-system button. Use instead of raw <button> everywhere.
+    props:
+      variant:
+        type: "'primary' | 'secondary' | 'ghost' | 'danger'"
+        required: false
+        default: "'primary'"
+        description: Visual style
+      size:
+        type: "'sm' | 'md' | 'lg'"
+        required: false
+        default: "'md'"
+      loading:
+        type: boolean
+        required: false
+        default: "false"
+        description: Shows a spinner and disables the button
+      icon:
+        type: React.ReactNode
+        required: false
+      children:
+        type: unknown
+        required: false
+      disabled:
+        type: unknown
+        required: false
+    styles:
+      classes:
+        - name: btn
+          at: app/globals.css:8
+        - name: btn-
+    renders:
+      - Spinner
+    passes:
+      Spinner:
+        - name: size
+          value: "14"
+          line: 20
+    usedBy:
+      - CartPage
+      - Header
+      - HeroBanner
+      - Modal
+      - ProfileForm
+      - ErrorBoundary
+      - OrderEditor
+      - ProductEditor
+      - LoginForm
+      - CartDrawer
+      - CartItem
+      - OrderSummary
+      - AddressForm
+      - CheckoutWizard
+      - PaymentForm
+      - AddToCartButton
+      - Filters
+    codeowners:
+      - "@northwind/design-system"
+    tests:
+      - Button.test.tsx
+    stories:
+      - Button.stories.tsx
+    examples:
+      - story: Button.stories.tsx#Primary
+        args:
+          variant: '"primary"'
+          children: '"Save"'
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  Card@src/components/ui/Card.tsx:
+    name: Card
+    file: src/components/ui/Card.tsx
+    line: 10
+    kind: function
+    export: named
+    description: Surface container. Compose with <Card.Header> and <Card.Body>.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+      elevated:
+        type: boolean
+        required: false
+        default: "false"
+    styles:
+      classes:
+        - name: card
+          at: app/globals.css:17
+        - name: elevated
+          at: app/globals.css:18
+    usedBy:
+      - OrderTimeline
+      - OrderEditor
+      - StatCard
+      - OrderSummary
+      - ProductCard
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  Card@src/features/admin/Card.tsx:
+    name: Card
+    file: src/features/admin/Card.tsx
+    line: 2
+    kind: function
+    export: named
+    description: Admin-only metric card (different from the design-system Card).
+    props:
+      label:
+        type: string
+        required: true
+      value:
+        type: string
+        required: true
+      delta:
+        type: number
+        required: false
+    variables:
+      - name: trend
+        kind: const
+        value: "delta === undefined ? null : delta >= 0 ? 'up' : 'down'"
+        line: 3
+        used: true
+    styles:
+      classes:
+        - name: admin-card
+        - name: rounded-lg
+        - name: p-4
+        - name: bg-slate-900
+        - name: text-white
+        - name: text-xs
+        - name: uppercase
+        - name: text-2xl
+        - name: trend-
+    usedBy:
+      - StatCard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin
+    rendering: server
+    issues:
+      - type: possible-duplicate
+        severity: low
+        message: Card looks like Card@src/components/ui/Card.tsx (same name; 0/5 props shared)
+        fix: reuse or extend Card@src/components/ui/Card.tsx, or merge the two
+  CardBody:
+    name: CardBody
+    file: src/components/ui/Card.tsx
+    line: 5
+    kind: function
+    export: none
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    styles:
+      classes:
+        - name: card-body
+          at: app/globals.css:20
+    usedBy:
+      - OrderTimeline
+      - OrderEditor
+      - StatCard
+      - OrderSummary
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  CardHeader:
+    name: CardHeader
+    file: src/components/ui/Card.tsx
+    line: 1
+    kind: function
+    export: none
+    props:
+      title:
+        type: string
+        required: true
+      action:
+        type: React.ReactNode
+        required: false
+    styles:
+      classes:
+        - name: card-header
+          at: app/globals.css:19
+    usedBy:
+      - OrderTimeline
+      - OrderEditor
+      - StatCard
+      - OrderSummary
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  CartBadge:
+    name: CartBadge
+    file: src/components/layout/CartBadge.tsx
+    line: 14
+    kind: class
+    export: default
+    description: Legacy class component wired to Redux with connect(). Pulses when the count changes.
+    props:
+      count:
+        type: number
+        required: true
+      onClear:
+        type: () => void
+        required: true
+      max:
+        type: number
+        required: false
+        default: "99"
+        description: Cap shown as "99+"
+    state:
+      pulse:
+        source: class
+        initial: "false"
+        setter: this.setState
+        type: boolean
+    lifecycle:
+      - via: componentDidUpdate
+        phases:
+          - update
+        calls:
+          - this.setState
+          - setTimeout
+        line: 19
+      - via: componentWillUnmount
+        phases:
+          - unmount
+        calls:
+          - clearTimeout
+        line: 26
+    variables:
+      - name: pulseTimer
+        kind: field
+        line: 17
+        used: true
+    timers:
+      - type: timeout
+        call: setTimeout
+        in: componentDidUpdate
+        line: 22
+        cleared: true
+    store:
+      reads:
+        - via: connect
+          kind: redux
+          path: cart.items
+          line: 43
+          storeId: redux:cart
+      writes:
+        - via: connect
+          kind: redux
+          action: clearCart
+          line: 43
+          storeId: redux:cart
+    styles:
+      classes:
+        - name: badge
+          at: app/globals.css:22
+        - name: badge-success
+          at: app/globals.css:24
+        - name: pulse
+          at: app/globals.css:27
+    usedBy:
+      - Header
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  CartDrawer:
+    name: CartDrawer
+    file: src/features/cart/CartDrawer.tsx
+    line: 10
+    kind: function
+    export: named
+    description: Slide-over cart opened from the header. Visibility lives in Redux (ui.drawerOpen).
+    hooks:
+      - name: useAppSelector
+        category: custom
+        count: 3
+      - name: useAppDispatch
+        category: custom
+      - name: useRouter
+        category: router
+    functions:
+      - name: close
+        line: 17
+        kind: helper
+        async: false
+        params: ""
+        calls:
+          - dispatch
+          - toggleDrawer
+        used: true
+      - name: goToCheckout
+        line: 18
+        kind: helper
+        async: false
+        params: ""
+        calls:
+          - close
+        used: true
+    store:
+      reads:
+        - via: useAppSelector
+          kind: redux
+          path: ui.drawerOpen
+          line: 11
+          storeId: redux:ui
+        - via: useAppSelector
+          kind: redux
+          path: cart.items
+          line: 12
+          storeId: redux:cart
+        - via: useAppSelector
+          kind: redux
+          path: cart.coupon
+          line: 13
+          storeId: redux:cart
+      writes:
+        - via: dispatch
+          kind: redux
+          action: toggleDrawer
+          in: handler close
+          line: 17
+          storeId: redux:ui
+    styles:
+      classes:
+        - name: empty
+    renders:
+      - Modal
+      - Button
+      - CartItem
+      - OrderSummary
+    passes:
+      Modal:
+        - name: open
+          value: open
+          line: 24
+        - name: title
+          value: "`Your cart (${items.length})`"
+          line: 24
+        - name: onClose
+          value: close
+          line: 24
+        - name: footer
+          value: <Button onClick={goToCheckout} disabled={!items.l…
+          line: 24
+      Button:
+        - name: onClick
+          value: goToCheckout
+          line: 24
+        - name: disabled
+          value: "!items.length"
+          line: 24
+      CartItem:
+        - name: key
+          value: line.product.id
+          line: 25
+        - name: line
+          value: line
+          line: 25
+      OrderSummary:
+        - name: lines
+          value: items
+          line: 26
+        - name: coupon
+          value: coupon
+          line: 26
+        - name: readOnly
+          value: "true"
+          line: 26
+    usedBy:
+      - Header
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  CartItem:
+    name: CartItem
+    file: src/features/cart/CartItem.tsx
+    line: 10
+    kind: memo
+    export: named
+    description: One cart line with quantity stepper and remove button.
+    props:
+      line:
+        type: CartLine
+        required: true
+      readOnly:
+        type: boolean
+        required: false
+        default: "false"
+    hooks:
+      - name: useAppDispatch
+        category: custom
+    variables:
+      - name: subtotal
+        kind: const
+        value: line.product.price * line.quantity
+        line: 12
+        used: true
+    functions:
+      - name: onStep
+        line: 13
+        kind: handler
+        async: false
+        params: "delta: number"
+        calls:
+          - dispatch
+          - updateQuantity
+        used: true
+    store:
+      reads: []
+      writes:
+        - via: dispatch
+          kind: redux
+          action: updateQuantity
+          in: handler onStep
+          line: 13
+          storeId: redux:cart
+        - via: dispatch
+          kind: redux
+          action: removeItem
+          in: inline callback
+          line: 27
+          storeId: redux:cart
+    styles:
+      classes:
+        - name: cart-item
+        - name: flex
+        - name: items-center
+        - name: gap-3
+        - name: stepper
+    renders:
+      - Button
+    passes:
+      Button:
+        - name: variant
+          value: '"ghost"'
+          line: 27
+        - name: size
+          value: '"sm"'
+          line: 27
+        - name: onClick
+          value: () => dispatch(removeItem(line.product.id))
+          line: 27
+    externals:
+      - next/image#Image
+    usedBy:
+      - CartPage
+      - OrderTimeline
+      - CartDrawer
+      - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  CartPage:
+    name: CartPage
+    file: app/cart/page.tsx
+    line: 10
+    kind: function
+    export: default
+    description: Full cart page. Reads lines and coupon from Redux and passes them down as props.
+    hooks:
+      - name: useAppSelector
+        category: custom
+        count: 2
+      - name: useAppDispatch
+        category: custom
+    store:
+      reads:
+        - via: useAppSelector
+          kind: redux
+          path: cart.items
+          line: 11
+          storeId: redux:cart
+        - via: useAppSelector
+          kind: redux
+          path: cart.coupon
+          line: 12
+          storeId: redux:cart
+      writes:
+        - via: dispatch
+          kind: redux
+          action: clearCart
+          in: inline callback
+          line: 21
+          storeId: redux:cart
+    styles:
+      classes:
+        - name: grid
+          at: app/globals.css:6
+        - name: md:grid-cols-3
+        - name: gap-8
+        - name: md:col-span-2
+        - name: btn
+          at: app/globals.css:8
+        - name: btn-primary
+          at: app/globals.css:9
+        - name: btn-lg
+          at: app/globals.css:15
+    renders:
+      - CartItem
+      - OrderSummary
+      - Button
+    passes:
+      CartItem:
+        - name: key
+          value: line.product.id
+          line: 18
+        - name: line
+          value: line
+          line: 18
+      OrderSummary:
+        - name: lines
+          value: items
+          line: 20
+        - name: coupon
+          value: coupon
+          line: 20
+      Button:
+        - name: variant
+          value: '"ghost"'
+          line: 21
+        - name: onClick
+          value: () => dispatch(clearCart())
+          line: 21
+    externals:
+      - next/link#Link
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /cart
+    rendering: client
+  CheckoutLayout:
+    name: CheckoutLayout
+    file: app/checkout/layout.tsx
+    line: 4
+    kind: function
+    export: default
+    description: Distraction-free checkout chrome.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    styles:
+      classes:
+        - name: checkout-shell
+        - name: max-w-5xl
+        - name: mx-auto
+        - name: text-xs
+        - name: text-gray-500
+    externals:
+      - next/link#Link
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+      - /checkout/success
+    rendering: server
+  CheckoutPage:
+    name: CheckoutPage
+    file: app/checkout/page.tsx
+    line: 6
+    kind: function
+    export: default
+    hooks:
+      - name: useAuth
+        category: custom
+    store:
+      reads:
+        - via: useAuth
+          kind: context
+          store: AuthContext
+          storeId: context:AuthContext
+      writes: []
+    renders:
+      - ProtectedRoute
+      - CheckoutWizard
+    passes:
+      CheckoutWizard:
+        - name: userEmail
+          value: user?.email
+          line: 10
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+    rendering: client
+  CheckoutWizard:
+    name: CheckoutWizard
+    file: src/features/checkout/CheckoutWizard.tsx
+    line: 45
+    kind: function
+    export: named
+    description: "Three-step checkout state machine: address → payment → review. Persists a draft in sessionStorage."
+    props:
+      userEmail:
+        type: string
+        required: false
+    state:
+      state:
+        source: useReducer
+        initial: "{ step: 0, address: {}, paymentToken: null, completed: [] }"
+        setter: dispatchWizard
+        reducer: wizardReducer
+    hooks:
+      - name: useReducer
+        category: state
+      - name: useAppSelector
+        category: custom
+        count: 3
+      - name: useAppDispatch
+        category: custom
+      - name: useRouter
+        category: router
+      - name: useToast
+        category: custom
+      - name: useEffect
+        category: effect
+        count: 2
+      - name: useCallback
+        category: memo
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+        deps: []
+        calls:
+          - sessionStorage.getItem
+          - dispatchWizard
+          - JSON.parse
+        line: 55
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - state
+        calls:
+          - sessionStorage.setItem
+          - JSON.stringify
+        line: 60
+    variables:
+      - name: amount
+        kind: const
+        value: items.reduce((sum, l) => sum + l.product.price * l.quantity, 0)
+        line: 53
+        used: true
+    functions:
+      - name: handlePlaceOrder
+        line: 64
+        kind: handler
+        async: true
+        params: ""
+        calls:
+          - dispatch
+          - checkout
+          - checkout.fulfilled.match
+          - sessionStorage.removeItem
+          - notify
+        used: true
+        memoized: true
+    store:
+      reads:
+        - via: useAppSelector
+          kind: redux
+          path: cart.items
+          line: 47
+          storeId: redux:cart
+        - via: useAppSelector
+          kind: redux
+          path: cart.coupon
+          line: 48
+          storeId: redux:cart
+        - via: useAppSelector
+          kind: redux
+          path: cart.status
+          line: 49
+          storeId: redux:cart
+        - via: useToast
+          kind: context
+          store: ToastContext
+          storeId: context:ToastContext
+      writes:
+        - via: dispatch
+          kind: redux
+          action: checkout
+          in: inline callback
+          line: 65
+          storeId: redux:cart
+    styles:
+      modules:
+        - file: src/features/checkout/Checkout.module.css
+          classes:
+            - name: wizard
+              at: src/features/checkout/Checkout.module.css:1
+            - name: step
+              at: src/features/checkout/Checkout.module.css:2
+    issues:
+      - type: unused-prop
+        severity: low
+        message: prop `userEmail` is destructured but never used
+        line: 45
+        fix: remove it from the props or use it
+    renders:
+      - StepIndicator
+      - AddressStep
+      - PaymentForm
+      - CartItem
+      - Button
+      - OrderSummary
+    passes:
+      StepIndicator:
+        - name: current
+          value: state.step
+          line: 75
+        - name: completed
+          value: state.completed
+          line: 75
+      AddressStep:
+        - name: draft
+          value: state.address
+          line: 76
+        - name: onNext
+          value: "(address) => dispatchWizard({ type: 'address', ad…"
+          line: 76
+      PaymentForm:
+        - name: amount
+          value: amount
+          line: 77
+        - name: onPaid
+          value: "(token) => dispatchWizard({ type: 'paid', token })"
+          line: 77
+        - name: onBack
+          value: "() => dispatchWizard({ type: 'back' })"
+          line: 77
+      CartItem:
+        - name: key
+          value: l.product.id
+          line: 81
+        - name: line
+          value: l
+          line: 81
+        - name: readOnly
+          value: "true"
+          line: 81
+      Button:
+        - name: onClick
+          value: handlePlaceOrder
+          line: 82
+        - name: loading
+          value: status === 'submitting'
+          line: 82
+      OrderSummary:
+        - name: lines
+          value: items
+          line: 86
+        - name: coupon
+          value: coupon
+          line: 86
+        - name: readOnly
+          value: state.step === 2
+          line: 86
+    usedBy:
+      - CheckoutPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+    rendering: client
+  DataTable:
+    name: DataTable
+    file: src/components/ui/DataTable.tsx
+    line: 23
+    kind: function
+    export: named
+    description: Generic sortable, paginated table used by every admin list.
+    props:
+      rows:
+        type: T[]
+        required: true
+      columns:
+        type: Column<T>[]
+        required: true
+      onRowClick:
+        type: "(row: T) => void"
+        required: false
+        description: Called with the clicked row
+      loading:
+        type: boolean
+        required: false
+        default: "false"
+      emptyText:
+        type: string
+        required: false
+        default: "'Nothing here yet'"
+      pageSize:
+        type: number
+        required: false
+        default: "20"
+    state:
+      sortKey:
+        source: useState
+        initial: "null"
+        setter: setSortKey
+        type: string | null
+      direction:
+        source: useState
+        initial: "'asc'"
+        setter: setDirection
+        type: "'asc' | 'desc'"
+      page:
+        source: useState
+        initial: "0"
+        setter: setPage
+    hooks:
+      - name: useState
+        category: state
+        count: 3
+      - name: useMemo
+        category: memo
+    variables:
+      - name: sorted
+        kind: memo
+        value: "{ if (!sortKey) return rows; const dir = direction === 'asc' ? 1 : -1…"
+        line: 28
+        used: true
+      - name: visible
+        kind: const
+        value: sorted.slice(page * pageSize, (page + 1) * pageSize)
+        line: 33
+        used: true
+    styles:
+      classes:
+        - name: empty
+    issues:
+      - type: a11y-click-handler
+        severity: low
+        message: click handler on <tr> without a role or keyboard handler; keyboard users cannot trigger it
+        line: 43
+        fix: use a <button>, or add role="button", tabIndex={0} and a key handler
+    renders:
+      - Spinner
+    passes:
+      Spinner:
+        - name: label
+          value: '"Loading rows"'
+          line: 35
+    usedBy:
+      - RecentOrders
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /admin/orders
+      - /admin
+    rendering: client
+  ErrorBoundary:
+    name: ErrorBoundary
+    file: src/features/admin/ErrorBoundary.tsx
+    line: 9
+    kind: class
+    export: named
+    description: Catches render errors in the admin area and reports them.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+      fallbackTitle:
+        type: string
+        required: false
+    state:
+      error:
+        source: class
+        initial: "null"
+        setter: this.setState
+        type: Error | null
+    lifecycle:
+      - via: getDerivedStateFromError
+        phases:
+          - error
+        line: 12
+      - via: componentDidCatch
+        phases:
+          - error
+        calls:
+          - fetch
+          - JSON.stringify
+        line: 16
+    apiCalls:
+      - via: fetch
+        method: POST
+        target: /api/errors
+        in: componentDidCatch
+        line: 17
+    styles:
+      classes:
+        - name: error-panel
+    renders:
+      - Button
+    passes:
+      Button:
+        - name: onClick
+          value: "() => this.setState({ error: null })"
+          line: 26
+    usedBy:
+      - AdminLayout
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+    rendering: client
+  FeaturedCollections:
+    name: FeaturedCollections
+    file: src/features/products/FeaturedCollections.tsx
+    line: 12
+    kind: function
+    export: named
+    description: Tabbed product collections on the homepage (compound Tabs).
+    props:
+      defaultTab:
+        type: string
+        required: false
+        default: "'new'"
+    renders:
+      - TabsRoot
+      - TabsList
+      - TabsTrigger
+      - TabsPanel
+      - ProductGrid
+    passes:
+      TabsRoot:
+        - name: defaultValue
+          value: defaultTab
+          line: 14
+      TabsTrigger:
+        - name: key
+          value: c.value
+          line: 16
+        - name: value
+          value: c.value
+          line: 16
+      TabsPanel:
+        - name: key
+          value: c.value
+          line: 19
+        - name: value
+          value: c.value
+          line: 19
+      ProductGrid:
+        - name: category
+          value: c.category
+          line: 20
+        - name: pageSize
+          value: "8"
+          line: 20
+    usedBy:
+      - HomePage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /
+    rendering: client
+  Filters:
+    name: Filters
+    file: src/features/products/Filters.tsx
+    line: 17
+    kind: function
+    export: named
+    description: Sidebar filters; applies them to the URL query string.
+    props:
+      categories:
+        type: string[]
+        required: true
+    state:
+      filters:
+        source: useReducer
+        initial: "{ ...EMPTY, category: params.get('category') ?? 'all' }"
+        setter: dispatch
+        reducer: filtersReducer
+    hooks:
+      - name: useSearchParams
+        category: router
+      - name: useRouter
+        category: router
+      - name: usePathname
+        category: router
+      - name: useReducer
+        category: state
+    functions:
+      - name: handleApply
+        line: 23
+        kind: handler
+        async: false
+        params: ""
+        calls:
+          - next.set
+          - String
+        used: true
+    validation:
+      - via: html
+        field: Min price
+        rules:
+          - min
+          - type=number
+        line: 34
+      - via: html
+        field: Max price
+        rules:
+          - min
+          - type=number
+        line: 35
+    styles:
+      classes:
+        - name: filters
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <select> has no label (no aria-label, and no id for a <label for>)
+        line: 31
+        fix: wrap it in <label>, link one with id/for, or add aria-label
+    renders:
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Min price"'
+          line: 34
+        - name: type
+          value: '"number"'
+          line: 34
+        - name: min
+          value: "0"
+          line: 34
+        - name: value
+          value: filters.minPrice
+          line: 34
+        - name: onChange
+          value: "(e) => dispatch({ type: 'set', field: 'minPrice',…"
+          line: 34
+        - name: label
+          value: '"Max price"'
+          line: 35
+        - name: type
+          value: '"number"'
+          line: 35
+        - name: min
+          value: "0"
+          line: 35
+        - name: value
+          value: filters.maxPrice
+          line: 35
+        - name: onChange
+          value: "(e) => dispatch({ type: 'set', field: 'maxPrice',…"
+          line: 35
+      Button:
+        - name: onClick
+          value: handleApply
+          line: 37
+        - name: variant
+          value: '"ghost"'
+          line: 38
+        - name: onClick
+          value: "() => dispatch({ type: 'reset' })"
+          line: 38
+    usedBy:
+      - ProductsPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products
+    rendering: client
+  Footer:
+    name: Footer
+    file: src/components/layout/Footer.jsx
+    line: 5
+    kind: function
+    export: named
+    description: Site footer with legal links. Plain JS component kept from the v1 codebase.
+    props:
+      year:
+        type: number
+        required: false
+        default: "2026"
+      links:
+        type: "arrayOf(PropTypes.shape({ href: PropTypes.string, label: PropTypes.string }))"
+        required: true
+      compact:
+        type: bool
+        required: false
+        default: "false"
+    styles:
+      classes:
+        - name: footer
+        - name: compact
+          at: app/globals.css:5
+    externals:
+      - next/link#Link
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: server
+  Header:
+    name: Header
+    file: src/components/layout/Header.tsx
+    line: 21
+    kind: function
+    export: named
+    description: "Sticky top navigation: search, account, theme toggle and the cart drawer trigger."
+    state:
+      scrolled:
+        source: useState
+        initial: "false"
+        setter: setScrolled
+    hooks:
+      - name: useAuth
+        category: custom
+      - name: useTheme
+        category: custom
+      - name: useAppDispatch
+        category: custom
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - unmount
+        deps: []
+        calls:
+          - setScrolled
+          - window.addEventListener
+        cleanup:
+          - window.removeEventListener
+        line: 27
+    functions:
+      - name: onToggleCart
+        line: 33
+        kind: handler
+        async: false
+        params: ""
+        calls:
+          - dispatch
+          - toggleDrawer
+        used: true
+    timers:
+      - type: listener
+        call: window.addEventListener
+        event: scroll
+        in: useEffect L27
+        line: 29
+        cleared: true
+    store:
+      reads:
+        - via: useAuth
+          kind: context
+          store: AuthContext
+          storeId: context:AuthContext
+        - via: useTheme
+          kind: context
+          store: ThemeContext
+          storeId: context:ThemeContext
+      writes:
+        - via: dispatch
+          kind: redux
+          action: toggleDrawer
+          in: handler onToggleCart
+          line: 33
+          storeId: redux:ui
+    styles:
+      classes:
+        - name: site-header
+          at: app/globals.css:4
+        - name: sticky
+        - name: top-0
+        - name: shadow-md
+        - name: compact
+          at: app/globals.css:5
+        - name: logo
+    renders:
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+    passes:
+      SearchBar:
+        - name: placeholder
+          value: '"Search products"'
+          line: 39
+      Button:
+        - name: variant
+          value: '"ghost"'
+          line: 40
+        - name: size
+          value: '"sm"'
+          line: 40
+        - name: onClick
+          value: toggleTheme
+          line: 40
+        - name: aria-label
+          value: '"Toggle theme"'
+          line: 40
+        - name: variant
+          value: '"ghost"'
+          line: 41
+        - name: size
+          value: '"sm"'
+          line: 41
+        - name: onClick
+          value: signOut
+          line: 41
+        - name: variant
+          value: '"secondary"'
+          line: 42
+        - name: size
+          value: '"sm"'
+          line: 42
+        - name: onClick
+          value: onToggleCart
+          line: 42
+        - name: icon
+          value: <CartBadge />
+          line: 42
+    externals:
+      - next/link#Link
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  HeroBanner:
+    name: HeroBanner
+    file: src/components/layout/HeroBanner.tsx
+    line: 14
+    kind: function
+    export: named
+    description: Homepage hero with a live promo countdown.
+    props:
+      headline:
+        type: string
+        required: true
+      endsAt:
+        type: string
+        required: true
+        description: ISO date the promotion ends
+      ctaHref:
+        type: string
+        required: false
+        default: "'/products'"
+    state:
+      remaining:
+        source: useState
+        initial: () => Date.parse(endsAt) - Date.now()
+        setter: setRemaining
+    hooks:
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - endsAt
+        calls:
+          - setInterval
+          - setRemaining
+          - Date.parse
+          - Date.now
+        line: 17
+    variables:
+      - name: hours
+        kind: const
+        value: Math.max(0, Math.floor(remaining / 3_600_000))
+        line: 22
+        used: true
+      - name: minutes
+        kind: const
+        value: Math.max(0, Math.floor((remaining % 3_600_000) / 60_000))
+        line: 23
+        used: true
+    timers:
+      - type: interval
+        call: setInterval
+        in: useEffect L17
+        line: 19
+        cleared: false
+    styles:
+      classes:
+        - name: hero
+        - name: grid
+          at: app/globals.css:6
+        - name: md:grid-cols-2
+        - name: gap-8
+        - name: text-4xl
+        - name: font-bold
+        - name: countdown
+    issues:
+      - type: memory-leak
+        severity: high
+        message: setInterval started in useEffect L17 without cleanup
+        line: 19
+        fix: return () => clearInterval(id) from the effect
+    renders:
+      - Button
+    passes:
+      Button:
+        - name: size
+          value: '"lg"'
+          line: 30
+        - name: onClick
+          value: () => window.location.assign(ctaHref)
+          line: 30
+    externals:
+      - next/image#Image
+    usedBy:
+      - HomePage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /
+    rendering: client
+  HomePage:
+    name: HomePage
+    file: app/page.tsx
+    line: 8
+    kind: function
+    export: default
+    description: "Landing page: promo hero + tabbed collections."
+    renders:
+      - HeroBanner
+      - FeaturedCollections
+      - NewsletterForm
+    passes:
+      HeroBanner:
+        - name: headline
+          value: '"Autumn sale — up to 40% off"'
+          line: 11
+        - name: endsAt
+          value: '"2026-11-01T00:00:00Z"'
+          line: 11
+      FeaturedCollections:
+        - name: defaultTab
+          value: '"bestsellers"'
+          line: 12
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /
+    rendering: server
+  Input:
+    name: Input
+    file: src/components/ui/Input.tsx
+    line: 10
+    kind: forwardRef
+    export: named
+    props:
+      label:
+        type: string
+        required: true
+      error:
+        type: string
+        required: false
+        description: Validation message shown under the field
+      hint:
+        type: string
+        required: false
+    hooks:
+      - name: useId
+        category: memo
+    styles:
+      classes:
+        - name: field
+          at: app/globals.css:33
+        - name: error
+          at: app/globals.css:34
+    usedBy:
+      - ProfileForm
+      - ProductEditor
+      - LoginForm
+      - OrderSummary
+      - AddressForm
+      - PaymentForm
+      - AddToCartButton
+      - Filters
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  LegacyButton:
+    name: LegacyButton
+    file: src/components/layout/LegacyButton.jsx
+    line: 7
+    kind: class
+    export: default
+    description: Button from the old design system.
+    status: deprecated
+    props:
+      kind:
+        type: unknown
+        required: false
+        default: "'default'"
+      onPress:
+        type: unknown
+        required: false
+        default: () => {}
+      children:
+        type: unknown
+        required: false
+    functions:
+      - name: handleClick
+        line: 10
+        kind: handler
+        async: false
+        params: event
+        calls:
+          - event.preventDefault
+          - this.props.onPress
+        used: true
+    styles:
+      classes:
+        - name: legacy-btn
+          at: app/globals.css:37
+        - name: legacy-btn--
+    usedBy:
+      - BlogPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /blog/[[...slug]]
+    rendering: server
+    issues:
+      - type: client-code-in-server-component
+        severity: high
+        message: LegacyButton is a class component but renders as a Server Component
+        fix: add 'use client' at the top of its file, or render it from a client component
+      - type: possible-duplicate
+        severity: low
+        message: LegacyButton looks like Button (same base name "Button"; 1/8 props shared)
+        fix: reuse or extend Button, or merge the two
+  LiveVisitors:
+    name: LiveVisitors
+    file: src/features/admin/LiveVisitors.tsx
+    line: 4
+    kind: class
+    export: named
+    description: Live visitor counter fed by a server-sent events stream.
+    props:
+      channel:
+        type: string
+        required: true
+    state:
+      count:
+        source: class
+        initial: "0"
+        setter: this.setState
+        type: number
+      online:
+        source: class
+        initial: navigator.onLine
+        setter: this.setState
+        type: boolean
+    lifecycle:
+      - via: componentDidMount
+        phases:
+          - mount
+        calls:
+          - this.setState
+          - Number
+          - window.addEventListener
+        line: 8
+    variables:
+      - name: source
+        kind: field
+        line: 6
+        used: true
+    timers:
+      - type: socket
+        call: new EventSource
+        in: componentDidMount
+        line: 9
+        cleared: false
+      - type: listener
+        call: window.addEventListener
+        event: online
+        in: componentDidMount
+        line: 12
+        cleared: false
+    styles:
+      classes:
+        - name: live
+        - name: offline
+    issues:
+      - type: memory-leak
+        severity: high
+        message: new EventSource started in componentDidMount with no matching release in componentWillUnmount
+        line: 9
+        fix: release it in componentWillUnmount
+      - type: memory-leak
+        severity: high
+        message: window.addEventListener('online') started in componentDidMount with no matching release in componentWillUnmount
+        line: 12
+        fix: release it in componentWillUnmount
+      - type: client-code-in-server-component
+        severity: high
+        message: LiveVisitors is a class component but renders as a Server Component
+        fix: add 'use client' at the top of its file, or render it from a client component
+    usedBy:
+      - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin
+    rendering: server
+  LoginForm:
+    name: LoginForm
+    file: src/features/auth/LoginForm.tsx
+    line: 14
+    kind: function
+    export: named
+    description: Email + password sign-in, validated with react-hook-form.
+    props:
+      onSuccess:
+        type: () => void
+        required: false
+    state:
+      serverError:
+        source: useState
+        initial: "null"
+        setter: setServerError
+        type: string | null
+    hooks:
+      - name: useAuth
+        category: custom
+      - name: useState
+        category: state
+      - name: useForm
+        category: custom
+    functions:
+      - name: onSubmit
+        line: 23
+        kind: handler
+        async: true
+        params: "values: LoginValues"
+        calls:
+          - setServerError
+          - signIn
+        sets:
+          - serverError
+        used: true
+    store:
+      reads:
+        - via: useAuth
+          kind: context
+          store: AuthContext
+          storeId: context:AuthContext
+      writes: []
+    validation:
+      - via: html
+        field: Email
+        rules:
+          - type=email
+        line: 35
+      - via: react-hook-form
+        field: email
+        rules:
+          - required
+          - pattern
+        line: 35
+      - via: react-hook-form
+        field: password
+        rules:
+          - required
+          - minLength
+        line: 36
+      - via: react-hook-form
+        field: remember
+        rules: []
+        line: 38
+    styles:
+      classes:
+        - name: inline-flex
+        - name: items-center
+        - name: gap-2
+        - name: error
+          at: app/globals.css:34
+    renders:
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Email"'
+          line: 35
+        - name: type
+          value: '"email"'
+          line: 35
+        - name: error
+          value: errors.email?.message
+          line: 35
+        - name: ...register('email', { required:…
+          value: spread
+          line: 35
+        - name: label
+          value: '"Password"'
+          line: 36
+        - name: type
+          value: '"password"'
+          line: 36
+        - name: error
+          value: errors.password?.message
+          line: 36
+        - name: ...register('password', { requir…
+          value: spread
+          line: 36
+      Button:
+        - name: type
+          value: '"submit"'
+          line: 41
+        - name: loading
+          value: isSubmitting
+          line: 41
+    usedBy:
+      - AccountPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account
+    rendering: client
+  Modal:
+    name: Modal
+    file: src/components/ui/Modal.tsx
+    line: 16
+    kind: function
+    export: named
+    description: Accessible dialog rendered into document.body. Locks page scroll and closes on Escape.
+    props:
+      open:
+        type: boolean
+        required: true
+      title:
+        type: string
+        required: true
+      onClose:
+        type: () => void
+        required: true
+      children:
+        type: React.ReactNode
+        required: true
+      footer:
+        type: React.ReactNode
+        required: false
+        description: Extra buttons rendered next to "Close"
+    refs:
+      - dialogRef
+      - previousFocus
+    hooks:
+      - name: useRef
+        category: ref
+        count: 2
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - open
+          - onClose
+        calls:
+          - onClose
+          - document.addEventListener
+        cleanup:
+          - document.removeEventListener
+          - document.body.style.removeProperty
+        line: 20
+    timers:
+      - type: listener
+        call: document.addEventListener
+        event: keydown
+        in: useEffect L20
+        line: 24
+        cleared: true
+    styles:
+      classes:
+        - name: backdrop
+          at: app/globals.css:35
+    issues:
+      - type: a11y-click-handler
+        severity: low
+        message: click handler on <div> without a role or keyboard handler; keyboard users cannot trigger it
+        line: 36
+        fix: use a <button>, or add role="button", tabIndex={0} and a key handler
+    renders:
+      - Button
+    passes:
+      Button:
+        - name: variant
+          value: '"ghost"'
+          line: 42
+        - name: onClick
+          value: onClose
+          line: 42
+    usedBy:
+      - OrderEditor
+      - CartDrawer
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  NewsletterForm:
+    name: NewsletterForm
+    file: src/features/newsletter/NewsletterForm.tsx
+    line: 4
+    kind: function
+    export: named
+    description: Server component form that posts straight to a server action.
+    validation:
+      - via: html
+        field: email
+        rules:
+          - required
+          - type=email
+        line: 7
+    styles:
+      classes:
+        - name: newsletter
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 7
+        fix: wrap it in <label>, link one with id/for, or add aria-label
+    usedBy:
+      - HomePage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /
+    rendering: server
+  OldPromoBanner:
+    name: OldPromoBanner
+    file: src/components/layout/OldPromoBanner.tsx
+    line: 7
+    kind: function
+    export: default
+    description: Promo strip from the 2024 redesign.
+    status: deprecated
+    props:
+      message:
+        type: string
+        required: true
+      dismissible:
+        type: boolean
+        required: false
+        default: "true"
+    state:
+      hidden:
+        source: useState
+        initial: "false"
+        setter: setHidden
+    hooks:
+      - name: useState
+        category: state
+    styles:
+      classes:
+        - name: promo-strip
+    codeowners:
+      - "@northwind/web"
+  OrderDetailPage:
+    name: OrderDetailPage
+    file: app/(account)/account/orders/[orderId]/page.tsx
+    line: 3
+    kind: function
+    export: default
+    props:
+      params:
+        type: "Promise<{ orderId: string }>"
+        required: true
+    variables:
+      - name: orderId
+        kind: const
+        value: from await params
+        line: 4
+        used: true
+    renders:
+      - OrderTimeline
+    passes:
+      OrderTimeline:
+        - name: orderId
+          value: orderId
+          line: 5
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+    rendering: server
+  OrderEditor:
+    name: OrderEditor
+    file: src/features/admin/OrderEditor.tsx
+    line: 12
+    kind: function
+    export: named
+    description: Modal to change an order's status or delete it.
+    props:
+      order:
+        type: Order | null
+        required: true
+      onClose:
+        type: () => void
+        required: true
+      onSaved:
+        type: () => void
+        required: true
+    state:
+      status:
+        source: useState
+        initial: order?.status ?? 'pending'
+        setter: setStatus
+        type: Order['status']
+      busy:
+        source: useState
+        initial: "false"
+        setter: setBusy
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useToast
+        category: custom
+    variables:
+      - name: unusedDraftNote
+        kind: const
+        value: "''"
+        line: 16
+        used: false
+    functions:
+      - name: handleSave
+        line: 18
+        kind: handler
+        async: true
+        params: ""
+        calls:
+          - setBusy
+          - http.patch
+          - notify
+          - onSaved
+        sets:
+          - busy
+        used: true
+      - name: handleDelete
+        line: 27
+        kind: handler
+        async: true
+        params: ""
+        calls:
+          - confirm
+          - http.delete
+          - onSaved
+        used: true
+    apiCalls:
+      - via: http.patch
+        method: PATCH
+        target: /orders/${order.id}
+        in: handler handleSave
+        line: 21
+      - via: http.delete
+        method: DELETE
+        target: /orders/${order.id}
+        in: handler handleDelete
+        line: 29
+    store:
+      reads:
+        - via: useToast
+          kind: context
+          store: ToastContext
+          storeId: context:ToastContext
+      writes: []
+    issues:
+      - type: unused-variable
+        severity: low
+        message: "`unusedDraftNote` is declared but never used"
+        line: 16
+        fix: remove it
+      - type: a11y-field-label
+        severity: medium
+        message: <select> has no label (no aria-label, and no id for a <label for>)
+        line: 39
+        fix: wrap it in <label>, link one with id/for, or add aria-label
+    renders:
+      - Modal
+      - Button
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - Badge
+      - CardBody
+    passes:
+      Modal:
+        - name: open
+          value: "!!order"
+          line: 34
+        - name: title
+          value: "`Edit order ${order?.id ?? ''}`"
+          line: 34
+        - name: onClose
+          value: onClose
+          line: 34
+        - name: footer
+          value: <><Button variant="danger" onClick={handleDelete}…
+          line: 34
+      Button:
+        - name: variant
+          value: '"danger"'
+          line: 34
+        - name: onClick
+          value: handleDelete
+          line: 34
+        - name: loading
+          value: busy
+          line: 34
+        - name: onClick
+          value: handleSave
+          line: 34
+      CardHeader:
+        - name: title
+          value: formatPrice(order.total)
+          line: 37
+        - name: action
+          value: <Badge>{order.status}</Badge>
+          line: 37
+    usedBy:
+      - AdminOrdersPage
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin/orders
+    rendering: client
+  OrderSummary:
+    name: OrderSummary
+    file: src/features/cart/OrderSummary.tsx
+    line: 21
+    kind: memo
+    export: named
+    description: Totals, shipping and coupon entry.
+    props:
+      lines:
+        type: CartLine[]
+        required: true
+      coupon:
+        type: string | null
+        required: true
+      readOnly:
+        type: boolean
+        required: false
+        default: "false"
+        description: Hide the coupon field (e.g. on the success page)
+    state:
+      code:
+        source: useState
+        initial: "''"
+        setter: setCode
+      codeError:
+        source: useState
+        initial: "null"
+        setter: setCodeError
+        type: string | null
+    hooks:
+      - name: useAppDispatch
+        category: custom
+      - name: useState
+        category: state
+        count: 2
+      - name: useMemo
+        category: memo
+    variables:
+      - name: subtotal
+        kind: memo
+        value: lines.reduce((sum, l) => sum + l.product.price * l.quantity, 0)
+        line: 26
+        used: true
+      - name: discount
+        kind: const
+        value: "coupon ? Math.round(subtotal * 0.1) : 0"
+        line: 27
+        used: true
+      - name: shipping
+        kind: const
+        value: "subtotal >= SHIPPING_FREE_FROM ? 0 : 499"
+        line: 28
+        used: true
+      - name: total
+        kind: const
+        value: subtotal - discount + shipping
+        line: 29
+        used: true
+    functions:
+      - name: handleApply
+        line: 31
+        kind: handler
+        async: false
+        params: ""
+        calls:
+          - .toUpperCase
+          - code.trim
+          - COUPON_RE.test
+          - setCodeError
+          - dispatch
+          - applyCoupon
+        sets:
+          - codeError
+        used: true
+    store:
+      reads: []
+      writes:
+        - via: dispatch
+          kind: redux
+          action: applyCoupon
+          in: handler handleApply
+          line: 35
+          storeId: redux:cart
+    validation:
+      - via: html
+        field: Coupon
+        rules:
+          - pattern
+        line: 50
+    styles:
+      classes:
+        - name: text-green-600
+        - name: text-xl
+        - name: font-bold
+        - name: flex
+        - name: gap-2
+    renders:
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Input
+      - Button
+    passes:
+      CardHeader:
+        - name: title
+          value: '"Order summary"'
+          line: 40
+      Input:
+        - name: label
+          value: '"Coupon"'
+          line: 50
+        - name: value
+          value: code
+          line: 50
+        - name: pattern
+          value: '"[A-Za-z0-9]{4,12}"'
+          line: 50
+        - name: error
+          value: codeError ?? undefined
+          line: 50
+        - name: onChange
+          value: (e) => setCode(e.target.value)
+          line: 50
+      Button:
+        - name: variant
+          value: '"secondary"'
+          line: 51
+        - name: onClick
+          value: handleApply
+          line: 51
+    usedBy:
+      - CartPage
+      - CartDrawer
+      - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  OrderTimeline:
+    name: OrderTimeline
+    file: src/features/account/OrderTimeline.tsx
+    line: 12
+    kind: function
+    export: named
+    description: Order status with live polling until the order ships.
+    props:
+      orderId:
+        type: string
+        required: true
+    state:
+      order:
+        source: useState
+        initial: "null"
+        setter: setOrder
+        type: Order | null
+    hooks:
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - orderId
+        calls:
+          - fetch
+          - load
+          - setInterval
+        cleanup:
+          - clearInterval
+          - controller.abort
+        line: 15
+    timers:
+      - type: interval
+        call: setInterval
+        in: useEffect L15
+        line: 23
+        cleared: true
+    apiCalls:
+      - via: fetch
+        method: GET
+        target: /api/orders/${orderId}
+        in: useEffect L15
+        line: 18
+    renders:
+      - Spinner
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - Badge
+      - CardBody
+      - CartItem
+    passes:
+      Spinner:
+        - name: label
+          value: '"Loading order"'
+          line: 30
+      CardHeader:
+        - name: title
+          value: "`Order ${order.id}`"
+          line: 33
+        - name: action
+          value: <Badge tone={TONE[order.status]}>{order.status}</…
+          line: 33
+      Badge:
+        - name: tone
+          value: TONE[order.status]
+          line: 33
+      CartItem:
+        - name: key
+          value: l.product.id
+          line: 36
+        - name: line
+          value: l
+          line: 36
+        - name: readOnly
+          value: "true"
+          line: 36
+    usedBy:
+      - OrderDetailPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+    rendering: client
+  PaymentForm:
+    name: PaymentForm
+    file: src/features/checkout/PaymentForm.tsx
+    line: 21
+    kind: class
+    export: named
+    description: Card entry. Class component because it wraps the imperative payments SDK.
+    props:
+      amount:
+        type: number
+        required: true
+      onPaid:
+        type: "(token: string) => void"
+        required: true
+      onBack:
+        type: () => void
+        required: true
+    state:
+      card:
+        source: class
+        initial: "''"
+        setter: this.setState
+        type: string
+      expiry:
+        source: class
+        initial: "''"
+        setter: this.setState
+        type: string
+      error:
+        source: class
+        initial: "null"
+        setter: this.setState
+        type: string | null
+      sdkReady:
+        source: class
+        initial: "false"
+        setter: this.setState
+        type: boolean
+      secondsLeft:
+        source: class
+        initial: "600"
+        setter: this.setState
+        type: number
+    lifecycle:
+      - via: componentDidMount
+        phases:
+          - mount
+        calls:
+          - document.createElement
+          - this.setState
+          - document.body.appendChild
+          - setInterval
+        line: 25
+      - via: componentDidUpdate
+        phases:
+          - update
+        calls:
+          - this.setState
+        line: 33
+      - via: componentWillUnmount
+        phases:
+          - unmount
+        calls:
+          - clearInterval
+        line: 37
+    variables:
+      - name: sessionTimer
+        kind: field
+        line: 23
+        used: true
+    functions:
+      - name: handleSubmit
+        line: 41
+        kind: handler
+        async: true
+        params: "e: React.FormEvent"
+        calls:
+          - e.preventDefault
+          - validateCard
+          - this.setState
+          - validateExpiry
+          - fetch
+          - JSON.stringify
+          - this.props.onPaid
+        used: true
+    timers:
+      - type: interval
+        call: setInterval
+        in: componentDidMount
+        line: 30
+        cleared: true
+    apiCalls:
+      - via: fetch
+        method: POST
+        target: /api/payments/tokenize
+        in: handleSubmit
+        line: 45
+    validation:
+      - via: custom
+        fn: validateCard
+        line: 43
+      - via: custom
+        fn: validateExpiry
+        line: 44
+      - via: html
+        field: Card number
+        rules:
+          - required
+        line: 54
+      - via: html
+        field: Expiry (MM/YY)
+        rules:
+          - required
+          - pattern
+        line: 55
+    styles:
+      modules:
+        - file: src/features/checkout/Checkout.module.css
+          classes:
+            - name: step
+              at: src/features/checkout/Checkout.module.css:2
+            - name: error
+              at: src/features/checkout/Checkout.module.css:5
+            - name: actions
+              at: src/features/checkout/Checkout.module.css:4
+    renders:
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Card number"'
+          line: 54
+        - name: required
+          value: "true"
+          line: 54
+        - name: inputMode
+          value: '"numeric"'
+          line: 54
+        - name: autoComplete
+          value: '"cc-number"'
+          line: 54
+        - name: value
+          value: card
+          line: 54
+        - name: onChange
+          value: "(e) => this.setState({ card: e.target.value })"
+          line: 54
+        - name: label
+          value: '"Expiry (MM/YY)"'
+          line: 55
+        - name: required
+          value: "true"
+          line: 55
+        - name: pattern
+          value: '"(0[1-9]|1[0-2])/\\d{2}"'
+          line: 55
+        - name: value
+          value: expiry
+          line: 55
+        - name: onChange
+          value: "(e) => this.setState({ expiry: e.target.value })"
+          line: 55
+      Button:
+        - name: variant
+          value: '"ghost"'
+          line: 58
+        - name: type
+          value: '"button"'
+          line: 58
+        - name: onClick
+          value: this.props.onBack
+          line: 58
+        - name: type
+          value: '"submit"'
+          line: 59
+        - name: disabled
+          value: "!sdkReady"
+          line: 59
+    usedBy:
+      - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+    rendering: client
+  ProductCard:
+    name: ProductCard
+    file: src/features/products/ProductCard.tsx
+    line: 20
+    kind: memo
+    export: named
+    description: Product tile used in grids, search results and related products.
+    props:
+      product:
+        type: Product
+        required: true
+      onAdd:
+        type: "(product: Product) => void"
+        required: false
+        description: Add-to-cart handler; hidden when omitted
+      compact:
+        type: boolean
+        required: false
+        default: "false"
+      highlight:
+        type: string
+        required: false
+        description: Shown as a ribbon, e.g. "New"
+    variables:
+      - name: soldOut
+        kind: const
+        value: product.stock === 0
+        line: 21
+        used: true
+      - name: lowStock
+        kind: const
+        value: product.stock > 0 && product.stock < 5
+        line: 22
+        used: true
+    styles:
+      classes:
+        - name: btn
+          at: app/globals.css:8
+        - name: btn-primary
+          at: app/globals.css:9
+        - name: btn-sm
+          at: app/globals.css:13
+      modules:
+        - file: src/features/products/ProductCard.module.css
+          classes:
+            - name: card
+              at: src/features/products/ProductCard.module.css:1
+            - name: compact
+              at: src/features/products/ProductCard.module.css:2
+            - name: soldOut
+              at: src/features/products/ProductCard.module.css:5
+            - name: image
+              at: src/features/products/ProductCard.module.css:3
+            - name: price
+              at: src/features/products/ProductCard.module.css:4
+    renders:
+      - Card@src/components/ui/Card.tsx
+      - Badge
+      - Tooltip
+    passes:
+      Card@src/components/ui/Card.tsx:
+        - name: elevated
+          value: "!compact"
+          line: 25
+      Badge:
+        - name: tone
+          value: '"success"'
+          line: 30
+        - name: tone
+          value: '"warning"'
+          line: 35
+      Tooltip:
+        - name: text
+          value: "`Only ${product.stock} left`"
+          line: 34
+    externals:
+      - next/link#Link
+      - next/image#Image
+    usedBy:
+      - ProductGrid
+      - RelatedProducts
+      - SearchResults
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  ProductDetailPage:
+    name: ProductDetailPage
+    file: app/products/[id]/page.tsx
+    line: 16
+    kind: function
+    export: default
+    description: "Product detail: gallery, info, lazy reviews and related items."
+    props:
+      params:
+        type: "Promise<{ id: string }>"
+        required: true
+    variables:
+      - name: id
+        kind: const
+        value: from await params
+        line: 17
+        used: true
+      - name: product
+        kind: const
+        value: await loadProduct(id)
+        line: 18
+        used: true
+    styles:
+      classes:
+        - name: grid
+          at: app/globals.css:6
+        - name: md:grid-cols-2
+        - name: gap-10
+    renders:
+      - ProductGallery
+      - ProductInfo
+      - Reviews
+      - RelatedProducts
+    passes:
+      ProductGallery:
+        - name: images
+          value: "[product.image]"
+          line: 22
+        - name: alt
+          value: product.name
+          line: 22
+      ProductInfo:
+        - name: product
+          value: product
+          line: 23
+      Reviews:
+        - name: productId
+          value: product.id
+          line: 24
+      RelatedProducts:
+        - name: category
+          value: product.category
+          line: 25
+        - name: excludeId
+          value: product.id
+          line: 25
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products/[id]
+    rendering: server
+  ProductEditor:
+    name: ProductEditor
+    file: src/features/admin/ProductEditor.tsx
+    line: 8
+    kind: function
+    export: named
+    description: Create or edit a product. `productId` undefined means "new".
+    props:
+      productId:
+        type: string
+        required: false
+    state:
+      product:
+        source: useState
+        initial: "{ name: '', price: 0, stock: 0, category: '' }"
+        setter: setProduct
+        type: Partial<Product>
+      loading:
+        source: useState
+        initial: "!!productId"
+        setter: setLoading
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - productId
+        calls:
+          - http.get
+          - setProduct
+          - setLoading
+        cleanup:
+          - controller.abort
+        line: 12
+    functions:
+      - name: handleSubmit
+        line: 22
+        kind: handler
+        async: true
+        params: "e: React.FormEvent"
+        calls:
+          - e.preventDefault
+          - http.put
+          - http.post
+        used: true
+    apiCalls:
+      - via: http.get
+        method: GET
+        target: /products/${productId}
+        in: useEffect L12
+        line: 15
+      - via: http.put
+        method: PUT
+        target: /products/${productId}
+        in: handler handleSubmit
+        line: 24
+      - via: http.post
+        method: POST
+        target: /products
+        in: handler handleSubmit
+        line: 25
+    validation:
+      - via: html
+        field: Name
+        rules:
+          - required
+          - minLength
+        line: 31
+      - via: html
+        field: Price (cents)
+        rules:
+          - required
+          - min
+          - type=number
+        line: 32
+      - via: html
+        field: Stock
+        rules:
+          - min
+          - type=number
+        line: 33
+    renders:
+      - Spinner
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Name"'
+          line: 31
+        - name: required
+          value: "true"
+          line: 31
+        - name: minLength
+          value: "3"
+          line: 31
+        - name: value
+          value: product.name
+          line: 31
+        - name: onChange
+          value: "(e) => setProduct({ ...product, name: e.target.va…"
+          line: 31
+        - name: label
+          value: '"Price (cents)"'
+          line: 32
+        - name: type
+          value: '"number"'
+          line: 32
+        - name: required
+          value: "true"
+          line: 32
+        - name: min
+          value: "0"
+          line: 32
+        - name: value
+          value: product.price
+          line: 32
+        - name: onChange
+          value: "(e) => setProduct({ ...product, price: Number(e.t…"
+          line: 32
+        - name: label
+          value: '"Stock"'
+          line: 33
+        - name: type
+          value: '"number"'
+          line: 33
+        - name: min
+          value: "0"
+          line: 33
+        - name: value
+          value: product.stock
+          line: 33
+        - name: onChange
+          value: "(e) => setProduct({ ...product, stock: Number(e.t…"
+          line: 33
+      Button:
+        - name: type
+          value: '"submit"'
+          line: 34
+    usedBy:
+      - AdminProductPage
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin/products/[...slug]
+    rendering: client
+  ProductGallery:
+    name: ProductGallery
+    file: src/features/products/ProductGallery.tsx
+    line: 6
+    kind: function
+    export: named
+    description: Image carousel with arrow-key navigation.
+    props:
+      images:
+        type: string[]
+        required: true
+      alt:
+        type: string
+        required: true
+    state:
+      index:
+        source: useState
+        initial: "0"
+        setter: setIndex
+      zoomed:
+        source: useState
+        initial: "false"
+        setter: setZoomed
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - images.length
+        calls:
+          - setIndex
+          - window.addEventListener
+        cleanup:
+          - window.removeEventListener
+        line: 10
+    timers:
+      - type: listener
+        call: window.addEventListener
+        event: keydown
+        in: useEffect L10
+        line: 15
+        cleared: true
+    styles:
+      classes:
+        - name: gallery
+        - name: zoomed
+        - name: thumbs
+        - name: flex
+        - name: gap-2
+    externals:
+      - next/image#Image
+    usedBy:
+      - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products/[id]
+    rendering: client
+  ProductGrid:
+    name: ProductGrid
+    file: src/features/products/ProductGrid.tsx
+    line: 19
+    kind: function
+    export: named
+    description: Responsive grid of products for a category. Column count follows the container width.
+    props:
+      category:
+        type: string
+        required: false
+        default: "'all'"
+      sort:
+        type: "'price' | 'rating' | 'newest'"
+        required: false
+        default: "'newest'"
+      pageSize:
+        type: number
+        required: false
+        default: "24"
+    state:
+      columns:
+        source: useState
+        initial: "4"
+        setter: setColumns
+    refs:
+      - containerRef
+    hooks:
+      - name: useSWR
+        category: data
+      - name: useRef
+        category: ref
+      - name: useState
+        category: state
+      - name: useAppDispatch
+        category: custom
+      - name: useToast
+        category: custom
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - unmount
+        deps: []
+        calls:
+          - setColumns
+          - Math.max
+          - Math.floor
+          - observer.observe
+        cleanup:
+          - observer.disconnect
+        line: 26
+    functions:
+      - name: handleAdd
+        line: 33
+        kind: handler
+        async: false
+        params: "product: Product"
+        calls:
+          - dispatch
+          - addItem
+          - notify
+        used: true
+    timers:
+      - type: observer
+        call: new ResizeObserver
+        in: useEffect L26
+        line: 28
+        cleared: true
+    apiCalls:
+      - via: useSWR
+        method: GET
+        target: /api/products?category=${category}&sort=${sort}&limit=${pageSize}
+        in: render
+        line: 20
+    store:
+      reads:
+        - via: useToast
+          kind: context
+          store: ToastContext
+          storeId: context:ToastContext
+      writes:
+        - via: dispatch
+          kind: redux
+          action: addItem
+          in: handler handleAdd
+          line: 34
+          storeId: redux:cart
+    styles:
+      classes:
+        - name: error
+          at: app/globals.css:34
+        - name: grid
+          at: app/globals.css:6
+    renders:
+      - Spinner
+      - ProductCard
+    passes:
+      Spinner:
+        - name: label
+          value: '"Loading products"'
+          line: 38
+      ProductCard:
+        - name: key
+          value: p.id
+          line: 42
+        - name: product
+          value: p
+          line: 42
+        - name: onAdd
+          value: handleAdd
+          line: 42
+        - name: highlight
+          value: "p.rating && p.rating > 4.5 ? 'Top rated' : undefi…"
+          line: 42
+    usedBy:
+      - ProductsPage
+      - FeaturedCollections
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /
+      - /products
+    rendering: client
+  ProductInfo:
+    name: ProductInfo
+    file: src/features/products/ProductInfo.tsx
+    line: 7
+    kind: function
+    export: named
+    description: Title, price, stock and the add-to-cart controls.
+    props:
+      product:
+        type: Product
+        required: true
+      showSku:
+        type: boolean
+        required: false
+        default: "false"
+    variables:
+      - name: inStock
+        kind: const
+        value: product.stock > 0
+        line: 8
+        used: true
+    styles:
+      classes:
+        - name: product-info
+        - name: price
+    issues:
+      - type: unused-prop
+        severity: low
+        message: prop `showSku` is destructured but never used
+        line: 7
+        fix: remove it from the props or use it
+    renders:
+      - Badge
+      - AddToCartButton
+    passes:
+      Badge:
+        - name: tone
+          value: "inStock ? 'success' : 'danger'"
+          line: 13
+      AddToCartButton:
+        - name: product
+          value: product
+          line: 14
+        - name: maxQuantity
+          value: Math.min(product.stock, 10)
+          line: 14
+    usedBy:
+      - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products/[id]
+    rendering: server
+  ProductsPage:
+    name: ProductsPage
+    file: app/products/page.tsx
+    line: 7
+    kind: function
+    export: default
+    description: Catalogue listing with sidebar filters. Filters and grid are siblings.
+    props:
+      searchParams:
+        type: "Promise<{ category?: string; sort?: 'price' | 'rating' | 'newest' }>"
+        required: true
+    variables:
+      - name: category
+        kind: const
+        value: from await searchParams
+        line: 8
+        used: true
+      - name: sort
+        kind: const
+        value: from await searchParams
+        line: 8
+        used: true
+    styles:
+      classes:
+        - name: flex
+        - name: gap-8
+    renders:
+      - Filters
+      - ProductGrid
+    passes:
+      Filters:
+        - name: categories
+          value: CATEGORIES
+          line: 11
+      ProductGrid:
+        - name: category
+          value: category
+          line: 12
+        - name: sort
+          value: sort
+          line: 12
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products
+    rendering: server
+  ProfileForm:
+    name: ProfileForm
+    file: src/features/account/ProfileForm.tsx
+    line: 10
+    kind: function
+    export: named
+    description: Edit name/email with native HTML validation.
+    state:
+      name:
+        source: useState
+        initial: profile?.name ?? ''
+        setter: setName
+      email:
+        source: useState
+        initial: profile?.email ?? ''
+        setter: setEmail
+      lastSaved:
+        source: useState
+        initial: "null"
+        setter: setLastSaved
+        type: string | null
+      saving:
+        source: useState
+        initial: "false"
+        setter: setSaving
+    hooks:
+      - name: useSelector
+        category: data
+      - name: useState
+        category: state
+        count: 4
+      - name: useToast
+        category: custom
+      - name: useAppSelector
+        category: custom
+    functions:
+      - name: handleSubmit
+        line: 20
+        kind: handler
+        async: true
+        params: "e: React.FormEvent<HTMLFormEl…"
+        calls:
+          - e.preventDefault
+          - setSaving
+          - http.patch
+          - notify
+        sets:
+          - saving
+        used: true
+    apiCalls:
+      - via: http.patch
+        method: PATCH
+        target: /me
+        in: handler handleSubmit
+        line: 24
+    store:
+      reads:
+        - via: useSelector
+          kind: redux
+          path: user.profile
+          line: 11
+          storeId: redux:user
+        - via: useAppSelector
+          kind: redux
+          path: user.wishlist
+          line: 18
+          storeId: redux:user
+        - via: useToast
+          kind: context
+          store: ToastContext
+          storeId: context:ToastContext
+      writes: []
+    validation:
+      - via: html
+        field: Name
+        rules:
+          - required
+          - minLength
+          - maxLength
+        line: 33
+      - via: html
+        field: Email
+        rules:
+          - required
+          - type=email
+        line: 34
+    styles:
+      classes:
+        - name: hint
+    issues:
+      - type: state-never-updated
+        severity: info
+        message: "`setLastSaved` is never called, so this state never changes"
+        line: 15
+        fix: replace the state with a constant
+      - type: unused-variable
+        severity: low
+        message: "`wishlistCount` (from useAppSelector) is never used"
+        line: 18
+    renders:
+      - Input
+      - Button
+    passes:
+      Input:
+        - name: label
+          value: '"Name"'
+          line: 33
+        - name: required
+          value: "true"
+          line: 33
+        - name: minLength
+          value: "2"
+          line: 33
+        - name: maxLength
+          value: "80"
+          line: 33
+        - name: value
+          value: name
+          line: 33
+        - name: onChange
+          value: (e) => setName(e.target.value)
+          line: 33
+        - name: label
+          value: '"Email"'
+          line: 34
+        - name: type
+          value: '"email"'
+          line: 34
+        - name: required
+          value: "true"
+          line: 34
+        - name: value
+          value: email
+          line: 34
+        - name: onChange
+          value: (e) => setEmail(e.target.value)
+          line: 34
+      Button:
+        - name: type
+          value: '"submit"'
+          line: 36
+        - name: loading
+          value: saving
+          line: 36
+    usedBy:
+      - AccountPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account
+    rendering: client
+  ProtectedRoute:
+    name: ProtectedRoute
+    file: src/features/auth/ProtectedRoute.tsx
+    line: 8
+    kind: function
+    export: named
+    description: Redirects to the login page when there is no session; optionally requires a role.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+      role:
+        type: "'admin' | 'customer'"
+        required: false
+    hooks:
+      - name: useAuth
+        category: custom
+      - name: useRouter
+        category: router
+      - name: usePathname
+        category: router
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - loading
+          - allowed
+          - router
+          - pathname
+        calls:
+          - router.replace
+          - encodeURIComponent
+        line: 14
+    variables:
+      - name: allowed
+        kind: const
+        value: "!!user && (!role || user.role === role)"
+        line: 12
+        used: true
+    store:
+      reads:
+        - via: useAuth
+          kind: context
+          store: AuthContext
+          storeId: context:AuthContext
+      writes: []
+    renders:
+      - Spinner
+    passes:
+      Spinner:
+        - name: label
+          value: '"Checking session"'
+          line: 18
+    usedBy:
+      - AccountLayout
+      - AdminLayout
+      - CheckoutPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /checkout
+    rendering: client
+  RecentOrders:
+    name: RecentOrders
+    file: src/features/admin/RecentOrders.tsx
+    line: 16
+    kind: function
+    export: named
+    description: Latest orders table on the dashboard; also reused by the orders page.
+    props:
+      limit:
+        type: number
+        required: false
+        default: "10"
+      onSelect:
+        type: "(order: Order) => void"
+        required: false
+    state:
+      orders:
+        source: useState
+        initial: "[]"
+        setter: setOrders
+        type: Order[]
+      loading:
+        source: useState
+        initial: "true"
+        setter: setLoading
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - limit
+        calls:
+          - http.get
+          - setOrders
+          - setLoading
+        cleanup:
+          - controller.abort
+        line: 20
+    apiCalls:
+      - via: http.get
+        method: GET
+        target: /orders
+        in: useEffect L20
+        line: 22
+    renders:
+      - DataTable
+    passes:
+      DataTable:
+        - name: rows
+          value: orders
+          line: 29
+        - name: columns
+          value: COLUMNS
+          line: 29
+        - name: loading
+          value: loading
+          line: 29
+        - name: onRowClick
+          value: onSelect
+          line: 29
+        - name: emptyText
+          value: '"No orders yet"'
+          line: 29
+    usedBy:
+      - AdminOrdersPage
+      - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin/orders
+      - /admin
+    rendering: client
+  RelatedProducts:
+    name: RelatedProducts
+    file: src/features/products/RelatedProducts.tsx
+    line: 8
+    kind: function
+    export: named
+    description: '"You may also like" strip.'
+    props:
+      category:
+        type: string
+        required: true
+      excludeId:
+        type: string
+        required: true
+      limit:
+        type: number
+        required: false
+        default: "4"
+    state:
+      items:
+        source: useState
+        initial: "[]"
+        setter: setItems
+        type: Product[]
+    hooks:
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - category
+          - limit
+        calls:
+          - getProducts
+          - setItems
+        cleanup: []
+        line: 11
+    apiCalls:
+      - via: service
+        method: CALL
+        target: getProducts()
+        module: "@/lib/api"
+        in: useEffect L11
+        line: 13
+    styles:
+      classes:
+        - name: related
+        - name: grid
+          at: app/globals.css:6
+        - name: grid-cols-4
+        - name: gap-4
+    issues:
+      - type: missing-dependency
+        severity: low
+        message: "useEffect L11 reads excludeId but its dependency array is [category, limit]: stale values possible"
+        line: 11
+        fix: add excludeId to the dependency array
+    renders:
+      - ProductCard
+    passes:
+      ProductCard:
+        - name: key
+          value: p.id
+          line: 22
+        - name: product
+          value: p
+          line: 22
+        - name: compact
+          value: "true"
+          line: 22
+    usedBy:
+      - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products/[id]
+    rendering: client
+  Reviews:
+    name: Reviews
+    file: src/features/products/Reviews.tsx
+    line: 8
+    kind: function
+    export: default
+    description: Customer reviews, loaded lazily below the fold.
+    props:
+      productId:
+        type: string
+        required: true
+    state:
+      reviews:
+        source: useState
+        initial: "null"
+        setter: setReviews
+        type: Review[] | null
+      expanded:
+        source: useState
+        initial: "false"
+        setter: setExpanded
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - productId
+        calls:
+          - fetch
+          - setReviews
+        line: 12
+    variables:
+      - name: visible
+        kind: const
+        value: "expanded ? reviews : reviews.slice(0, 3)"
+        line: 20
+        used: true
+    apiCalls:
+      - via: fetch
+        method: GET
+        target: /api/products/${productId}/reviews
+        in: useEffect L12
+        line: 14
+    styles:
+      classes:
+        - name: reviews
+    issues:
+      - type: unsafe-async-update
+        severity: medium
+        message: useEffect L12 sets state (setReviews) after async work with no cleanup; it can run after unmount or out of order
+        line: 12
+        fix: use an AbortController or an `ignore` flag set in the cleanup
+    renders:
+      - Spinner
+    passes:
+      Spinner:
+        - name: label
+          value: '"Loading reviews"'
+          line: 19
+    usedBy:
+      - ProductDetailPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /products/[id]
+    rendering: client
+  RootLayout:
+    name: RootLayout
+    file: app/layout.tsx
+    line: 19
+    kind: function
+    export: default
+    description: "App shell: Redux store, auth, theme and toasts wrap every page."
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    styles:
+      classes:
+        - name: container
+        - name: mx-auto
+        - name: px-4
+      sheets:
+        - app/globals.css
+    renders:
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+    passes:
+      Footer:
+        - name: links
+          value: FOOTER_LINKS
+          line: 29
+        - name: year
+          value: new Date().getFullYear()
+          line: 29
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: server
+  SalesChart:
+    name: SalesChart
+    file: src/features/admin/SalesChart.tsx
+    line: 8
+    kind: class
+    export: named
+    description: Canvas revenue chart. Class component with the full lifecycle for imperative drawing.
+    props:
+      data:
+        type: Point[]
+        required: true
+      width:
+        type: number
+        required: true
+      height:
+        type: number
+        required: false
+        default: "240"
+      currency:
+        type: string
+        required: false
+        default: "'USD'"
+    state:
+      max:
+        source: class
+        initial: "0"
+        setter: this.setState
+        type: number
+      hovered:
+        source: class
+        initial: "null"
+        setter: this.setState
+        type: number | null
+      prevData:
+        source: class
+        initial: "[]"
+        setter: this.setState
+        type: Point[]
+    refs:
+      - canvasRef
+    lifecycle:
+      - via: constructor
+        phases:
+          - mount
+        calls:
+          - this.handleMove.bind
+        line: 13
+      - via: getDerivedStateFromProps
+        phases:
+          - mount
+          - update
+        calls:
+          - Math.max
+        line: 19
+      - via: componentDidMount
+        phases:
+          - mount
+        calls:
+          - this.draw
+        line: 24
+      - via: shouldComponentUpdate
+        phases:
+          - update
+        line: 29
+      - via: getSnapshotBeforeUpdate
+        phases:
+          - update
+        line: 33
+      - via: componentDidUpdate
+        phases:
+          - update
+        calls:
+          - console.debug
+          - cancelAnimationFrame
+          - requestAnimationFrame
+          - this.draw
+        line: 37
+      - via: componentWillUnmount
+        phases:
+          - unmount
+        calls:
+          - cancelAnimationFrame
+        line: 43
+    variables:
+      - name: canvasRef
+        kind: field
+        value: React.createRef<HTMLCanvasElement>()
+        line: 10
+        used: true
+      - name: frame
+        kind: field
+        value: "0"
+        line: 11
+        used: true
+    functions:
+      - name: handleMove
+        line: 48
+        kind: handler
+        async: false
+        params: "e: MouseEvent"
+        calls:
+          - Math.floor
+          - this.setState
+        used: true
+      - name: draw
+        line: 53
+        kind: method
+        async: false
+        params: ""
+        calls:
+          - ctx.clearRect
+          - ctx.fillRect
+        used: true
+    timers:
+      - type: animation-frame
+        call: requestAnimationFrame
+        in: componentDidUpdate
+        line: 40
+        cleared: true
+    styles:
+      classes:
+        - name: chart
+    usedBy:
+      - SalesPanel
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin
+    rendering: client
+  SalesPanel:
+    name: SalesPanel
+    file: src/features/admin/SalesPanel.tsx
+    line: 8
+    kind: function
+    export: named
+    description: Sizes the chart to the window and loads the revenue series.
+    props:
+      range:
+        type: "'7d' | '30d' | '90d'"
+        required: false
+        default: "'30d'"
+    state:
+      width:
+        source: useState
+        initial: "800"
+        setter: setWidth
+    hooks:
+      - name: useSWR
+        category: data
+      - name: useState
+        category: state
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+        deps: []
+        calls:
+          - window.addEventListener
+          - setWidth
+          - Math.min
+        line: 12
+    timers:
+      - type: listener
+        call: window.addEventListener
+        event: resize
+        in: useEffect L12
+        line: 14
+        cleared: false
+    apiCalls:
+      - via: useSWR
+        method: GET
+        target: /api/admin/sales?range=${range}
+        in: render
+        line: 9
+    issues:
+      - type: memory-leak
+        severity: high
+        message: window.addEventListener('resize') started in useEffect L12 without cleanup
+        line: 14
+        fix: return () => target.removeEventListener(sameEvent, sameHandler) from the effect
+    renders:
+      - SalesChart
+    passes:
+      SalesChart:
+        - name: data
+          value: data
+          line: 17
+        - name: width
+          value: width
+          line: 17
+    usedBy:
+      - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin
+    rendering: client
+  SearchBar:
+    name: SearchBar
+    file: src/features/search/SearchBar.tsx
+    line: 16
+    kind: function
+    export: named
+    description: Debounced search input with recent-term suggestions.
+    props:
+      placeholder:
+        type: string
+        required: false
+        default: "'Search'"
+      onSearch:
+        type: "(term: string) => void"
+        required: false
+        description: Navigate to /search on submit (header) or only report the term (search page)
+      autoFocus:
+        type: boolean
+        required: false
+        default: "false"
+    state:
+      term:
+        source: useState
+        initial: "''"
+        setter: setTerm
+      open:
+        source: useState
+        initial: "false"
+        setter: setOpen
+    refs:
+      - inputRef
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useDebounce
+        category: custom
+      - name: useSearchStore
+        category: custom
+        count: 2
+      - name: useRef
+        category: ref
+      - name: useRouter
+        category: router
+      - name: useEffect
+        category: effect
+        count: 2
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - autoFocus
+        line: 25
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - debounced
+          - onSearch
+        line: 29
+    functions:
+      - name: handleSubmit
+        line: 33
+        kind: handler
+        async: false
+        params: "e: React.FormEvent"
+        calls:
+          - e.preventDefault
+          - term.trim
+          - addRecent
+          - trackEvent
+          - onSearch
+          - encodeURIComponent
+        used: true
+    timers:
+      - type: timeout
+        call: setTimeout
+        in: inline callback
+        line: 44
+        cleared: null
+    apiCalls:
+      - via: service
+        method: CALL
+        target: trackEvent()
+        module: "@/lib/api"
+        in: handler handleSubmit
+        line: 37
+    store:
+      reads:
+        - via: useSearchStore
+          kind: zustand
+          store: useSearchStore
+          path: recent
+          line: 20
+          storeId: zustand:useSearchStore
+        - via: useSearchStore
+          kind: zustand
+          store: useSearchStore
+          path: addRecent
+          line: 21
+          storeId: zustand:useSearchStore
+      writes: []
+    validation:
+      - via: html
+        field: input
+        rules:
+          - required
+          - minLength
+        line: 44
+    styles:
+      classes:
+        - name: search-bar
+        - name: relative
+        - name: suggestions
+        - name: absolute
+    issues:
+      - type: a11y-field-label
+        severity: medium
+        message: <input> has no label (no aria-label, and no id for a <label for>)
+        line: 44
+        fix: wrap it in <label>, link one with id/for, or add aria-label
+    usedBy:
+      - SearchPage
+      - Header
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  SearchPage:
+    name: SearchPage
+    file: app/search/page.tsx
+    line: 8
+    kind: function
+    export: default
+    description: "Live search: SearchBar reports debounced terms, SearchResults fetches them."
+    state:
+      term:
+        source: useState
+        initial: initial
+        setter: setTerm
+    hooks:
+      - name: useSearchParams
+        category: router
+      - name: useState
+        category: state
+    variables:
+      - name: initial
+        kind: const
+        value: useSearchParams().get('q') ?? ''
+        line: 9
+        used: true
+    renders:
+      - SearchBar
+      - SearchResults
+    passes:
+      SearchBar:
+        - name: placeholder
+          value: '"What are you looking for?"'
+          line: 13
+        - name: onSearch
+          value: setTerm
+          line: 13
+        - name: autoFocus
+          value: "true"
+          line: 13
+      SearchResults:
+        - name: term
+          value: term
+          line: 14
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /search
+    rendering: client
+  SearchResults:
+    name: SearchResults
+    file: src/features/search/SearchResults.tsx
+    line: 9
+    kind: function
+    export: named
+    description: Results list for a search term; re-fetches as the term changes.
+    props:
+      term:
+        type: string
+        required: true
+      limit:
+        type: number
+        required: false
+        default: "30"
+    hooks:
+      - name: useSWR
+        category: data
+    variables:
+      - name: count
+        kind: const
+        value: data?.length ?? 0
+        line: 11
+        used: true
+    apiCalls:
+      - via: useSWR
+        method: GET
+        target: "term ? `/api/search?q=${encodeURIComponent(term)}&limit=${limit}` : null"
+        in: render
+        line: 10
+    styles:
+      classes:
+        - name: hint
+        - name: grid
+          at: app/globals.css:6
+    renders:
+      - Spinner
+      - ProductCard
+    passes:
+      Spinner:
+        - name: label
+          value: '"Searching"'
+          line: 14
+      ProductCard:
+        - name: key
+          value: p.id
+          line: 18
+        - name: product
+          value: p
+          line: 18
+        - name: compact
+          value: "true"
+          line: 18
+    usedBy:
+      - SearchPage
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /search
+    rendering: client
+  Spinner:
+    name: Spinner
+    file: src/components/ui/Spinner.tsx
+    line: 2
+    kind: function
+    export: named
+    description: Inline loading indicator.
+    props:
+      size:
+        type: number
+        required: false
+        default: "16"
+      label:
+        type: string
+        required: false
+        default: "'Loading'"
+    styles:
+      classes:
+        - name: spinner
+          at: app/globals.css:30
+    usedBy:
+      - Button
+      - DataTable
+      - OrderTimeline
+      - ProductEditor
+      - ProtectedRoute
+      - ProductGrid
+      - Reviews
+      - SearchResults
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  StatCard:
+    name: StatCard
+    file: src/features/admin/StatCard.tsx
+    line: 5
+    kind: function
+    export: named
+    description: "Dashboard KPI tile: design-system Card shell around the admin metric card."
+    props:
+      title:
+        type: string
+        required: true
+      metrics:
+        type: "{ label: string; value: string; delta?: number }[]"
+        required: true
+    styles:
+      classes:
+        - name: grid
+          at: app/globals.css:6
+        - name: grid-cols-3
+        - name: gap-2
+    renders:
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Card@src/features/admin/Card.tsx
+    passes:
+      Card@src/components/ui/Card.tsx:
+        - name: elevated
+          value: "true"
+          line: 7
+      CardHeader:
+        - name: title
+          value: title
+          line: 8
+      Card@src/features/admin/Card.tsx:
+        - name: key
+          value: m.label
+          line: 10
+        - name: ...m
+          value: spread
+          line: 10
+    usedBy:
+      - AdminDashboard
+    codeowners:
+      - "@northwind/back-office"
+      - "@ana"
+    pages:
+      - /admin
+    rendering: server
+  StepIndicator:
+    name: StepIndicator
+    file: src/features/checkout/StepIndicator.tsx
+    line: 6
+    kind: function
+    export: named
+    description: '"1 — 2 — 3" progress header for the checkout wizard.'
+    props:
+      current:
+        type: number
+        required: true
+      completed:
+        type: number[]
+        required: true
+    styles:
+      classes:
+        - name: steps
+        - name: flex
+        - name: gap-4
+        - name: step
+        - name: active
+        - name: done
+    usedBy:
+      - CheckoutWizard
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout
+    rendering: client
+  StoreProvider:
+    name: StoreProvider
+    file: src/store/StoreProvider.tsx
+    line: 7
+    kind: function
+    export: named
+    description: Creates the Redux store once per request/tab and provides it to client components.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    refs:
+      - storeRef
+    hooks:
+      - name: useRef
+        category: ref
+    externals:
+      - react-redux#Provider
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  SuccessPage:
+    name: SuccessPage
+    file: app/checkout/success/page.tsx
+    line: 7
+    kind: function
+    export: default
+    hooks:
+      - name: useSearchParams
+        category: router
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - orderId
+        calls:
+          - trackEvent
+        line: 9
+    variables:
+      - name: orderId
+        kind: const
+        value: useSearchParams().get('order')
+        line: 8
+        used: true
+    apiCalls:
+      - via: service
+        method: CALL
+        target: trackEvent()
+        module: "@/lib/api"
+        in: useEffect L9
+        line: 10
+    styles:
+      classes:
+        - name: text-center
+        - name: py-20
+    externals:
+      - next/link#Link
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /checkout/success
+    rendering: client
+  TabsList:
+    name: TabsList
+    file: src/components/ui/Tabs.tsx
+    line: 16
+    kind: function
+    export: none
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    usedBy:
+      - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /
+    rendering: client
+  TabsPanel:
+    name: TabsPanel
+    file: src/components/ui/Tabs.tsx
+    line: 25
+    kind: function
+    export: none
+    props:
+      value:
+        type: string
+        required: true
+      children:
+        type: React.ReactNode
+        required: true
+    hooks:
+      - name: useTabs
+        category: custom
+    store:
+      reads:
+        - via: useTabs
+          kind: context
+          store: TabsContext
+          storeId: context:TabsContext
+      writes: []
+    usedBy:
+      - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /
+    rendering: client
+  TabsRoot:
+    name: TabsRoot
+    file: src/components/ui/Tabs.tsx
+    line: 11
+    kind: function
+    export: named
+    props:
+      defaultValue:
+        type: string
+        required: true
+      children:
+        type: React.ReactNode
+        required: true
+    state:
+      active:
+        source: useState
+        initial: defaultValue
+        setter: setActive
+    hooks:
+      - name: useState
+        category: state
+    styles:
+      classes:
+        - name: tabs
+    usedBy:
+      - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /
+    rendering: client
+  TabsTrigger:
+    name: TabsTrigger
+    file: src/components/ui/Tabs.tsx
+    line: 20
+    kind: function
+    export: none
+    props:
+      value:
+        type: string
+        required: true
+      children:
+        type: React.ReactNode
+        required: true
+    hooks:
+      - name: useTabs
+        category: custom
+    store:
+      reads:
+        - via: useTabs
+          kind: context
+          store: TabsContext
+          storeId: context:TabsContext
+      writes: []
+    usedBy:
+      - FeaturedCollections
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /
+    rendering: client
+  ThemeProvider:
+    name: ThemeProvider
+    file: src/features/theme/ThemeContext.tsx
+    line: 8
+    kind: function
+    export: named
+    description: Follows the OS colour scheme until the user picks one.
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    state:
+      theme:
+        source: useState
+        initial: "'light'"
+        setter: setTheme
+        type: Theme
+      userChoice:
+        source: useState
+        initial: "null"
+        setter: setUserChoice
+        type: Theme | null
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useEffect
+        category: effect
+      - name: useLayoutEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - userChoice
+        calls:
+          - window.matchMedia
+          - setTheme
+          - onChange
+          - media.addEventListener
+        cleanup:
+          - media.removeEventListener
+        line: 12
+      - via: useLayoutEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - theme
+        line: 20
+    functions:
+      - name: toggleTheme
+        line: 24
+        kind: helper
+        async: false
+        params: ""
+        calls:
+          - setUserChoice
+          - setTheme
+        sets:
+          - userChoice
+          - theme
+        used: true
+    timers:
+      - type: listener
+        call: media.addEventListener
+        event: change
+        in: useEffect L12
+        line: 16
+        cleared: true
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  ToastItem:
+    name: ToastItem
+    file: src/features/toast/ToastViewport.tsx
+    line: 6
+    kind: function
+    export: none
+    props:
+      toast:
+        type: Toast
+        required: true
+      onDismiss:
+        type: "(id: number) => void"
+        required: true
+    hooks:
+      - name: useEffect
+        category: effect
+    lifecycle:
+      - via: useEffect
+        phases:
+          - mount
+          - update
+          - unmount
+        deps:
+          - toast.id
+          - onDismiss
+        calls:
+          - setTimeout
+          - onDismiss
+        cleanup:
+          - clearTimeout
+        line: 8
+    timers:
+      - type: timeout
+        call: setTimeout
+        in: useEffect L8
+        line: 9
+        cleared: true
+    styles:
+      classes:
+        - name: toast
+          at: app/globals.css:36
+        - name: toast-
+    renders:
+      - Badge
+    passes:
+      Badge:
+        - name: tone
+          value: "toast.tone === 'error' ? 'danger' : 'success'"
+          line: 15
+    usedBy:
+      - ToastViewport
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  ToastProvider:
+    name: ToastProvider
+    file: src/features/toast/ToastContext.tsx
+    line: 19
+    kind: function
+    export: named
+    description: Global notification queue (max 5 visible).
+    props:
+      children:
+        type: React.ReactNode
+        required: true
+    state:
+      toasts:
+        source: useReducer
+        initial: "[]"
+        setter: dispatch
+        reducer: toastReducer
+    hooks:
+      - name: useReducer
+        category: state
+      - name: useCallback
+        category: memo
+        count: 2
+    functions:
+      - name: notify
+        line: 21
+        kind: helper
+        async: false
+        params: "message: string, tone: Toast['tone'] = 'info'"
+        calls:
+          - dispatch
+          - Date.now
+        sets:
+          - toasts
+        used: true
+        memoized: true
+      - name: dismiss
+        line: 22
+        kind: helper
+        async: false
+        params: "id: number"
+        calls:
+          - dispatch
+        sets:
+          - toasts
+        used: true
+        memoized: true
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  ToastViewport:
+    name: ToastViewport
+    file: src/features/toast/ToastViewport.tsx
+    line: 23
+    kind: function
+    export: named
+    description: Renders queued toasts in the corner of the screen.
+    hooks:
+      - name: useToast
+        category: custom
+    store:
+      reads:
+        - via: useToast
+          kind: context
+          store: ToastContext
+          storeId: context:ToastContext
+      writes: []
+    styles:
+      classes:
+        - name: toast-viewport
+        - name: fixed
+        - name: bottom-4
+        - name: right-4
+        - name: z-50
+    renders:
+      - ToastItem
+    passes:
+      ToastItem:
+        - name: key
+          value: t.id
+          line: 25
+        - name: toast
+          value: t
+          line: 25
+        - name: onDismiss
+          value: dismiss
+          line: 25
+    usedBy:
+      - RootLayout
+    codeowners:
+      - "@northwind/web"
+    pages:
+      - /account/orders/[orderId]
+      - /account
+      - /admin/orders
+      - /admin
+      - /admin/products/[...slug]
+      - /blog/[[...slug]]
+      - /cart
+      - /checkout
+      - /checkout/success
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+  Tooltip:
+    name: Tooltip
+    file: src/components/ui/Tooltip.tsx
+    line: 4
+    kind: function
+    export: named
+    props:
+      text:
+        type: string
+        required: true
+      children:
+        type: React.ReactElement
+        required: true
+    state:
+      visible:
+        source: useState
+        initial: "false"
+        setter: setVisible
+      position:
+        source: useState
+        initial: "{ top: 0, left: 0 }"
+        setter: setPosition
+        type: "{ top: number; left: number }"
+    refs:
+      - anchorRef
+    hooks:
+      - name: useState
+        category: state
+        count: 2
+      - name: useRef
+        category: ref
+      - name: useLayoutEffect
+        category: effect
+    lifecycle:
+      - via: useLayoutEffect
+        phases:
+          - mount
+          - update
+        deps:
+          - visible
+        calls:
+          - anchorRef.current.getBoundingClientRect
+          - setPosition
+        line: 10
+    usedBy:
+      - ProductCard
+    codeowners:
+      - "@northwind/design-system"
+    pages:
+      - /
+      - /products/[id]
+      - /products
+      - /search
+    rendering: client
+pages:
+  /:
+    router: next-app
+    file: app/page.tsx
+    component: HomePage
+    layouts:
+      - RootLayout
+    metadata: static
+    components:
+      - RootLayout
+      - HomePage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - HeroBanner
+      - FeaturedCollections
+      - NewsletterForm
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - TabsRoot
+      - TabsList
+      - TabsTrigger
+      - TabsPanel
+      - ProductGrid
+      - Spinner
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - ProductCard
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Input
+      - Tooltip
+  /account:
+    router: next-app
+    file: app/(account)/account/page.tsx
+    component: AccountPage
+    layouts:
+      - RootLayout
+      - AccountLayout
+    components:
+      - RootLayout
+      - AccountLayout
+      - AccountPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProtectedRoute
+      - AccountNav
+      - ProfileForm
+      - LoginForm
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - Input
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+  /account/orders/[orderId]:
+    router: next-app
+    file: app/(account)/account/orders/[orderId]/page.tsx
+    component: OrderDetailPage
+    params:
+      - orderId
+    layouts:
+      - RootLayout
+      - AccountLayout
+    components:
+      - RootLayout
+      - AccountLayout
+      - OrderDetailPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProtectedRoute
+      - AccountNav
+      - OrderTimeline
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - Badge
+      - CardBody
+      - CartItem
+      - Modal
+      - OrderSummary
+      - Input
+  /admin:
+    router: next-app
+    file: app/(admin)/admin/page.tsx
+    component: AdminDashboard
+    layouts:
+      - RootLayout
+      - AdminLayout
+    components:
+      - RootLayout
+      - AdminLayout
+      - AdminDashboard
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProtectedRoute
+      - AdminSidebar
+      - ErrorBoundary
+      - StatCard
+      - LiveVisitors
+      - SalesPanel
+      - RecentOrders
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Card@src/features/admin/Card.tsx
+      - SalesChart
+      - DataTable
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Input
+  /admin/orders:
+    router: next-app
+    file: app/(admin)/admin/orders/page.tsx
+    component: AdminOrdersPage
+    layouts:
+      - RootLayout
+      - AdminLayout
+    components:
+      - RootLayout
+      - AdminLayout
+      - AdminOrdersPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProtectedRoute
+      - AdminSidebar
+      - ErrorBoundary
+      - RecentOrders
+      - OrderEditor
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - DataTable
+      - Modal
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - Badge
+      - CardBody
+      - CartItem
+      - OrderSummary
+      - Input
+  /admin/products/[...slug]:
+    router: next-app
+    file: app/(admin)/admin/products/[...slug]/page.tsx
+    component: AdminProductPage
+    params:
+      - slug
+    layouts:
+      - RootLayout
+      - AdminLayout
+    components:
+      - RootLayout
+      - AdminLayout
+      - AdminProductPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProtectedRoute
+      - AdminSidebar
+      - ErrorBoundary
+      - ProductEditor
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - Input
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+  /blog/[[...slug]]:
+    router: next-app
+    file: app/blog/[[...slug]]/page.tsx
+    component: BlogPage
+    params:
+      - slug
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - BlogPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - LegacyButton
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Input
+  /cart:
+    router: next-app
+    file: app/cart/page.tsx
+    component: CartPage
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - CartPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - CartItem
+      - OrderSummary
+      - Button
+      - SearchBar
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Input
+      - Spinner
+      - Modal
+      - Badge
+  /checkout:
+    router: next-app
+    file: app/checkout/page.tsx
+    component: CheckoutPage
+    layouts:
+      - RootLayout
+      - CheckoutLayout
+    components:
+      - RootLayout
+      - CheckoutLayout
+      - CheckoutPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProtectedRoute
+      - CheckoutWizard
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - StepIndicator
+      - AddressStep
+      - PaymentForm
+      - CartItem
+      - OrderSummary
+      - Modal
+      - Badge
+      - AddressForm
+      - Input
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+  /checkout/success:
+    router: next-app
+    file: app/checkout/success/page.tsx
+    component: SuccessPage
+    layouts:
+      - RootLayout
+      - CheckoutLayout
+    components:
+      - RootLayout
+      - CheckoutLayout
+      - SuccessPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Card@src/components/ui/Card.tsx
+      - CardHeader
+      - CardBody
+      - Input
+  /products:
+    router: next-app
+    file: app/products/page.tsx
+    component: ProductsPage
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - ProductsPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - Filters
+      - ProductGrid
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Input
+      - Spinner
+      - ProductCard
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Card@src/components/ui/Card.tsx
+      - Tooltip
+      - CardHeader
+      - CardBody
+  /products/[id]:
+    router: next-app
+    file: app/products/[id]/page.tsx
+    component: ProductDetailPage
+    params:
+      - id
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - ProductDetailPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - ProductGallery
+      - ProductInfo
+      - Reviews
+      - RelatedProducts
+      - SearchBar
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Badge
+      - AddToCartButton
+      - Spinner
+      - ProductCard
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Input
+      - Card@src/components/ui/Card.tsx
+      - Tooltip
+      - CardHeader
+      - CardBody
+  /search:
+    router: next-app
+    file: app/search/page.tsx
+    component: SearchPage
+    layouts:
+      - RootLayout
+    components:
+      - RootLayout
+      - SearchPage
+      - StoreProvider
+      - AuthProvider
+      - ThemeProvider
+      - ToastProvider
+      - Header
+      - Footer
+      - ToastViewport
+      - SearchBar
+      - SearchResults
+      - Button
+      - CartBadge
+      - CartDrawer
+      - ToastItem
+      - Spinner
+      - ProductCard
+      - Modal
+      - CartItem
+      - OrderSummary
+      - Badge
+      - Card@src/components/ui/Card.tsx
+      - Tooltip
+      - CardHeader
+      - CardBody
+      - Input
+endpoints:
+  /api/orders:
+    kind: route-handler
+    file: app/api/orders/route.ts
+    methods:
+      - GET
+      - POST
+  action:subscribe:
+    kind: server-action
+    file: src/features/newsletter/actions.ts
+    importedBy:
+      - src/features/newsletter/NewsletterForm.tsx
+  middleware:
+    kind: middleware
+    file: src/middleware.ts
+stores:
+  context:AuthContext:
+    kind: context
+    name: AuthContext
+    file: src/features/auth/AuthContext.tsx
+    line: 15
+    default: "null"
+    readers:
+      - AccountPage
+      - CheckoutPage
+      - Header
+      - AdminSidebar
+      - LoginForm
+      - ProtectedRoute
+    writers: []
+    providers:
+      - AuthProvider
+  context:TabsContext:
+    kind: context
+    name: TabsContext
+    file: src/components/ui/Tabs.tsx
+    line: 4
+    default: "null"
+    readers:
+      - TabsTrigger
+      - TabsPanel
+    writers: []
+    providers:
+      - TabsRoot
+  context:ThemeContext:
+    kind: context
+    name: ThemeContext
+    file: src/features/theme/ThemeContext.tsx
+    line: 5
+    default: "{ theme: 'light', toggleTheme: () => {} }"
+    readers:
+      - Header
+    writers: []
+    providers:
+      - ThemeProvider
+  context:ToastContext:
+    kind: context
+    name: ToastContext
+    file: src/features/toast/ToastContext.tsx
+    line: 16
+    default: "null"
+    readers:
+      - ProfileForm
+      - OrderEditor
+      - CheckoutWizard
+      - AddToCartButton
+      - ProductGrid
+      - ToastViewport
+    writers: []
+    providers:
+      - ToastProvider
+  redux:cart:
+    kind: redux-slice
+    name: cart
+    file: src/store/cartSlice.ts
+    line: 19
+    key: cart
+    state:
+      - items
+      - coupon
+      - status
+    actions:
+      - addItem
+      - removeItem
+      - updateQuantity
+      - applyCoupon
+      - clearCart
+    thunks:
+      - checkout
+    readers:
+      - CartPage
+      - CartBadge
+      - CartDrawer
+      - CheckoutWizard
+      - AddToCartButton
+    writers:
+      - CartPage
+      - CartBadge
+      - CartItem
+      - OrderSummary
+      - CheckoutWizard
+      - AddToCartButton
+      - ProductGrid
+  redux:ui:
+    kind: redux-slice
+    name: ui
+    file: src/store/uiSlice.ts
+    line: 3
+    key: ui
+    state:
+      - drawerOpen
+      - theme
+    actions:
+      - toggleDrawer
+      - setTheme
+    readers:
+      - CartDrawer
+    writers:
+      - Header
+      - CartDrawer
+  redux:user:
+    kind: redux-slice
+    name: user
+    file: src/store/userSlice.ts
+    line: 4
+    key: user
+    state:
+      - profile
+      - wishlist
+    actions:
+      - setProfile
+      - toggleWishlist
+    readers:
+      - ProfileForm
+    writers:
+      - AuthProvider
+  zustand:useSearchStore:
+    kind: zustand
+    name: useSearchStore
+    file: src/features/search/useSearchStore.ts
+    line: 10
+    state:
+      - recent
+    actions:
+      - addRecent
+      - clearRecent
+    readers:
+      - SearchBar
+    writers:
+      - SearchBar
+styles:
+  app/globals.css:
+    module: false
+    classes: 28
+    importedBy:
+      - app/layout.tsx
+  src/features/checkout/Checkout.module.css:
+    module: true
+    classes: 5
+    importedBy:
+      - src/features/checkout/AddressForm.tsx
+      - src/features/checkout/CheckoutWizard.tsx
+      - src/features/checkout/PaymentForm.tsx
+  src/features/products/ProductCard.module.css:
+    module: true
+    classes: 6
+    importedBy:
+      - src/features/products/ProductCard.tsx
+tokens:
+  definitions:
+    --accent:
+      value: "#4f46e5"
+      at: app/globals.css:1
+      source: css
+      uses: 4
+    --border:
+      value: "#e5e7eb"
+      at: app/globals.css:1
+      source: css
+      uses: 2
+    --danger:
+      value: "#dc2626"
+      at: app/globals.css:1
+      source: css
+      uses: 3
+    --radius-card:
+      value: 12px
+      at: app/globals.css:1
+      source: css
+    --surface:
+      value: "#fff"
+      at: app/globals.css:1
+      source: css
+      uses: 3
+  drift:
+    - value: "#fff"
+      at: app/globals.css:9
+      property: color
+      token: --surface
+      defined: app/globals.css:1
+      match: exact
+      use: var(--surface)
+    - value: "#fff"
+      at: app/globals.css:12
+      property: color
+      token: --surface
+      defined: app/globals.css:1
+      match: exact
+      use: var(--surface)
+    - value: 12px
+      at: app/globals.css:17
+      property: border-radius
+      token: --radius-card
+      defined: app/globals.css:1
+      match: exact
+      use: var(--radius-card)
+    - value: 12px
+      at: src/features/checkout/Checkout.module.css:2
+      property: border-radius
+      token: --radius-card
+      defined: app/globals.css:1
+      match: exact
+      use: var(--radius-card)
+    - value: 12px
+      at: src/features/products/ProductCard.module.css:1
+      property: border-radius
+      token: --radius-card
+      defined: app/globals.css:1
+      match: exact
+      use: var(--radius-card)
+    - value: "#dc2727"
+      at: src/features/products/ProductCard.module.css:7
+      property: color
+      token: --danger
+      defined: app/globals.css:1
+      match: near
+      use: var(--danger)
+duplicates:
+  - components:
+      - Card@src/components/ui/Card.tsx
+      - Card@src/features/admin/Card.tsx
+    score: 0.75
+    reasons:
+      - same name
+      - 0/5 props shared
+  - components:
+      - Button
+      - LegacyButton
+    score: 0.66
+    reasons:
+      - same base name "Button"
+      - 1/8 props shared
+hooks:
+  useAuth:
+    file: src/features/auth/AuthContext.tsx
+    line: 57
+    reads:
+      - AuthContext
+    usedBy:
+      - AccountPage
+      - CheckoutPage
+      - Header
+      - AdminSidebar
+      - LoginForm
+      - ProtectedRoute
+  useDebounce:
+    file: src/features/search/useDebounce.ts
+    line: 4
+    calls:
+      - useState
+      - useEffect
+    usedBy:
+      - SearchBar
+  useTabs:
+    file: src/components/ui/Tabs.tsx
+    line: 5
+    reads:
+      - TabsContext
+    usedBy:
+      - TabsTrigger
+      - TabsPanel
+  useTheme:
+    file: src/features/theme/ThemeContext.tsx
+    line: 32
+    reads:
+      - ThemeContext
+    usedBy:
+      - Header
+  useToast:
+    file: src/features/toast/ToastContext.tsx
+    line: 26
+    reads:
+      - ToastContext
+    usedBy:
+      - ProfileForm
+      - OrderEditor
+      - CheckoutWizard
+      - AddToCartButton
+      - ProductGrid
+      - ToastViewport
+health:
+  issues:
+    high: 8
+    medium: 6
+    low: 11
+    info: 1
+  byType:
+    deprecated-usage: 1
+    memory-leak: 5
+    client-code-in-server-component: 2
+    possible-duplicate: 2
+    a11y-click-handler: 2
+    state-never-updated: 1
+    unused-variable: 2
+    render-loop: 1
+    a11y-field-label: 4
+    unused-prop: 3
+    missing-dependency: 1
+    unsafe-async-update: 1
+    unused-import: 1
+  unusedComponents:
+    - OldPromoBanner
+  unusedExports:
+    - file: src/features/auth/AuthContext.tsx
+      name: AuthContext
+    - file: src/features/theme/ThemeContext.tsx
+      name: ThemeContext
+    - file: src/features/toast/ToastContext.tsx
+      name: ToastContext
+    - file: src/lib/api.ts
+      name: getOrder
+    - file: src/lib/format.ts
+      name: formatLegacyPrice
+  unusedFiles:
+    - src/components/layout/OldPromoBanner.tsx
+  unusedImports:
+    - file: src/features/account/AccountNav.tsx
+      name: Badge
+      source: "@/components/ui/Badge"
+      line: 2

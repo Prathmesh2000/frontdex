@@ -7,31 +7,38 @@ import { knowledgeDir, scan } from './index.js';
 const require = createRequire(import.meta.url);
 const { createIndex } = require('./query.cjs');
 
-const START = '<!-- react-catalogue:start -->';
-const END = '<!-- react-catalogue:end -->';
-const CMD = 'npx react-catalogue';
-const SERVER_NAME = 'react-catalogue';
-const HOOK_MARK = 'react-catalogue hook';
+const START = '<!-- frontdex:start -->';
+const END = '<!-- frontdex:end -->';
+// Blocks, servers, hooks and rule files written under the old react-catalogue name are replaced, not duplicated.
+const BLOCK_RE = /\n*<!-- (?:react-catalogue|frontdex):start -->[\s\S]*?<!-- (?:react-catalogue|frontdex):end -->\n*/;
+const CMD = 'npx frontdex';
+const SERVER_NAME = 'frontdex';
+const LEGACY_SERVER_NAME = 'react-catalogue';
+const HOOK_RE = /(?:react-catalogue|frontdex) hook/;
 export const TARGETS = ['agents-md', 'claude', 'cursor', 'opencode', 'copilot', 'hermes'];
 
-export const RULES = `## Frontend knowledge base (react-catalogue)
+/** Always-on agent rules, pointing at this project's knowledge folder and catalogue file. */
+export const rulesFor = (config) => {
+  const kb = path.relative(config.root, knowledgeDir(config)).split(path.sep).join('/');
+  return `## Frontend knowledge base (frontdex)
 
-This project keeps a generated map of every React component and page in \`.catalogue/agent/\` (start at \`.catalogue/agent/INDEX.md\`). Follow these rules for every frontend change:
+This project keeps a generated map of every React component and page in \`${kb}/agent/\` (start at \`${kb}/agent/INDEX.md\`). Follow these rules for every frontend change:
 
-1. **Before creating a component**, search for an existing one: MCP tool \`catalogue_search\` or \`${CMD} query "<terms or filters>"\` (filters: \`uses:Button\`, \`hook:useQuery\`, \`prop:onClose\`, \`is:shared\`). Reuse or extend instead of duplicating.
-2. **Before editing a component**, read its card: \`catalogue_component\`, \`${CMD} show <Name>\`, or \`.catalogue/agent/components/<source folder>.md\`.
+1. **Before creating a component**, check for an existing one: MCP tool \`catalogue_find_existing\` with the name and props you plan (or \`${CMD} find <Name> --props a,b\`), and \`catalogue_search\` / \`${CMD} query "<terms or filters>"\` (filters: \`uses:Button\`, \`hook:useQuery\`, \`prop:onClose\`, \`is:shared\`). Reuse or extend instead of duplicating. Use design tokens (\`catalogue_tokens\`) instead of hard-coded colors and sizes.
+2. **Before editing a component**, read its card: \`catalogue_component\`, \`${CMD} show <Name>\`, or \`${kb}/agent/components/<source folder>.md\`.
 3. **Before changing props, exports or behaviour**, check the blast radius with \`catalogue_impact\` or \`${CMD} impact <Name>\`, and update every caller in the same change.
 4. **Reuse what exists**: check \`catalogue_state\` (Redux/context/zustand), \`catalogue_api\` (endpoints) and \`catalogue_styles\` (CSS classes) before adding new state, API calls or styles.
 5. **Do not ship regressions**: every effect that starts an interval, listener, subscription or observer must release it in its cleanup; avoid unused variables/props/imports. Check \`catalogue_health\` (or \`${CMD} health\`) for the components you touched.
 6. **After editing components or routes**, run \`catalogue_rescan\` or \`${CMD} scan\`, and mention notable catalogue changes in your summary.
-7. Do not hand-edit \`.catalogue/\` or \`catalogue.yaml\`, except the human-owned fields (description, tags, owner, x-*).`;
+7. Do not hand-edit \`${kb}/\` or \`${config.output}\`, except the human-owned fields (description, tags, owner, x-*).`;
+};
 
 function upsertBlock(file, body, { remove = false, create = true } = {}) {
   const exists = fs.existsSync(file);
   if (!exists && (remove || !create)) return null;
   const text = exists ? fs.readFileSync(file, 'utf8') : '';
   const block = `${START}\n${body}\n${END}`;
-  const re = new RegExp(`\\n*${START}[\\s\\S]*?${END}\\n*`);
+  const re = BLOCK_RE;
   let next;
   if (remove) next = text.replace(re, '\n').replace(/^\n+/, '');
   else if (re.test(text)) next = text.replace(re, `\n\n${block}\n`).replace(/^\n+/, '');
@@ -65,7 +72,12 @@ function updateJson(file, mutate, { remove = false } = {}) {
   return exists ? (remove ? 'removed' : 'updated') : 'created';
 }
 
-const stripOurHooks = (list) => (list ?? []).map((g) => ({ ...g, hooks: (g.hooks ?? []).filter((h) => !String(h.command).includes(HOOK_MARK)) })).filter((g) => g.hooks.length);
+const stripOurHooks = (list) => (list ?? []).map((g) => ({ ...g, hooks: (g.hooks ?? []).filter((h) => !HOOK_RE.test(String(h.command))) })).filter((g) => g.hooks.length);
+const setServer = (servers, remove, entry) => {
+  delete servers[LEGACY_SERVER_NAME];
+  if (remove) delete servers[SERVER_NAME];
+  else servers[SERVER_NAME] = entry;
+};
 
 /**
  * Wires coding agents to the knowledge base: always-on rules (AGENTS.md / CLAUDE.md / Cursor rules / Copilot),
@@ -77,7 +89,8 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
   const results = [];
   const record = (file, status) => status && results.push({ file: path.relative(root, file) || file, status });
   const want = (t) => targets.includes(t);
-  const mcpEntry = { type: 'stdio', command: 'npx', args: ['react-catalogue', 'mcp'] };
+  const mcpEntry = { type: 'stdio', command: 'npx', args: ['frontdex', 'mcp'] };
+  const RULES = rulesFor(config);
 
   if (!remove) fs.mkdirSync(path.join(knowledgeDir(config), 'agent'), { recursive: true });
   const rulesFile = path.join(knowledgeDir(config), 'agent', 'RULES.md');
@@ -93,7 +106,7 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
     // Claude Code reads AGENTS.md only when there is no CLAUDE.md, so an existing CLAUDE.md gets an import.
     const rel = path.relative(root, rulesFile).split(path.sep).join('/');
     record(at('CLAUDE.md'), upsertBlock(at('CLAUDE.md'), `@${rel}`, { remove, create: false }));
-    if (mcp) record(at('.mcp.json'), updateJson(at('.mcp.json'), (d) => (remove ? delete d.mcpServers?.[SERVER_NAME] : ((d.mcpServers ??= {})[SERVER_NAME] = mcpEntry)), { remove }));
+    if (mcp) record(at('.mcp.json'), updateJson(at('.mcp.json'), (d) => setServer((d.mcpServers ??= {}), remove, mcpEntry), { remove }));
     if (hooks) {
       record(
         at('.claude', 'settings.json'),
@@ -116,11 +129,13 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
     }
   }
   if (want('cursor')) {
-    const mdc = at('.cursor', 'rules', 'react-catalogue.mdc');
+    const legacyMdc = at('.cursor', 'rules', 'react-catalogue.mdc');
+    if (fs.existsSync(legacyMdc)) fs.rmSync(legacyMdc), record(legacyMdc, 'removed');
+    const mdc = at('.cursor', 'rules', 'frontdex.mdc');
     if (remove) {
       if (fs.existsSync(mdc)) fs.rmSync(mdc), record(mdc, 'removed');
     } else {
-      const content = `---\ndescription: Frontend component knowledge base (react-catalogue)\nalwaysApply: true\n---\n\n${RULES}\n`;
+      const content = `---\ndescription: Frontend component knowledge base (frontdex)\nalwaysApply: true\n---\n\n${RULES}\n`;
       const existed = fs.existsSync(mdc);
       if (!existed || fs.readFileSync(mdc, 'utf8') !== content) {
         fs.mkdirSync(path.dirname(mdc), { recursive: true });
@@ -128,7 +143,7 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
         record(mdc, existed ? 'updated' : 'created');
       } else record(mdc, 'unchanged');
     }
-    if (mcp) record(at('.cursor', 'mcp.json'), updateJson(at('.cursor', 'mcp.json'), (d) => (remove ? delete d.mcpServers?.[SERVER_NAME] : ((d.mcpServers ??= {})[SERVER_NAME] = mcpEntry)), { remove }));
+    if (mcp) record(at('.cursor', 'mcp.json'), updateJson(at('.cursor', 'mcp.json'), (d) => setServer((d.mcpServers ??= {}), remove, mcpEntry), { remove }));
     if (hooks) {
       record(
         at('.cursor', 'hooks.json'),
@@ -137,7 +152,7 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
           (d) => {
             d.version ??= 1;
             d.hooks ??= {};
-            for (const k of ['postToolUse', 'sessionStart']) d.hooks[k] = (d.hooks[k] ?? []).filter((h) => !String(h.command).includes(HOOK_MARK));
+            for (const k of ['postToolUse', 'sessionStart']) d.hooks[k] = (d.hooks[k] ?? []).filter((h) => !HOOK_RE.test(String(h.command)));
             if (!remove) {
               d.hooks.postToolUse.push({ command: `${CMD} hook post-edit --format cursor`, matcher: 'Write|Edit' });
               d.hooks.sessionStart.push({ command: `${CMD} hook session-start --format cursor` });
@@ -156,9 +171,8 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
       updateJson(
         file,
         (d) => {
-          if (remove) return void delete d.mcp?.[SERVER_NAME];
-          d.$schema ??= 'https://opencode.ai/config.json';
-          (d.mcp ??= {})[SERVER_NAME] = { type: 'local', command: ['npx', 'react-catalogue', 'mcp'], enabled: true };
+          if (!remove) d.$schema ??= 'https://opencode.ai/config.json';
+          setServer((d.mcp ??= {}), remove, { type: 'local', command: ['npx', 'frontdex', 'mcp'], enabled: true });
         },
         { remove },
       ),
@@ -168,7 +182,7 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
 
   const notes = [];
   if (want('hermes') && !remove) {
-    notes.push(`Hermes reads AGENTS.md automatically. Its MCP servers are user-level only; add to ~/.hermes/config.yaml:\n  mcp_servers:\n    ${SERVER_NAME}:\n      command: "npx"\n      args: ["react-catalogue", "mcp"]`);
+    notes.push(`Hermes reads AGENTS.md automatically. Its MCP servers are user-level only; add to ~/.hermes/config.yaml:\n  mcp_servers:\n    ${SERVER_NAME}:\n      command: "npx"\n      args: ["frontdex", "mcp"]`);
   }
   if (want('claude') && mcp && !remove) notes.push('Claude Code asks once to approve the project MCP server from .mcp.json.');
   return { results, notes };
@@ -211,7 +225,7 @@ export async function runHook(config, event, { format = 'claude' } = {}) {
     if (event === 'session-start') {
       const index = path.join(knowledgeDir(config), 'agent', 'INDEX.md');
       const head = fs.existsSync(index) ? fs.readFileSync(index, 'utf8').slice(0, 6000) : '';
-      return emit(format, 'SessionStart', `${RULES}\n\n${head}`);
+      return emit(format, 'SessionStart', `${rulesFor(config)}\n\n${head}`);
     }
     const files = new Set([...result.delta.changed, ...result.delta.added]);
     const edited = editedPath(input, config.root);
@@ -220,7 +234,7 @@ export async function runHook(config, event, { format = 'claude' } = {}) {
     const touched = idx.comps.filter((m) => files.has(m.c.file));
     const removed = (result.commit?.changes ?? []).filter((c) => c.change === 'removed');
     if (!touched.length && !removed.length) return;
-    const lines = ['react-catalogue: component knowledge updated after your edit.'];
+    const lines = ['frontdex: component knowledge updated after your edit.'];
     for (const m of touched) {
       const impact = idx.impact(m.id);
       const change = result.commit?.changes.find((c) => c.key === m.id);
@@ -231,6 +245,6 @@ export async function runHook(config, event, { format = 'claude' } = {}) {
     for (const r of removed) lines.push(`- ${r.kind === 'pages' ? 'Page' : 'Component'} ${r.key} no longer exists; make sure nothing still imports it.`);
     emit(format, 'PostToolUse', lines.join('\n'));
   } catch (err) {
-    process.stderr.write(`react-catalogue hook: ${err.message}\n`);
+    process.stderr.write(`frontdex hook: ${err.message}\n`);
   }
 }

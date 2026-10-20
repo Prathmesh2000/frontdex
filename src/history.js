@@ -69,6 +69,8 @@ export function createHistory(dir) {
       info,
       components: Object.fromEntries(Object.entries(catalogue.components).map(([id, c]) => [id, put(c)])),
       pages: Object.fromEntries(Object.entries(catalogue.pages).map(([r, p]) => [r, put(p)])),
+      // Only present once an ID has changed, so manifests (and their hashes) of catalogues without aliases are as before.
+      ...(catalogue.aliases && { aliases: catalogue.aliases }),
     };
   }
 
@@ -76,29 +78,10 @@ export function createHistory(dir) {
     const changes = [];
     const summary = {};
     for (const kind of ['components', 'pages']) {
-      const a = before?.[kind] ?? {};
-      const b = after[kind];
       const ignored = kind === 'components' ? IGNORED_COMPONENT_FIELDS : IGNORED_PAGE_FIELDS;
-      const s = { added: 0, removed: 0, changed: 0 };
-      for (const key of Object.keys(b)) {
-        if (!(key in a)) {
-          s.added++;
-          changes.push({ kind, key, change: 'added' });
-        } else if (a[key] !== b[key]) {
-          const details = describe(get(a[key]), get(b[key]), ignored);
-          if (details.length) {
-            s.changed++;
-            changes.push({ kind, key, change: 'changed', details });
-          }
-        }
-      }
-      for (const key of Object.keys(a)) {
-        if (!(key in b)) {
-          s.removed++;
-          changes.push({ kind, key, change: 'removed' });
-        }
-      }
-      summary[kind] = s;
+      const d = diffKind(kind, before?.[kind] ?? {}, after[kind], kind === 'components' && after.aliases, ignored, get);
+      changes.push(...d.changes);
+      summary[kind] = d.summary;
     }
     return { summary, changes };
   }
@@ -111,7 +94,7 @@ export function createHistory(dir) {
     const manifestHash = put(manifest);
     if (parent?.manifest === manifestHash) return (pending.clear(), null);
     const { summary, changes } = diffManifests(parent ? get(parent.manifest) : null, manifest);
-    const meaningful = Object.values(summary).some((s) => s.added + s.removed + s.changed > 0);
+    const meaningful = changes.length > 0;
     if (parent && !meaningful) return (pending.clear(), null);
     const time = new Date().toISOString();
     const entry = {
@@ -145,6 +128,7 @@ export function createHistory(dir) {
         info: { ...m.info, generatedAt: entry.time },
         components: Object.fromEntries(Object.entries(m.components).map(([k, h]) => [k, get(h)])),
         pages: Object.fromEntries(Object.entries(m.pages).map(([k, h]) => [k, get(h)])),
+        ...(m.aliases && { aliases: m.aliases }),
       },
     };
   }
@@ -205,6 +189,57 @@ function describe(a, b, ignored) {
   return out;
 }
 
+/**
+ * Field-level diff of two whole catalogues (e.g. two git refs), same rules as history commits: added / removed /
+ * changed components, pages and endpoints, ignoring line shifts and derived fields (usedBy, pages, components).
+ */
+export function diffCatalogues(before, after, { ignoreComponentFields = [] } = {}) {
+  const changes = [];
+  const summary = {};
+  const componentIgnored = new Set([...IGNORED_COMPONENT_FIELDS, ...ignoreComponentFields]);
+  for (const kind of ['components', 'pages', 'endpoints']) {
+    const ignored = kind === 'components' ? componentIgnored : kind === 'pages' ? IGNORED_PAGE_FIELDS : new Set();
+    const d = diffKind(kind, before?.[kind] ?? {}, after?.[kind] ?? {}, kind === 'components' && after?.aliases, ignored);
+    changes.push(...d.changes);
+    if (kind !== 'endpoints' || d.changes.length) summary[kind] = d.summary;
+  }
+  return { summary, changes };
+}
+
+/**
+ * Added / changed / removed keys of one kind. A new key that `aliases` maps from a vanished key is the same item under a
+ * new ID (its file moved), reported once as `renamed` with `from`, not as a remove plus an add. `load` turns stored
+ * values into records (history stores hashes); identical values are skipped without describing them.
+ */
+function diffKind(kind, a, b, aliases, ignored, load = (x) => x) {
+  const summary = { added: 0, removed: 0, changed: 0 };
+  const changes = [];
+  const renamedFrom = new Map(Object.entries(aliases || {}).filter(([from, to]) => from in a && !(from in b) && to in b && !(to in a)).map(([from, to]) => [to, from]));
+  for (const key of Object.keys(b)) {
+    const from = key in a ? key : renamedFrom.get(key);
+    if (from === undefined) {
+      summary.added++;
+      changes.push({ kind, key, change: 'added' });
+      continue;
+    }
+    const details = a[from] === b[key] ? [] : describe(load(a[from]), load(b[key]), ignored);
+    if (from !== key) {
+      summary.renamed = (summary.renamed ?? 0) + 1;
+      changes.push({ kind, key, change: 'renamed', from, ...(details.length && { details }) });
+    } else if (details.length) {
+      summary.changed++;
+      changes.push({ kind, key, change: 'changed', details });
+    }
+  }
+  const renamed = new Set(renamedFrom.values());
+  for (const key of Object.keys(a)) {
+    if (key in b || renamed.has(key)) continue;
+    summary.removed++;
+    changes.push({ kind, key, change: 'removed' });
+  }
+  return { summary, changes };
+}
+
 function gitHead(root) {
   if (!root) return undefined;
   try {
@@ -214,10 +249,10 @@ function gitHead(root) {
   }
 }
 
-/** One-line human summary of a commit, e.g. "+2 ~1 −0 components · +1 pages". */
+/** One-line human summary of a commit, e.g. "+2 ~1 →1 −0 components · +1 pages" (→ counts components whose ID moved). */
 export function formatSummary(summary) {
   return Object.entries(summary)
-    .map(([kind, s]) => [kind, [s.added && `+${s.added}`, s.changed && `~${s.changed}`, s.removed && `−${s.removed}`].filter(Boolean).join(' ')])
+    .map(([kind, s]) => [kind, [s.added && `+${s.added}`, s.changed && `~${s.changed}`, s.renamed && `→${s.renamed}`, s.removed && `−${s.removed}`].filter(Boolean).join(' ')])
     .filter(([, t]) => t)
     .map(([kind, t]) => `${t} ${kind}`)
     .join(' · ') || 'no changes';

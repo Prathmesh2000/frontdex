@@ -1,0 +1,2424 @@
+{
+ "generator": "frontdex 0.3.0",
+ "components": {
+  "AccountLayout": {
+   "name": "AccountLayout",
+   "file": "app/(account)/account/layout.tsx",
+   "line": 5,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [
+    "ProtectedRoute",
+    "AccountNav"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account"
+   ]
+  },
+  "AccountNav": {
+   "name": "AccountNav",
+   "file": "src/features/account/AccountNav.tsx",
+   "line": 13,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "AccountLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account"
+   ]
+  },
+  "AccountPage": {
+   "name": "AccountPage",
+   "file": "app/(account)/account/page.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "ProfileForm",
+    "LoginForm"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/account"
+   ]
+  },
+  "AddressForm": {
+   "name": "AddressForm",
+   "file": "src/features/checkout/AddressForm.tsx",
+   "line": 15,
+   "kind": "function",
+   "props": [
+    "initial",
+    "onSubmit",
+    "submitLabel"
+   ],
+   "state": [
+    "values",
+    "errors"
+   ],
+   "renders": [
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "AddressStep"
+   ],
+   "pages": [
+    "/checkout"
+   ]
+  },
+  "AddressStep": {
+   "name": "AddressStep",
+   "file": "src/features/checkout/AddressStep.tsx",
+   "line": 5,
+   "kind": "function",
+   "props": [
+    "draft",
+    "onNext",
+    "onBack"
+   ],
+   "state": [],
+   "renders": [
+    "AddressForm"
+   ],
+   "usedBy": [
+    "CheckoutWizard"
+   ],
+   "pages": [
+    "/checkout"
+   ]
+  },
+  "AddToCartButton": {
+   "name": "AddToCartButton",
+   "file": "src/features/products/AddToCartButton.tsx",
+   "line": 11,
+   "kind": "function",
+   "props": [
+    "product",
+    "maxQuantity"
+   ],
+   "state": [
+    "quantity"
+   ],
+   "renders": [
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "ProductInfo"
+   ],
+   "pages": [
+    "/products/[id]"
+   ]
+  },
+  "AdminDashboard": {
+   "name": "AdminDashboard",
+   "file": "app/(admin)/admin/page.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "StatCard",
+    "LiveVisitors",
+    "SalesPanel",
+    "RecentOrders"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/admin"
+   ]
+  },
+  "AdminLayout": {
+   "name": "AdminLayout",
+   "file": "app/(admin)/admin/layout.tsx",
+   "line": 6,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [
+    "ProtectedRoute",
+    "AdminSidebar",
+    "ErrorBoundary"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]"
+   ]
+  },
+  "AdminOrdersPage": {
+   "name": "AdminOrdersPage",
+   "file": "app/(admin)/admin/orders/page.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "selected",
+    "version"
+   ],
+   "renders": [
+    "RecentOrders",
+    "OrderEditor"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/admin/orders"
+   ]
+  },
+  "AdminProductPage": {
+   "name": "AdminProductPage",
+   "file": "app/(admin)/admin/products/[...slug]/page.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [
+    "params"
+   ],
+   "state": [],
+   "renders": [
+    "ProductEditor"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/admin/products/[...slug]"
+   ]
+  },
+  "AdminSidebar": {
+   "name": "AdminSidebar",
+   "file": "src/features/admin/AdminSidebar.tsx",
+   "line": 14,
+   "kind": "function",
+   "props": [
+    "collapsed"
+   ],
+   "state": [
+    "renders"
+   ],
+   "renders": [],
+   "usedBy": [
+    "AdminLayout"
+   ],
+   "pages": [
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]"
+   ]
+  },
+  "AuthProvider": {
+   "name": "AuthProvider",
+   "file": "src/features/auth/AuthContext.tsx",
+   "line": 18,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [
+    "user",
+    "loading"
+   ],
+   "renders": [],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "Badge": {
+   "name": "Badge",
+   "file": "src/components/ui/Badge.tsx",
+   "line": 3,
+   "kind": "function",
+   "props": [
+    "tone",
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "OrderTimeline",
+    "OrderEditor",
+    "ProductCard",
+    "ProductInfo",
+    "ToastItem"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "BlogPage": {
+   "name": "BlogPage",
+   "file": "app/blog/[[...slug]]/page.tsx",
+   "line": 10,
+   "kind": "function",
+   "props": [
+    "params"
+   ],
+   "state": [],
+   "renders": [
+    "LegacyButton"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/blog/[[...slug]]"
+   ]
+  },
+  "Button": {
+   "name": "Button",
+   "file": "src/components/ui/Button.tsx",
+   "line": 14,
+   "kind": "forwardRef",
+   "props": [
+    "variant",
+    "size",
+    "loading",
+    "icon",
+    "children",
+    "disabled"
+   ],
+   "state": [],
+   "renders": [
+    "Spinner"
+   ],
+   "usedBy": [
+    "CartPage",
+    "Header",
+    "HeroBanner",
+    "Modal",
+    "ProfileForm",
+    "ErrorBoundary",
+    "OrderEditor",
+    "ProductEditor",
+    "LoginForm",
+    "CartDrawer",
+    "CartItem",
+    "OrderSummary",
+    "AddressForm",
+    "CheckoutWizard",
+    "PaymentForm",
+    "AddToCartButton",
+    "Filters"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "Card@src/components/ui/Card.tsx": {
+   "name": "Card",
+   "file": "src/components/ui/Card.tsx",
+   "line": 10,
+   "kind": "function",
+   "props": [
+    "children",
+    "elevated"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "OrderTimeline",
+    "OrderEditor",
+    "StatCard",
+    "OrderSummary",
+    "ProductCard"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "Card@src/features/admin/Card.tsx": {
+   "name": "Card",
+   "file": "src/features/admin/Card.tsx",
+   "line": 2,
+   "kind": "function",
+   "props": [
+    "label",
+    "value",
+    "delta"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "StatCard"
+   ],
+   "pages": [
+    "/admin"
+   ]
+  },
+  "CardBody": {
+   "name": "CardBody",
+   "file": "src/components/ui/Card.tsx",
+   "line": 5,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "OrderTimeline",
+    "OrderEditor",
+    "StatCard",
+    "OrderSummary"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "CardHeader": {
+   "name": "CardHeader",
+   "file": "src/components/ui/Card.tsx",
+   "line": 1,
+   "kind": "function",
+   "props": [
+    "title",
+    "action"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "OrderTimeline",
+    "OrderEditor",
+    "StatCard",
+    "OrderSummary"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "CartBadge": {
+   "name": "CartBadge",
+   "file": "src/components/layout/CartBadge.tsx",
+   "line": 14,
+   "kind": "class",
+   "props": [
+    "count",
+    "onClear",
+    "max"
+   ],
+   "state": [
+    "pulse"
+   ],
+   "renders": [],
+   "usedBy": [
+    "Header"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "CartDrawer": {
+   "name": "CartDrawer",
+   "file": "src/features/cart/CartDrawer.tsx",
+   "line": 10,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "Modal",
+    "Button",
+    "CartItem",
+    "OrderSummary"
+   ],
+   "usedBy": [
+    "Header"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "CartItem": {
+   "name": "CartItem",
+   "file": "src/features/cart/CartItem.tsx",
+   "line": 10,
+   "kind": "memo",
+   "props": [
+    "line",
+    "readOnly"
+   ],
+   "state": [],
+   "renders": [
+    "Button"
+   ],
+   "usedBy": [
+    "CartPage",
+    "OrderTimeline",
+    "CartDrawer",
+    "CheckoutWizard"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "CartPage": {
+   "name": "CartPage",
+   "file": "app/cart/page.tsx",
+   "line": 10,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "CartItem",
+    "OrderSummary",
+    "Button"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/cart"
+   ]
+  },
+  "CheckoutLayout": {
+   "name": "CheckoutLayout",
+   "file": "app/checkout/layout.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/checkout",
+    "/checkout/success"
+   ]
+  },
+  "CheckoutPage": {
+   "name": "CheckoutPage",
+   "file": "app/checkout/page.tsx",
+   "line": 6,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "ProtectedRoute",
+    "CheckoutWizard"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/checkout"
+   ]
+  },
+  "CheckoutWizard": {
+   "name": "CheckoutWizard",
+   "file": "src/features/checkout/CheckoutWizard.tsx",
+   "line": 45,
+   "kind": "function",
+   "props": [
+    "userEmail"
+   ],
+   "state": [
+    "state"
+   ],
+   "renders": [
+    "StepIndicator",
+    "AddressStep",
+    "PaymentForm",
+    "CartItem",
+    "Button",
+    "OrderSummary"
+   ],
+   "usedBy": [
+    "CheckoutPage"
+   ],
+   "pages": [
+    "/checkout"
+   ]
+  },
+  "DataTable": {
+   "name": "DataTable",
+   "file": "src/components/ui/DataTable.tsx",
+   "line": 23,
+   "kind": "function",
+   "props": [
+    "rows",
+    "columns",
+    "onRowClick",
+    "loading",
+    "emptyText",
+    "pageSize"
+   ],
+   "state": [
+    "sortKey",
+    "direction",
+    "page"
+   ],
+   "renders": [
+    "Spinner"
+   ],
+   "usedBy": [
+    "RecentOrders"
+   ],
+   "pages": [
+    "/admin/orders",
+    "/admin"
+   ]
+  },
+  "ErrorBoundary": {
+   "name": "ErrorBoundary",
+   "file": "src/features/admin/ErrorBoundary.tsx",
+   "line": 9,
+   "kind": "class",
+   "props": [
+    "children",
+    "fallbackTitle"
+   ],
+   "state": [
+    "error"
+   ],
+   "renders": [
+    "Button"
+   ],
+   "usedBy": [
+    "AdminLayout"
+   ],
+   "pages": [
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]"
+   ]
+  },
+  "FeaturedCollections": {
+   "name": "FeaturedCollections",
+   "file": "src/features/products/FeaturedCollections.tsx",
+   "line": 12,
+   "kind": "function",
+   "props": [
+    "defaultTab"
+   ],
+   "state": [],
+   "renders": [
+    "TabsRoot",
+    "TabsList",
+    "TabsTrigger",
+    "TabsPanel",
+    "ProductGrid"
+   ],
+   "usedBy": [
+    "HomePage"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "Filters": {
+   "name": "Filters",
+   "file": "src/features/products/Filters.tsx",
+   "line": 17,
+   "kind": "function",
+   "props": [
+    "categories"
+   ],
+   "state": [
+    "filters"
+   ],
+   "renders": [
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "ProductsPage"
+   ],
+   "pages": [
+    "/products"
+   ]
+  },
+  "Footer": {
+   "name": "Footer",
+   "file": "src/components/layout/Footer.jsx",
+   "line": 5,
+   "kind": "function",
+   "props": [
+    "year",
+    "links",
+    "compact"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "Header": {
+   "name": "Header",
+   "file": "src/components/layout/Header.tsx",
+   "line": 21,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "scrolled"
+   ],
+   "renders": [
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer"
+   ],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "HeroBanner": {
+   "name": "HeroBanner",
+   "file": "src/components/layout/HeroBanner.tsx",
+   "line": 14,
+   "kind": "function",
+   "props": [
+    "headline",
+    "endsAt",
+    "ctaHref"
+   ],
+   "state": [
+    "remaining"
+   ],
+   "renders": [
+    "Button"
+   ],
+   "usedBy": [
+    "HomePage"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "HomePage": {
+   "name": "HomePage",
+   "file": "app/page.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "HeroBanner",
+    "FeaturedCollections",
+    "NewsletterForm"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/"
+   ]
+  },
+  "Input": {
+   "name": "Input",
+   "file": "src/components/ui/Input.tsx",
+   "line": 10,
+   "kind": "forwardRef",
+   "props": [
+    "label",
+    "error",
+    "hint"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "ProfileForm",
+    "ProductEditor",
+    "LoginForm",
+    "OrderSummary",
+    "AddressForm",
+    "PaymentForm",
+    "AddToCartButton",
+    "Filters"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "LegacyButton": {
+   "name": "LegacyButton",
+   "file": "src/components/layout/LegacyButton.jsx",
+   "line": 7,
+   "kind": "class",
+   "props": [
+    "kind",
+    "onPress",
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "BlogPage"
+   ],
+   "pages": [
+    "/blog/[[...slug]]"
+   ]
+  },
+  "LiveVisitors": {
+   "name": "LiveVisitors",
+   "file": "src/features/admin/LiveVisitors.tsx",
+   "line": 4,
+   "kind": "class",
+   "props": [
+    "channel"
+   ],
+   "state": [
+    "count",
+    "online"
+   ],
+   "renders": [],
+   "usedBy": [
+    "AdminDashboard"
+   ],
+   "pages": [
+    "/admin"
+   ]
+  },
+  "LoginForm": {
+   "name": "LoginForm",
+   "file": "src/features/auth/LoginForm.tsx",
+   "line": 14,
+   "kind": "function",
+   "props": [
+    "onSuccess"
+   ],
+   "state": [
+    "serverError"
+   ],
+   "renders": [
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "AccountPage"
+   ],
+   "pages": [
+    "/account"
+   ]
+  },
+  "Modal": {
+   "name": "Modal",
+   "file": "src/components/ui/Modal.tsx",
+   "line": 16,
+   "kind": "function",
+   "props": [
+    "open",
+    "title",
+    "onClose",
+    "children",
+    "footer"
+   ],
+   "state": [],
+   "renders": [
+    "Button"
+   ],
+   "usedBy": [
+    "OrderEditor",
+    "CartDrawer"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "NewsletterForm": {
+   "name": "NewsletterForm",
+   "file": "src/features/newsletter/NewsletterForm.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "HomePage"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "OldPromoBanner": {
+   "name": "OldPromoBanner",
+   "file": "src/components/layout/OldPromoBanner.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [
+    "message",
+    "dismissible"
+   ],
+   "state": [
+    "hidden"
+   ],
+   "renders": [],
+   "usedBy": [],
+   "pages": []
+  },
+  "OrderDetailPage": {
+   "name": "OrderDetailPage",
+   "file": "app/(account)/account/orders/[orderId]/page.tsx",
+   "line": 3,
+   "kind": "function",
+   "props": [
+    "params"
+   ],
+   "state": [],
+   "renders": [
+    "OrderTimeline"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/account/orders/[orderId]"
+   ]
+  },
+  "OrderEditor": {
+   "name": "OrderEditor",
+   "file": "src/features/admin/OrderEditor.tsx",
+   "line": 12,
+   "kind": "function",
+   "props": [
+    "order",
+    "onClose",
+    "onSaved"
+   ],
+   "state": [
+    "status",
+    "busy"
+   ],
+   "renders": [
+    "Modal",
+    "Button",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "Badge",
+    "CardBody"
+   ],
+   "usedBy": [
+    "AdminOrdersPage"
+   ],
+   "pages": [
+    "/admin/orders"
+   ]
+  },
+  "OrderSummary": {
+   "name": "OrderSummary",
+   "file": "src/features/cart/OrderSummary.tsx",
+   "line": 21,
+   "kind": "memo",
+   "props": [
+    "lines",
+    "coupon",
+    "readOnly"
+   ],
+   "state": [
+    "code",
+    "codeError"
+   ],
+   "renders": [
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "CartPage",
+    "CartDrawer",
+    "CheckoutWizard"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "OrderTimeline": {
+   "name": "OrderTimeline",
+   "file": "src/features/account/OrderTimeline.tsx",
+   "line": 12,
+   "kind": "function",
+   "props": [
+    "orderId"
+   ],
+   "state": [
+    "order"
+   ],
+   "renders": [
+    "Spinner",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "Badge",
+    "CardBody",
+    "CartItem"
+   ],
+   "usedBy": [
+    "OrderDetailPage"
+   ],
+   "pages": [
+    "/account/orders/[orderId]"
+   ]
+  },
+  "PaymentForm": {
+   "name": "PaymentForm",
+   "file": "src/features/checkout/PaymentForm.tsx",
+   "line": 21,
+   "kind": "class",
+   "props": [
+    "amount",
+    "onPaid",
+    "onBack"
+   ],
+   "state": [
+    "card",
+    "expiry",
+    "error",
+    "sdkReady",
+    "secondsLeft"
+   ],
+   "renders": [
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "CheckoutWizard"
+   ],
+   "pages": [
+    "/checkout"
+   ]
+  },
+  "ProductCard": {
+   "name": "ProductCard",
+   "file": "src/features/products/ProductCard.tsx",
+   "line": 20,
+   "kind": "memo",
+   "props": [
+    "product",
+    "onAdd",
+    "compact",
+    "highlight"
+   ],
+   "state": [],
+   "renders": [
+    "Card@src/components/ui/Card.tsx",
+    "Badge",
+    "Tooltip"
+   ],
+   "usedBy": [
+    "ProductGrid",
+    "RelatedProducts",
+    "SearchResults"
+   ],
+   "pages": [
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "ProductDetailPage": {
+   "name": "ProductDetailPage",
+   "file": "app/products/[id]/page.tsx",
+   "line": 16,
+   "kind": "function",
+   "props": [
+    "params"
+   ],
+   "state": [],
+   "renders": [
+    "ProductGallery",
+    "ProductInfo",
+    "Reviews",
+    "RelatedProducts"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/products/[id]"
+   ]
+  },
+  "ProductEditor": {
+   "name": "ProductEditor",
+   "file": "src/features/admin/ProductEditor.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [
+    "productId"
+   ],
+   "state": [
+    "product",
+    "loading"
+   ],
+   "renders": [
+    "Spinner",
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "AdminProductPage"
+   ],
+   "pages": [
+    "/admin/products/[...slug]"
+   ]
+  },
+  "ProductGallery": {
+   "name": "ProductGallery",
+   "file": "src/features/products/ProductGallery.tsx",
+   "line": 6,
+   "kind": "function",
+   "props": [
+    "images",
+    "alt"
+   ],
+   "state": [
+    "index",
+    "zoomed"
+   ],
+   "renders": [],
+   "usedBy": [
+    "ProductDetailPage"
+   ],
+   "pages": [
+    "/products/[id]"
+   ]
+  },
+  "ProductGrid": {
+   "name": "ProductGrid",
+   "file": "src/features/products/ProductGrid.tsx",
+   "line": 19,
+   "kind": "function",
+   "props": [
+    "category",
+    "sort",
+    "pageSize"
+   ],
+   "state": [
+    "columns"
+   ],
+   "renders": [
+    "Spinner",
+    "ProductCard"
+   ],
+   "usedBy": [
+    "ProductsPage",
+    "FeaturedCollections"
+   ],
+   "pages": [
+    "/",
+    "/products"
+   ]
+  },
+  "ProductInfo": {
+   "name": "ProductInfo",
+   "file": "src/features/products/ProductInfo.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [
+    "product",
+    "showSku"
+   ],
+   "state": [],
+   "renders": [
+    "Badge",
+    "AddToCartButton"
+   ],
+   "usedBy": [
+    "ProductDetailPage"
+   ],
+   "pages": [
+    "/products/[id]"
+   ]
+  },
+  "ProductsPage": {
+   "name": "ProductsPage",
+   "file": "app/products/page.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [
+    "searchParams"
+   ],
+   "state": [],
+   "renders": [
+    "Filters",
+    "ProductGrid"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/products"
+   ]
+  },
+  "ProfileForm": {
+   "name": "ProfileForm",
+   "file": "src/features/account/ProfileForm.tsx",
+   "line": 10,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "name",
+    "email",
+    "lastSaved",
+    "saving"
+   ],
+   "renders": [
+    "Input",
+    "Button"
+   ],
+   "usedBy": [
+    "AccountPage"
+   ],
+   "pages": [
+    "/account"
+   ]
+  },
+  "ProtectedRoute": {
+   "name": "ProtectedRoute",
+   "file": "src/features/auth/ProtectedRoute.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [
+    "children",
+    "role"
+   ],
+   "state": [],
+   "renders": [
+    "Spinner"
+   ],
+   "usedBy": [
+    "AccountLayout",
+    "AdminLayout",
+    "CheckoutPage"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/checkout"
+   ]
+  },
+  "RecentOrders": {
+   "name": "RecentOrders",
+   "file": "src/features/admin/RecentOrders.tsx",
+   "line": 16,
+   "kind": "function",
+   "props": [
+    "limit",
+    "onSelect"
+   ],
+   "state": [
+    "orders",
+    "loading"
+   ],
+   "renders": [
+    "DataTable"
+   ],
+   "usedBy": [
+    "AdminOrdersPage",
+    "AdminDashboard"
+   ],
+   "pages": [
+    "/admin/orders",
+    "/admin"
+   ]
+  },
+  "RelatedProducts": {
+   "name": "RelatedProducts",
+   "file": "src/features/products/RelatedProducts.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [
+    "category",
+    "excludeId",
+    "limit"
+   ],
+   "state": [
+    "items"
+   ],
+   "renders": [
+    "ProductCard"
+   ],
+   "usedBy": [
+    "ProductDetailPage"
+   ],
+   "pages": [
+    "/products/[id]"
+   ]
+  },
+  "Reviews": {
+   "name": "Reviews",
+   "file": "src/features/products/Reviews.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [
+    "productId"
+   ],
+   "state": [
+    "reviews",
+    "expanded"
+   ],
+   "renders": [
+    "Spinner"
+   ],
+   "usedBy": [
+    "ProductDetailPage"
+   ],
+   "pages": [
+    "/products/[id]"
+   ]
+  },
+  "RootLayout": {
+   "name": "RootLayout",
+   "file": "app/layout.tsx",
+   "line": 19,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "SalesChart": {
+   "name": "SalesChart",
+   "file": "src/features/admin/SalesChart.tsx",
+   "line": 8,
+   "kind": "class",
+   "props": [
+    "data",
+    "width",
+    "height",
+    "currency"
+   ],
+   "state": [
+    "max",
+    "hovered",
+    "prevData"
+   ],
+   "renders": [],
+   "usedBy": [
+    "SalesPanel"
+   ],
+   "pages": [
+    "/admin"
+   ]
+  },
+  "SalesPanel": {
+   "name": "SalesPanel",
+   "file": "src/features/admin/SalesPanel.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [
+    "range"
+   ],
+   "state": [
+    "width"
+   ],
+   "renders": [
+    "SalesChart"
+   ],
+   "usedBy": [
+    "AdminDashboard"
+   ],
+   "pages": [
+    "/admin"
+   ]
+  },
+  "SearchBar": {
+   "name": "SearchBar",
+   "file": "src/features/search/SearchBar.tsx",
+   "line": 16,
+   "kind": "function",
+   "props": [
+    "placeholder",
+    "onSearch",
+    "autoFocus"
+   ],
+   "state": [
+    "term",
+    "open"
+   ],
+   "renders": [],
+   "usedBy": [
+    "SearchPage",
+    "Header"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "SearchPage": {
+   "name": "SearchPage",
+   "file": "app/search/page.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [],
+   "state": [
+    "term"
+   ],
+   "renders": [
+    "SearchBar",
+    "SearchResults"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/search"
+   ]
+  },
+  "SearchResults": {
+   "name": "SearchResults",
+   "file": "src/features/search/SearchResults.tsx",
+   "line": 9,
+   "kind": "function",
+   "props": [
+    "term",
+    "limit"
+   ],
+   "state": [],
+   "renders": [
+    "Spinner",
+    "ProductCard"
+   ],
+   "usedBy": [
+    "SearchPage"
+   ],
+   "pages": [
+    "/search"
+   ]
+  },
+  "Spinner": {
+   "name": "Spinner",
+   "file": "src/components/ui/Spinner.tsx",
+   "line": 2,
+   "kind": "function",
+   "props": [
+    "size",
+    "label"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "Button",
+    "DataTable",
+    "OrderTimeline",
+    "ProductEditor",
+    "ProtectedRoute",
+    "ProductGrid",
+    "Reviews",
+    "SearchResults"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "StatCard": {
+   "name": "StatCard",
+   "file": "src/features/admin/StatCard.tsx",
+   "line": 5,
+   "kind": "function",
+   "props": [
+    "title",
+    "metrics"
+   ],
+   "state": [],
+   "renders": [
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Card@src/features/admin/Card.tsx"
+   ],
+   "usedBy": [
+    "AdminDashboard"
+   ],
+   "pages": [
+    "/admin"
+   ]
+  },
+  "StepIndicator": {
+   "name": "StepIndicator",
+   "file": "src/features/checkout/StepIndicator.tsx",
+   "line": 6,
+   "kind": "function",
+   "props": [
+    "current",
+    "completed"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "CheckoutWizard"
+   ],
+   "pages": [
+    "/checkout"
+   ]
+  },
+  "StoreProvider": {
+   "name": "StoreProvider",
+   "file": "src/store/StoreProvider.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "SuccessPage": {
+   "name": "SuccessPage",
+   "file": "app/checkout/success/page.tsx",
+   "line": 7,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/checkout/success"
+   ]
+  },
+  "TabsList": {
+   "name": "TabsList",
+   "file": "src/components/ui/Tabs.tsx",
+   "line": 16,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "FeaturedCollections"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "TabsPanel": {
+   "name": "TabsPanel",
+   "file": "src/components/ui/Tabs.tsx",
+   "line": 25,
+   "kind": "function",
+   "props": [
+    "value",
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "FeaturedCollections"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "TabsRoot": {
+   "name": "TabsRoot",
+   "file": "src/components/ui/Tabs.tsx",
+   "line": 11,
+   "kind": "function",
+   "props": [
+    "defaultValue",
+    "children"
+   ],
+   "state": [
+    "active"
+   ],
+   "renders": [],
+   "usedBy": [
+    "FeaturedCollections"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "TabsTrigger": {
+   "name": "TabsTrigger",
+   "file": "src/components/ui/Tabs.tsx",
+   "line": 20,
+   "kind": "function",
+   "props": [
+    "value",
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "FeaturedCollections"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "ThemeProvider": {
+   "name": "ThemeProvider",
+   "file": "src/features/theme/ThemeContext.tsx",
+   "line": 8,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [
+    "theme",
+    "userChoice"
+   ],
+   "renders": [],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "ToastItem": {
+   "name": "ToastItem",
+   "file": "src/features/toast/ToastViewport.tsx",
+   "line": 6,
+   "kind": "function",
+   "props": [
+    "toast",
+    "onDismiss"
+   ],
+   "state": [],
+   "renders": [
+    "Badge"
+   ],
+   "usedBy": [
+    "ToastViewport"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "ToastProvider": {
+   "name": "ToastProvider",
+   "file": "src/features/toast/ToastContext.tsx",
+   "line": 19,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [
+    "toasts"
+   ],
+   "renders": [],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "ToastViewport": {
+   "name": "ToastViewport",
+   "file": "src/features/toast/ToastViewport.tsx",
+   "line": 23,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "ToastItem"
+   ],
+   "usedBy": [
+    "RootLayout"
+   ],
+   "pages": [
+    "/account/orders/[orderId]",
+    "/account",
+    "/admin/orders",
+    "/admin",
+    "/admin/products/[...slug]",
+    "/blog/[[...slug]]",
+    "/cart",
+    "/checkout",
+    "/checkout/success",
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  },
+  "Tooltip": {
+   "name": "Tooltip",
+   "file": "src/components/ui/Tooltip.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [
+    "text",
+    "children"
+   ],
+   "state": [
+    "visible",
+    "position"
+   ],
+   "renders": [],
+   "usedBy": [
+    "ProductCard"
+   ],
+   "pages": [
+    "/",
+    "/products/[id]",
+    "/products",
+    "/search"
+   ]
+  }
+ },
+ "pages": {
+  "/": {
+   "file": "app/page.tsx",
+   "component": "HomePage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "HomePage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "HeroBanner",
+    "FeaturedCollections",
+    "NewsletterForm",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "TabsRoot",
+    "TabsList",
+    "TabsTrigger",
+    "TabsPanel",
+    "ProductGrid",
+    "Spinner",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "ProductCard",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Input",
+    "Tooltip"
+   ]
+  },
+  "/account": {
+   "file": "app/(account)/account/page.tsx",
+   "component": "AccountPage",
+   "layouts": [
+    "RootLayout",
+    "AccountLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "AccountLayout",
+    "AccountPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProtectedRoute",
+    "AccountNav",
+    "ProfileForm",
+    "LoginForm",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "Input",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody"
+   ]
+  },
+  "/account/orders/[orderId]": {
+   "file": "app/(account)/account/orders/[orderId]/page.tsx",
+   "component": "OrderDetailPage",
+   "layouts": [
+    "RootLayout",
+    "AccountLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "AccountLayout",
+    "OrderDetailPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProtectedRoute",
+    "AccountNav",
+    "OrderTimeline",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "Badge",
+    "CardBody",
+    "CartItem",
+    "Modal",
+    "OrderSummary",
+    "Input"
+   ]
+  },
+  "/admin": {
+   "file": "app/(admin)/admin/page.tsx",
+   "component": "AdminDashboard",
+   "layouts": [
+    "RootLayout",
+    "AdminLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "AdminLayout",
+    "AdminDashboard",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProtectedRoute",
+    "AdminSidebar",
+    "ErrorBoundary",
+    "StatCard",
+    "LiveVisitors",
+    "SalesPanel",
+    "RecentOrders",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Card@src/features/admin/Card.tsx",
+    "SalesChart",
+    "DataTable",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Input"
+   ]
+  },
+  "/admin/orders": {
+   "file": "app/(admin)/admin/orders/page.tsx",
+   "component": "AdminOrdersPage",
+   "layouts": [
+    "RootLayout",
+    "AdminLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "AdminLayout",
+    "AdminOrdersPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProtectedRoute",
+    "AdminSidebar",
+    "ErrorBoundary",
+    "RecentOrders",
+    "OrderEditor",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "DataTable",
+    "Modal",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "Badge",
+    "CardBody",
+    "CartItem",
+    "OrderSummary",
+    "Input"
+   ]
+  },
+  "/admin/products/[...slug]": {
+   "file": "app/(admin)/admin/products/[...slug]/page.tsx",
+   "component": "AdminProductPage",
+   "layouts": [
+    "RootLayout",
+    "AdminLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "AdminLayout",
+    "AdminProductPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProtectedRoute",
+    "AdminSidebar",
+    "ErrorBoundary",
+    "ProductEditor",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "Input",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody"
+   ]
+  },
+  "/blog/[[...slug]]": {
+   "file": "app/blog/[[...slug]]/page.tsx",
+   "component": "BlogPage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "BlogPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "LegacyButton",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Input"
+   ]
+  },
+  "/cart": {
+   "file": "app/cart/page.tsx",
+   "component": "CartPage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "CartPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "CartItem",
+    "OrderSummary",
+    "Button",
+    "SearchBar",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Input",
+    "Spinner",
+    "Modal",
+    "Badge"
+   ]
+  },
+  "/checkout": {
+   "file": "app/checkout/page.tsx",
+   "component": "CheckoutPage",
+   "layouts": [
+    "RootLayout",
+    "CheckoutLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "CheckoutLayout",
+    "CheckoutPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProtectedRoute",
+    "CheckoutWizard",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "StepIndicator",
+    "AddressStep",
+    "PaymentForm",
+    "CartItem",
+    "OrderSummary",
+    "Modal",
+    "Badge",
+    "AddressForm",
+    "Input",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody"
+   ]
+  },
+  "/checkout/success": {
+   "file": "app/checkout/success/page.tsx",
+   "component": "SuccessPage",
+   "layouts": [
+    "RootLayout",
+    "CheckoutLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "CheckoutLayout",
+    "SuccessPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Card@src/components/ui/Card.tsx",
+    "CardHeader",
+    "CardBody",
+    "Input"
+   ]
+  },
+  "/products": {
+   "file": "app/products/page.tsx",
+   "component": "ProductsPage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "ProductsPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "Filters",
+    "ProductGrid",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Input",
+    "Spinner",
+    "ProductCard",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Card@src/components/ui/Card.tsx",
+    "Tooltip",
+    "CardHeader",
+    "CardBody"
+   ]
+  },
+  "/products/[id]": {
+   "file": "app/products/[id]/page.tsx",
+   "component": "ProductDetailPage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "ProductDetailPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "ProductGallery",
+    "ProductInfo",
+    "Reviews",
+    "RelatedProducts",
+    "SearchBar",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Badge",
+    "AddToCartButton",
+    "Spinner",
+    "ProductCard",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Input",
+    "Card@src/components/ui/Card.tsx",
+    "Tooltip",
+    "CardHeader",
+    "CardBody"
+   ]
+  },
+  "/search": {
+   "file": "app/search/page.tsx",
+   "component": "SearchPage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "SearchPage",
+    "StoreProvider",
+    "AuthProvider",
+    "ThemeProvider",
+    "ToastProvider",
+    "Header",
+    "Footer",
+    "ToastViewport",
+    "SearchBar",
+    "SearchResults",
+    "Button",
+    "CartBadge",
+    "CartDrawer",
+    "ToastItem",
+    "Spinner",
+    "ProductCard",
+    "Modal",
+    "CartItem",
+    "OrderSummary",
+    "Badge",
+    "Card@src/components/ui/Card.tsx",
+    "Tooltip",
+    "CardHeader",
+    "CardBody",
+    "Input"
+   ]
+  }
+ }
+}

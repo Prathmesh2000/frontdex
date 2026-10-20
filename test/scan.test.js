@@ -48,7 +48,7 @@ test('memory leaks: uncleared resources are flagged, cleaned ones are not', () =
   assert.deepEqual(C.Modal.timers.map((t) => t.cleared), [true]);
   assert.deepEqual(C.PaymentForm.timers.map((t) => [t.type, t.cleared]), [['interval', true]]);
   assert.equal(C.ProductGrid.timers[0].type, 'observer');
-  assert.equal(issuesOf('Modal').length, 0);
+  assert.equal(issuesOf('Modal', 'memory-leak').length, 0);
 });
 
 test('render loops, unsafe async updates and stale dependencies', () => {
@@ -116,4 +116,59 @@ test('regeneration keeps human-owned fields', () => {
   assert.equal(merged.components.Header.owner, 'web-core');
   assert.equal(merged.components.Header['x-figma'], 'https://figma.com/x');
   assert.equal(merged.pages['/'].description, 'Landing');
+});
+
+test('monorepo: workspace packages resolve to source across apps', () => {
+  const mono = example('monorepo');
+  assert.deepEqual(validateCatalogue(mono), { valid: true, errors: [] });
+  assert.equal(mono.info.packageManager, 'pnpm');
+  assert.deepEqual(mono.info.workspaces, ['@acme/admin', '@acme/web', '@acme/ui']);
+  const M = mono.components;
+  // `@acme/ui` (main → dist/index.js) and `@acme/ui/card` (exports map) both land on packages/ui/src.
+  assert.equal(M.Button.file, 'packages/ui/src/button.tsx');
+  assert.equal(M.Button.workspace, '@acme/ui');
+  assert.deepEqual(M.Button.usedBy.sort(), ['Dashboard', 'HomePage', 'SettingsPage']);
+  assert.deepEqual(M.Card.usedBy.sort(), ['Dashboard', 'HomePage', 'Users']);
+  // `@/components/Hero` comes from apps/web/tsconfig.json paths, which extends the root base config.
+  assert.deepEqual(M.Hero.usedBy, ['HomePage']);
+  assert.equal(M.HomePage.externals, undefined);
+  // Both apps serve `/`: the Next app keeps the plain key, the admin app's route is keyed by its workspace.
+  assert.equal(mono.pages['/'].workspace, '@acme/web');
+  assert.equal(mono.pages['/ (@acme/admin)'].component, 'Dashboard');
+  assert.deepEqual(mono.pages['/settings'].layouts, ['RootLayout']);
+  assert.deepEqual(mono.health.unusedComponents, ['Badge']);
+});
+
+test('package manager detection: packageManager field, then lockfiles; Yarn berry and PnP', async () => {
+  const { detectPackageManager } = await import('../src/scanner/workspace.js');
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const project = (files, pkg = {}) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-'));
+    for (const f of files) fs.writeFileSync(path.join(dir, f), '');
+    return detectPackageManager(dir, pkg);
+  };
+  assert.equal(project(['package-lock.json']), 'npm');
+  assert.equal(project(['pnpm-lock.yaml', 'package-lock.json']), 'pnpm');
+  assert.equal(project(['bun.lock']), 'bun');
+  assert.equal(project(['yarn.lock']), 'yarn');
+  assert.equal(project(['yarn.lock', '.yarnrc.yml']), 'yarn-berry');
+  assert.equal(project(['yarn.lock', '.yarnrc.yml', '.pnp.cjs']), 'yarn-pnp');
+  assert.equal(project(['package-lock.json'], { packageManager: 'pnpm@10.0.0' }), 'pnpm');
+  assert.equal(project([]), null);
+});
+
+test('Next.js server side: route handlers, middleware, server actions, metadata, client/server rendering', () => {
+  assert.deepEqual(shop.endpoints['/api/orders'], { kind: 'route-handler', file: 'app/api/orders/route.ts', methods: ['GET', 'POST'] });
+  assert.deepEqual(shop.endpoints.middleware, { kind: 'middleware', file: 'src/middleware.ts' });
+  assert.deepEqual(shop.endpoints['action:subscribe'].importedBy, ['src/features/newsletter/NewsletterForm.tsx']);
+  assert.equal(shop.pages['/'].metadata, 'static');
+  // ProfileForm's module says 'use client'; Button has no directive but is rendered by client components.
+  assert.equal(C.ProfileForm.rendering, 'client');
+  assert.equal(C.Button.rendering, 'client');
+  assert.equal(C.NewsletterForm.rendering, 'server');
+  assert.equal(C.RootLayout.rendering, 'server');
+  // demo: LiveVisitors is a class component imported straight into a server page.
+  assert.ok(issuesOf('LiveVisitors', 'client-code-in-server-component').length);
+  assert.equal(issuesOf('ProfileForm', 'client-code-in-server-component').length, 0);
 });

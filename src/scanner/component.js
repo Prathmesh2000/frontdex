@@ -1,4 +1,5 @@
 const MAX_TEXT = 80;
+const SIGNALS = { createSignal: 'signal', createStore: 'signal', createMemo: 'computed', useSignal: 'signal', useStore: 'signal', useComputed$: 'computed' };
 const MAX_CALLS = 12;
 
 const HOOK_CATEGORY = {
@@ -289,6 +290,15 @@ export function extractFunctionComponent(fnPath, ctx) {
 
   fnPath.traverse({
     CallExpression(p) {
+      // Solid createSignal/createStore/createMemo and Qwik useSignal/useStore/useComputed$ hold component state.
+      const signal = SIGNALS[memberText(p.node.callee)];
+      if (signal) {
+        const id = p.parentPath.isVariableDeclarator() ? p.parent.id : null;
+        const [valueId, setterId] = id?.type === 'ArrayPattern' ? id.elements : [id];
+        if (valueId?.type === 'Identifier') {
+          record.state[valueId.name] = { source: signal, ...(signal === 'signal' && p.node.arguments[0] && { initial: text(code, p.node.arguments[0]) }), ...(setterId?.type === 'Identifier' && { setter: setterId.name }) };
+        }
+      }
       const hook = hookName(p.node.callee);
       if (!hook) return;
       record.hooks.set(hook, (record.hooks.get(hook) ?? 0) + 1);

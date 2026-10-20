@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://react-catalogue.dev/schema/1.0/catalogue.schema.json",
+  "$id": "https://github.com/Prathmesh2000/frontdex/spec/catalogue.schema.json",
   "title": "CatalogueSpec 1.1",
   "type": "object",
   "required": [
@@ -36,6 +36,13 @@
         "$ref": "#/definitions/Page"
       }
     },
+    "endpoints": {
+      "type": "object",
+      "description": "Server entry points defined by the frontend: route handlers, API routes, resource routes, middleware, server actions.",
+      "additionalProperties": {
+        "$ref": "#/definitions/Endpoint"
+      }
+    },
     "stores": {
       "type": "object",
       "additionalProperties": {
@@ -48,11 +55,172 @@
         "$ref": "#/definitions/Stylesheet"
       }
     },
+    "tokens": {
+      "type": "object",
+      "description": "Design tokens (CSS custom properties, Tailwind theme) and hard-coded values that drift from them.",
+      "additionalProperties": false,
+      "properties": {
+        "definitions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "at"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "css",
+                  "tailwind",
+                  "theme"
+                ]
+              },
+              "uses": {
+                "type": "integer",
+                "description": "References: classes resolving to it and var() uses in stylesheets."
+              },
+              "usedBy": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Components using it through Tailwind classes."
+              }
+            }
+          }
+        },
+        "drift": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "at",
+              "token",
+              "match"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "property": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string"
+              },
+              "defined": {
+                "type": "string"
+              },
+              "match": {
+                "enum": [
+                  "exact",
+                  "near"
+                ]
+              },
+              "use": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "duplicates": {
+      "type": "array",
+      "description": "Pairs of components that look like duplicates, best match first.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "components",
+          "score"
+        ],
+        "properties": {
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "score": {
+            "type": "number"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Custom hooks: where they are defined, the stores/contexts they read, the hooks they call, and the components using them.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "reads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "calls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "health": {
       "$ref": "#/definitions/Health"
+    },
+    "aliases": {
+      "$ref": "#/definitions/Aliases"
     }
   },
   "definitions": {
+    "Aliases": {
+      "type": "object",
+      "description": "Former ComponentIds / HookIds that changed (e.g. the file moved) → the current ID, so old references keep resolving. Chains are collapsed; an alias is dropped once its old ID is live again or its target is gone.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
     "StringList": {
       "type": "array",
       "items": {
@@ -84,13 +252,43 @@
             "next"
           ]
         },
+        "packageManager": {
+          "enum": [
+            "npm",
+            "pnpm",
+            "yarn",
+            "yarn-berry",
+            "yarn-pnp",
+            "bun"
+          ],
+          "description": "Detected from the packageManager field or the lockfile."
+        },
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Workspace (monorepo) package names."
+        },
         "routers": {
           "type": "array",
           "items": {
             "enum": [
               "next-app",
               "next-pages",
-              "react-router"
+              "react-router",
+              "react-router-v7",
+              "remix",
+              "tanstack",
+              "gatsby",
+              "solid-start",
+              "qwik-city",
+              "nuxt",
+              "vue-router",
+              "sveltekit",
+              "astro",
+              "html",
+              "angular-router"
             ]
           }
         },
@@ -120,6 +318,10 @@
         "file": {
           "type": "string"
         },
+        "workspace": {
+          "type": "string",
+          "description": "Workspace package that contains the component (monorepos only)."
+        },
         "line": {
           "type": "integer",
           "minimum": 1
@@ -129,8 +331,17 @@
             "function",
             "class",
             "memo",
-            "forwardRef"
+            "forwardRef",
+            "styled"
           ]
+        },
+        "tag": {
+          "type": "string",
+          "description": "Custom element tag (customElements.define / @customElement)."
+        },
+        "element": {
+          "type": "string",
+          "description": "HTML element a styled component renders (styled.button → button)."
         },
         "export": {
           "enum": [
@@ -138,6 +349,13 @@
             "named",
             "none"
           ]
+        },
+        "rendering": {
+          "enum": [
+            "client",
+            "server"
+          ],
+          "description": "App Router only: client when its module, or a component that renders it, has 'use client'."
         },
         "description": {
           "type": "string"
@@ -154,6 +372,49 @@
         },
         "owner": {
           "type": "string"
+        },
+        "codeowners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Owners from the CODEOWNERS file (last matching rule)."
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Test files for the component, relative to its folder."
+        },
+        "stories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Story files (Storybook/Ladle CSF) for the component, relative to its folder."
+        },
+        "examples": {
+          "type": "array",
+          "description": "Stories (CSF) as usage examples: \"<file>#<Story>\" and the args (props) each renders with.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "story"
+            ],
+            "properties": {
+              "story": {
+                "type": "string"
+              },
+              "args": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         },
         "props": {
           "type": "object",
@@ -301,7 +562,16 @@
           "enum": [
             "useState",
             "useReducer",
-            "class"
+            "class",
+            "ref",
+            "reactive",
+            "computed",
+            "data",
+            "$state",
+            "let",
+            "field",
+            "x-data",
+            "signal"
           ]
         },
         "initial": {
@@ -400,11 +670,27 @@
           "enum": [
             "next-app",
             "next-pages",
-            "react-router"
+            "react-router",
+            "react-router-v7",
+            "remix",
+            "tanstack",
+            "gatsby",
+            "solid-start",
+            "qwik-city",
+            "nuxt",
+            "vue-router",
+            "sveltekit",
+            "astro",
+            "html",
+            "angular-router"
           ]
         },
         "file": {
           "type": "string"
+        },
+        "workspace": {
+          "type": "string",
+          "description": "Workspace package that serves the page (monorepos only)."
         },
         "component": {
           "type": "string"
@@ -414,6 +700,21 @@
         },
         "layouts": {
           "$ref": "#/definitions/StringList"
+        },
+        "wrappers": {
+          "$ref": "#/definitions/StringList",
+          "description": "Guards and providers wrapping the page component in the route element, outermost first."
+        },
+        "alternates": {
+          "$ref": "#/definitions/StringList",
+          "description": "Other components the route can show instead of the page (loaders, redirects, conditional branches)."
+        },
+        "metadata": {
+          "enum": [
+            "static",
+            "dynamic"
+          ],
+          "description": "Next.js metadata export: a metadata object or generateMetadata."
         },
         "components": {
           "$ref": "#/definitions/StringList"
@@ -664,6 +965,10 @@
         },
         "at": {
           "type": "string"
+        },
+        "token": {
+          "type": "string",
+          "description": "Tailwind theme token the utility class resolves to."
         }
       },
       "required": [
@@ -891,6 +1196,50 @@
               "name"
             ]
           }
+        }
+      }
+    },
+    "Endpoint": {
+      "type": "object",
+      "required": [
+        "kind",
+        "file"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "kind": {
+          "enum": [
+            "route-handler",
+            "api-route",
+            "resource-route",
+            "middleware",
+            "server-action"
+          ]
+        },
+        "file": {
+          "type": "string"
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workspace": {
+          "type": "string"
+        },
+        "importedBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files importing a server action."
+        },
+        "description": {
+          "type": "string"
         }
       }
     }

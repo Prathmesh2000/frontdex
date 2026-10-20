@@ -1,0 +1,206 @@
+{
+ "generator": "frontdex 0.3.0",
+ "components": {
+  "Badge": {
+   "name": "Badge",
+   "file": "packages/ui/src/badge.tsx",
+   "line": 2,
+   "kind": "function",
+   "props": [
+    "label"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": []
+  },
+  "Button": {
+   "name": "Button",
+   "file": "packages/ui/src/button.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [
+    "variant",
+    "onClick",
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "Dashboard",
+    "HomePage",
+    "SettingsPage"
+   ],
+   "pages": [
+    "/",
+    "/settings",
+    "/ (@acme/admin)"
+   ]
+  },
+  "Card": {
+   "name": "Card",
+   "file": "packages/ui/src/card.tsx",
+   "line": 3,
+   "kind": "function",
+   "props": [
+    "title",
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "Dashboard",
+    "Users",
+    "HomePage"
+   ],
+   "pages": [
+    "/",
+    "/ (@acme/admin)",
+    "/users"
+   ]
+  },
+  "Dashboard": {
+   "name": "Dashboard",
+   "file": "apps/admin/src/pages/Dashboard.tsx",
+   "line": 4,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "Card",
+    "Button"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/ (@acme/admin)"
+   ]
+  },
+  "Hero": {
+   "name": "Hero",
+   "file": "apps/web/src/components/Hero.tsx",
+   "line": 1,
+   "kind": "function",
+   "props": [
+    "title"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [
+    "HomePage"
+   ],
+   "pages": [
+    "/"
+   ]
+  },
+  "HomePage": {
+   "name": "HomePage",
+   "file": "apps/web/app/page.tsx",
+   "line": 5,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "Hero",
+    "Card",
+    "Button"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/"
+   ]
+  },
+  "RootLayout": {
+   "name": "RootLayout",
+   "file": "apps/web/app/layout.tsx",
+   "line": 3,
+   "kind": "function",
+   "props": [
+    "children"
+   ],
+   "state": [],
+   "renders": [],
+   "usedBy": [],
+   "pages": [
+    "/",
+    "/settings"
+   ]
+  },
+  "SettingsPage": {
+   "name": "SettingsPage",
+   "file": "apps/web/app/settings/page.tsx",
+   "line": 3,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "Button"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/settings"
+   ]
+  },
+  "Users": {
+   "name": "Users",
+   "file": "apps/admin/src/pages/Users.tsx",
+   "line": 3,
+   "kind": "function",
+   "props": [],
+   "state": [],
+   "renders": [
+    "Card"
+   ],
+   "usedBy": [],
+   "pages": [
+    "/users"
+   ]
+  }
+ },
+ "pages": {
+  "/": {
+   "file": "apps/web/app/page.tsx",
+   "component": "HomePage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "HomePage",
+    "Hero",
+    "Card",
+    "Button"
+   ]
+  },
+  "/ (@acme/admin)": {
+   "file": "apps/admin/src/main.tsx",
+   "component": "Dashboard",
+   "layouts": [],
+   "components": [
+    "Dashboard",
+    "Card",
+    "Button"
+   ]
+  },
+  "/settings": {
+   "file": "apps/web/app/settings/page.tsx",
+   "component": "SettingsPage",
+   "layouts": [
+    "RootLayout"
+   ],
+   "components": [
+    "RootLayout",
+    "SettingsPage",
+    "Button"
+   ]
+  },
+  "/users": {
+   "file": "apps/admin/src/main.tsx",
+   "component": "Users",
+   "layouts": [],
+   "components": [
+    "Users",
+    "Card"
+   ]
+  }
+ }
+}

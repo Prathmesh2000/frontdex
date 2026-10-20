@@ -1,4 +1,9 @@
 node_modules/
+frontdex-site/
 catalogue-site/
 .DS_Store
 *.log
+ui-react/dist/
+dist-pack/
+.claude/
+compat/react-catalogue/schema.json

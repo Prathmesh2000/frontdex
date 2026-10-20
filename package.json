@@ -1,34 +1,62 @@
 {
-  "name": "react-catalogue",
-  "version": "0.2.0",
-  "description": "Knowledge base for React and Next.js frontends: components, pages, state, lifecycle, history, and a separate view for coding agents (MCP, rules, hooks).",
+  "name": "frontdex",
+  "version": "0.3.0",
+  "description": "A living index of your frontend for developers and coding agents: components, pages, state, APIs, design tokens and health. React, Next.js, Vue, Svelte, Astro, Angular, Web Components and plain HTML.",
   "type": "module",
   "bin": {
-    "rcat": "bin/rcat.js",
-    "react-catalogue": "bin/rcat.js"
+    "frontdex": "bin/frontdex.js",
+    "fdx": "bin/frontdex.js",
+    "rcat": "bin/frontdex.js",
+    "react-catalogue": "bin/frontdex.js"
   },
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./next": "./src/plugins/next.cjs",
-    "./vite": "./src/plugins/vite.js",
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./next": {
+      "types": "./src/plugins/next.d.cts",
+      "default": "./src/plugins/next.cjs"
+    },
+    "./vite": {
+      "types": "./src/plugins/vite.d.ts",
+      "default": "./src/plugins/vite.js"
+    },
+    "./webpack": {
+      "types": "./src/plugins/webpack.d.cts",
+      "default": "./src/plugins/webpack.cjs"
+    },
+    "./rspack": {
+      "types": "./src/plugins/webpack.d.cts",
+      "default": "./src/plugins/webpack.cjs"
+    },
+    "./overlay": "./src/overlay/overlay.js",
     "./query": "./src/query.cjs",
-    "./schema.json": "./spec/catalogue.schema.json"
+    "./schema.json": "./spec/catalogue.schema.json",
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",
     "src",
     "ui",
     "spec",
-    "docs"
+    "docs",
+    "ui-react/dist"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "build:ui": "vite build --config ui-react/vite.config.mjs",
+    "dev:ui": "vite --config ui-react/vite.config.mjs",
+    "prepack": "npm run build:ui",
+    "typecheck:ui": "tsc --noEmit --strict --jsx react-jsx --module esnext --moduleResolution bundler --target es2023 --skipLibCheck --types vite/client ui-react/src/main.tsx",
+    "gen:types": "node scripts/schema-types.js"
   },
   "engines": {
     "node": ">=18.17"
   },
   "keywords": [
+    "frontdex",
     "react",
     "nextjs",
     "catalogue",
@@ -48,5 +76,24 @@
     "@babel/traverse": "^7.29.10",
     "ajv": "^8.20.0",
     "yaml": "^2.9.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Prathmesh2000/frontdex.git"
+  },
+  "devDependencies": {
+    "@astrojs/compiler": "^4.0.0",
+    "@tanstack/react-router": "^1.170.45",
+    "@tanstack/react-virtual": "^3.14.21",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "svelte": "^5.57.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vue": "^3.5.44"
+  },
+  "types": "./src/index.d.ts"
 }

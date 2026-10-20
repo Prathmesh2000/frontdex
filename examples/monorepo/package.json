@@ -1,0 +1,6 @@
+{
+  "name": "acme-monorepo",
+  "private": true,
+  "description": "pnpm workspace sample for frontdex: a Next app and a Vite admin app sharing @acme/ui",
+  "packageManager": "pnpm@9.15.0"
+}

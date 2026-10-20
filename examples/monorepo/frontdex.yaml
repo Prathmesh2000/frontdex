@@ -1,0 +1,256 @@
+# yaml-language-server: $schema=./node_modules/frontdex/spec/catalogue.schema.json
+catalogue: "1.1"
+info:
+  title: acme-monorepo
+  framework: next
+  packageManager: pnpm
+  workspaces:
+    - "@acme/admin"
+    - "@acme/web"
+    - "@acme/ui"
+  routers:
+    - next-app
+    - react-router
+  generator: frontdex 0.3.0
+  generatedAt: 2026-10-19T12:48:49.106Z
+components:
+  Badge:
+    name: Badge
+    file: packages/ui/src/badge.tsx
+    workspace: "@acme/ui"
+    line: 2
+    kind: function
+    export: named
+    props:
+      label:
+        type: string
+        required: true
+    styles:
+      classes:
+        - name: badge
+  Button:
+    name: Button
+    file: packages/ui/src/button.tsx
+    workspace: "@acme/ui"
+    line: 4
+    kind: function
+    export: named
+    description: Primary action button shared by every Acme app.
+    props:
+      variant:
+        type: "'primary' | 'ghost'"
+        required: false
+        default: "'primary'"
+      onClick:
+        type: () => void
+        required: false
+      children:
+        type: ReactNode
+        required: true
+    styles:
+      classes:
+        - name: btn
+        - name: btn-
+    usedBy:
+      - Dashboard
+      - HomePage
+      - SettingsPage
+    pages:
+      - /
+      - /settings
+      - / (@acme/admin)
+    rendering: server
+  Card:
+    name: Card
+    file: packages/ui/src/card.tsx
+    workspace: "@acme/ui"
+    line: 3
+    kind: function
+    export: named
+    props:
+      title:
+        type: string
+        required: true
+      children:
+        type: ReactNode
+        required: true
+    styles:
+      classes:
+        - name: card
+    usedBy:
+      - Dashboard
+      - Users
+      - HomePage
+    pages:
+      - /
+      - / (@acme/admin)
+      - /users
+    rendering: server
+  Dashboard:
+    name: Dashboard
+    file: apps/admin/src/pages/Dashboard.tsx
+    workspace: "@acme/admin"
+    line: 4
+    kind: function
+    export: named
+    renders:
+      - Card
+      - Button
+    passes:
+      Card:
+        - name: title
+          value: '"Dashboard"'
+          line: 6
+      Button:
+        - name: onClick
+          value: () => window.location.reload()
+          line: 7
+    pages:
+      - / (@acme/admin)
+  Hero:
+    name: Hero
+    file: apps/web/src/components/Hero.tsx
+    workspace: "@acme/web"
+    line: 1
+    kind: function
+    export: named
+    props:
+      title:
+        type: string
+        required: true
+    styles:
+      classes:
+        - name: hero
+    usedBy:
+      - HomePage
+    pages:
+      - /
+    rendering: server
+  HomePage:
+    name: HomePage
+    file: apps/web/app/page.tsx
+    workspace: "@acme/web"
+    line: 5
+    kind: function
+    export: default
+    renders:
+      - Hero
+      - Card
+      - Button
+    passes:
+      Hero:
+        - name: title
+          value: '"Acme"'
+          line: 8
+      Card:
+        - name: title
+          value: '"Get started"'
+          line: 9
+      Button:
+        - name: variant
+          value: '"primary"'
+          line: 10
+    pages:
+      - /
+    rendering: server
+  RootLayout:
+    name: RootLayout
+    file: apps/web/app/layout.tsx
+    workspace: "@acme/web"
+    line: 3
+    kind: function
+    export: default
+    props:
+      children:
+        type: ReactNode
+        required: true
+    pages:
+      - /
+      - /settings
+    rendering: server
+  SettingsPage:
+    name: SettingsPage
+    file: apps/web/app/settings/page.tsx
+    workspace: "@acme/web"
+    line: 3
+    kind: function
+    export: default
+    renders:
+      - Button
+    passes:
+      Button:
+        - name: variant
+          value: '"ghost"'
+          line: 4
+    pages:
+      - /settings
+    rendering: server
+  Users:
+    name: Users
+    file: apps/admin/src/pages/Users.tsx
+    workspace: "@acme/admin"
+    line: 3
+    kind: function
+    export: named
+    renders:
+      - Card
+    passes:
+      Card:
+        - name: title
+          value: '"Users"'
+          line: 4
+    pages:
+      - /users
+pages:
+  /:
+    router: next-app
+    file: apps/web/app/page.tsx
+    component: HomePage
+    layouts:
+      - RootLayout
+    workspace: "@acme/web"
+    components:
+      - RootLayout
+      - HomePage
+      - Hero
+      - Card
+      - Button
+  / (@acme/admin):
+    router: react-router
+    file: apps/admin/src/main.tsx
+    component: Dashboard
+    workspace: "@acme/admin"
+    components:
+      - Dashboard
+      - Card
+      - Button
+  /settings:
+    router: next-app
+    file: apps/web/app/settings/page.tsx
+    component: SettingsPage
+    layouts:
+      - RootLayout
+    workspace: "@acme/web"
+    components:
+      - RootLayout
+      - SettingsPage
+      - Button
+  /users:
+    router: react-router
+    file: apps/admin/src/main.tsx
+    component: Users
+    workspace: "@acme/admin"
+    components:
+      - Users
+      - Card
+stores: {}
+styles: {}
+health:
+  issues:
+    high: 0
+    medium: 0
+    low: 0
+    info: 0
+  byType: {}
+  unusedComponents:
+    - Badge

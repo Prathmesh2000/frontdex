@@ -498,3 +498,8 @@ svg.graph .col-title { fill: var(--muted); font-size: 10.5px; letter-spacing: 0.
   .route { grid-template-columns: 1fr; gap: 8px; }
   .grid { grid-template-columns: 1fr; }
 }
+
+/* design system view */
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); margin-right: 6px; vertical-align: -2px; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+#design-q, #diff-base { min-width: 280px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }

@@ -12,7 +12,7 @@
   const len = (x) => (Array.isArray(x) ? x.length : x ? Object.keys(x).length : 0);
 
   if (!cat) {
-    main.innerHTML = '<p>No catalogue data found. Run <code>rcat scan</code> and reload.</p>';
+    main.innerHTML = '<p>No catalogue data found. Run <code>frontdex scan</code> and reload.</p>';
     return;
   }
 
@@ -194,7 +194,7 @@
       const hl = $('.hl', body);
       if (hl) body.scrollTop = hl.offsetTop - 120;
     } catch {
-      body.innerHTML = `<p class="none" style="padding:16px">Source is available while running <code>rcat serve</code>.${ROOT ? '' : ' This is a static export.'}</p>`;
+      body.innerHTML = `<p class="none" style="padding:16px">Source is available while running <code>frontdex serve</code>.${ROOT ? '' : ' This is a static export.'}</p>`;
     }
   }
   document.addEventListener('click', (e) => {
@@ -530,7 +530,7 @@
   }
 
   function pagePreview(route, params) {
-    if (!PREVIEW) return '<p class="none">Set <code>"preview": "http://localhost:3000"</code> in catalogue.config.json to see the rendered page here.</p>';
+    if (!PREVIEW) return '<p class="none">Set <code>"preview": "http://localhost:3000"</code> in frontdex.config.json to see the rendered page here.</p>';
     const dyn = [...route.matchAll(/\[\[?(?:\.\.\.)?(\w+)\]\]?|:(\w+)/g)].map((m) => m[1] || m[2]);
     const values = Object.fromEntries(dyn.map((d) => [d, params.get(`param.${d}`) || '1']));
     const path = route.replace(/ \(.*\)$/, '').replace(/\[\[?(?:\.\.\.)?(\w+)\]\]?|:(\w+)/g, (_m, a, b) => enc(values[a || b])).replace(/\/\*$/, '/');
@@ -543,7 +543,7 @@
         <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${I('external', 'sm')} Open</a>
       </div>
       <div class="frame-wrap"><iframe src="${esc(url)}" style="width:${width}" title="Preview of ${esc(route)}"></iframe></div>
-      <p class="preview-hint">Live view of your running app (${esc(PREVIEW)}). Start it with your dev command if the frame is empty; change the URL with <code>"preview"</code> in catalogue.config.json.</p>`;
+      <p class="preview-hint">Live view of your running app (${esc(PREVIEW)}). Start it with your dev command if the frame is empty; change the URL with <code>"preview"</code> in frontdex.config.json.</p>`;
   }
 
   const ISSUE_CAP = 200;
@@ -637,8 +637,8 @@
     main.innerHTML = `
       ${trail ? trailCrumbs(trail) : crumbs([{ href: '#/components', html: `${I('grid', 'sm')}Components` }, { html: esc(c.name) }])}
       <div class="vh"><div class="vh-title">${compIco(id, 'lg')}<div>
-        <h1>${esc(c.name)}<span class="badge k-${esc(c.kind)}">${esc(c.kind)}</span>${pageRoots.has(id) ? '<span class="badge k-page">page</span>' : ''}${layoutIds.has(id) ? '<span class="badge k-layout">layout</span>' : ''}${c.status ? `<span class="badge${c.status === 'deprecated' ? ' danger' : ''}">${esc(c.status)}</span>` : ''}${(c.tags || []).map((t) => `<span class="badge">#${esc(t)}</span>`).join('')}</h1>
-        <div class="sub">${fileRef(c.file, c.line)}${c.export && c.export !== 'none' ? `<span>${esc(c.export)} export</span>` : ''}${c.owner ? `<span>owner ${esc(c.owner)}</span>` : ''}${trails.length > 1 ? `<a href="${compHref(id, { tab: 'family', trail: keepTrail })}">${I('family', 'sm')} ${trails.length} paths to this component</a>` : ''}</div>
+        <h1>${esc(c.name)}<span class="badge k-${esc(c.kind)}">${esc(c.kind)}</span>${pageRoots.has(id) ? '<span class="badge k-page">page</span>' : ''}${layoutIds.has(id) ? '<span class="badge k-layout">layout</span>' : ''}${c.status ? `<span class="badge${c.status === 'deprecated' ? ' danger' : ''}">${esc(c.status)}</span>` : ''}${c.rendering ? `<span class="badge" title="Next.js App Router rendering">${esc(c.rendering)}</span>` : ''}${c.tag ? `<span class="badge mono">&lt;${esc(c.tag)}&gt;</span>` : ''}${c.element ? `<span class="badge mono">styled.${esc(c.element)}</span>` : ''}${(c.tags || []).map((t) => `<span class="badge">#${esc(t)}</span>`).join('')}</h1>
+        <div class="sub">${fileRef(c.file, c.line)}${c.export && c.export !== 'none' ? `<span>${esc(c.export)} export</span>` : ''}${c.owner ? `<span>owner ${esc(c.owner)}</span>` : ''}${c.codeowners ? `<span>CODEOWNERS ${c.codeowners.map(esc).join(', ')}</span>` : ''}${c.tests ? `<span>${I('check', 'sm')} tested (${c.tests.map(esc).join(', ')})</span>` : ''}${trails.length > 1 ? `<a href="${compHref(id, { tab: 'family', trail: keepTrail })}">${I('family', 'sm')} ${trails.length} paths to this component</a>` : ''}</div>
       </div></div>
       <div class="btn-row">${ROOT ? `<a class="btn" href="vscode://file/${esc(ROOT)}/${esc(c.file)}:${c.line || 1}">${I('external', 'sm')} VS Code</a>` : ''}<a class="btn" href="#/g?focus=${enc('c:' + id)}">${I('graph', 'sm')} Graph</a></div></div>
       ${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}
@@ -656,7 +656,8 @@
       <div id="tab-body"></div>`;
     const body = $('#tab-body');
     const render = {
-      overview: () => dataFlow(m),
+      // Stories (CSF) shown as real usage examples above the data flow.
+      overview: () => (c.examples?.length ? card('Usage examples (stories)', ico('prop', 'eye'), `<div class="table-wrap"><table><tbody>${c.examples.map((e) => `<tr><td class="mono small">${esc(e.story.split('#')[1])}</td><td><code>&lt;${esc(c.name)}${Object.entries(e.args || {}).map(([k, v]) => (String(v).startsWith('"') ? ` ${esc(k)}=${esc(v)}` : ` ${esc(k)}={${esc(v)}}`)).join('')} /&gt;</code></td><td>${fileRef(dirOf(c.file) ? `${dirOf(c.file)}/${e.story.split('#')[0]}` : e.story.split('#')[0])}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: c.examples.length }) + '<div style="height:16px"></div>' : '') + dataFlow(m),
       family: () => family(m, trails, trail),
       internals: () => internals(m),
       lifecycle: () => lifecycleTab(m),
@@ -673,7 +674,7 @@
           const hl = $('.hl', body);
           if (hl) hl.parentElement.parentElement.scrollTop = hl.offsetTop - 80;
         })
-        .catch(() => ($('.card', body).lastElementChild.outerHTML = '<p class="none">Source is available while running <code>rcat serve</code>.</p>'));
+        .catch(() => ($('.card', body).lastElementChild.outerHTML = '<p class="none">Source is available while running <code>frontdex serve</code>.</p>'));
     } else body.innerHTML = render();
     const focus = params.get('focus');
     if (focus) {
@@ -1002,10 +1003,16 @@
       if (HEALTH.unusedImports?.length) rows.push(card('Unused imports', ico('issue', 'propIn'), `<div class="table-wrap"><table><tbody>${HEALTH.unusedImports.map((u) => `<tr><td><code>${esc(u.name)}</code> <span class="muted small">from ${esc(u.source)}</span></td><td>${fileRef(u.file, u.line)}</td></tr>`).join('')}</tbody></table></div>`, { count: HEALTH.unusedImports.length }));
       return rows.length ? `<div class="grid">${rows.join('')}</div>` : `<div class="all-good">${I('check')} No dead code found.</div>`;
     };
+    const SERVER = Object.entries(cat.endpoints || {});
+    const serverCard = () =>
+      SERVER.length
+        ? card('Server endpoints defined here', ico('api', 'globe'), `<div class="table-wrap"><table><thead><tr><th>Endpoint</th><th>Kind</th><th>Methods</th><th>File</th><th>Imported by</th></tr></thead><tbody>${SERVER.map(([k, e]) => `<tr><td><code>${esc(k)}</code></td><td><span class="badge">${esc(e.kind)}</span></td><td>${(e.methods || []).map(methodBadge).join(' ') || '–'}</td><td>${fileRef(e.file)}</td><td>${(e.importedBy || []).map((f) => fileRef(f)).join(' ') || '–'}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: SERVER.length, sub: 'Route handlers, API routes, resource routes, middleware and server actions.' }) + '<div style="height:16px"></div>'
+        : '';
     const apiView = () =>
-      ENDPOINTS.size
+      serverCard() +
+      (ENDPOINTS.size
         ? card('API endpoints', ico('api', 'swap'), `<div class="table-wrap"><table><thead><tr><th>Method</th><th>Endpoint</th><th>Called from</th></tr></thead><tbody>${[...ENDPOINTS.values()].sort((a, b) => natural(a.target ?? '', b.target ?? '')).map((e) => `<tr><td>${methodBadge(e.method)}</td><td><code>${esc(e.target ?? '?')}</code></td><td>${e.users.map((u) => `<div style="margin-bottom:4px">${compChip(u.id)} <span class="muted small">${esc(u.via)} · ${esc(u.in)}</span> ${lineRef(C[u.id].file, u.line)}</div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: ENDPOINTS.size })
-        : '<p class="none">No API calls detected.</p>';
+        : '<p class="none">No API calls detected.</p>');
     const sevCard = (s, icon) => `<a class="stat" href="${healthHref({ severity: sev === s ? undefined : s })}" style="${sev === s ? 'border-color:var(--accent)' : ''}"><span class="ico lg sev-icon ${s}" style="background:var(--surface-2)">${I(icon)}</span><div><div class="v">${counts[s] ?? 0}</div><div class="k">${s}</div></div></a>`;
     main.innerHTML = `
       ${crumbs([{ href: '#/', html: `${I('sitemap', 'sm')}Site map` }, { html: `${I('pulse', 'sm')}Health` }])}
@@ -1019,6 +1026,84 @@
       </div>
       <div id="health-body"></div>`;
     $('#health-body').innerHTML = view === 'api' ? apiView() : type === 'dead-code' ? deadCode() : card(type ? esc(type.replace(/-/g, ' ')) : 'All component issues', ico('issue', 'alert'), issueList(filtered), { wide: true, count: filtered.length }) + (type ? '' : `<div style="margin-top:20px">${deadCode()}</div>`);
+  }
+
+  // ---------- view: design system (tokens, drift, duplicates) ----------
+  const TOKENS = cat.tokens || { definitions: {}, drift: [] };
+  const DUPES = cat.duplicates || [];
+  const atRef = (at) => (at ? fileRef(at.slice(0, at.lastIndexOf(':')), at.slice(at.lastIndexOf(':') + 1)) : '');
+  // Only plain color literals become swatches; anything else stays text (values come from source, never trusted as CSS).
+  const isColor = (v) => /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,/%]+\)|hsla?\([\d\s.,/%deg]+\))$/i.test(String(v).trim());
+  const swatch = (v) => (isColor(v) ? `<span class="swatch" style="background:${esc(v)}"></span>` : '');
+
+  function viewDesign(params) {
+    const tab = ['tokens', 'drift', 'duplicates'].includes(params.get('tab')) ? params.get('tab') : DUPES.length && !len(TOKENS.definitions) ? 'duplicates' : 'tokens';
+    const q = (params.get('q') || '').toLowerCase();
+    const defs = Object.entries(TOKENS.definitions).filter(([k, t]) => !q || k.toLowerCase().includes(q) || String(t.value).toLowerCase().includes(q));
+    const drift = (TOKENS.drift || []).filter((d) => !q || `${d.token} ${d.value} ${d.at}`.toLowerCase().includes(q));
+    const tabs = [['tokens', 'Tokens', 'droplet', len(TOKENS.definitions)], ['drift', 'Hard-coded values', 'alert', len(TOKENS.drift)], ['duplicates', 'Possible duplicates', 'siblings', DUPES.length]];
+    const bodies = {
+      tokens: () =>
+        defs.length
+          ? card('Design tokens', ico('style', 'droplet'), `<div class="table-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Source</th><th>Defined</th><th>Uses</th><th>Used by</th></tr></thead><tbody>${defs.map(([k, t]) => `<tr><td><code>${esc(k)}</code></td><td>${swatch(t.value)}<code>${esc(t.value)}</code></td><td><span class="badge">${esc(t.source || 'css')}</span></td><td>${atRef(t.at)}</td><td>${t.uses ?? '–'}</td><td>${(t.usedBy || []).map((id) => compChip(id)).join(' ') || '<span class="muted small">–</span>'}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: defs.length, sub: 'CSS custom properties, Tailwind theme and JS theme objects. Uses counts classes resolving to the token and var() references.' })
+          : '<div class="card"><p class="none">No design tokens found (CSS custom properties, a Tailwind theme or a JS theme object).</p></div>',
+      drift: () =>
+        drift.length
+          ? card('Values that should use a token', ico('issue', 'alert'), `<div class="table-wrap"><table><thead><tr><th>Value</th><th>Where</th><th>Match</th><th>Use instead</th><th>Token defined</th></tr></thead><tbody>${drift.map((d) => `<tr><td>${swatch(d.value)}<code>${esc(d.value)}</code>${d.property && d.property !== 'class' ? ` <span class="muted small">${esc(d.property)}</span>` : ''}</td><td>${atRef(d.at)}</td><td><span class="badge${d.match === 'near' ? ' sev-low' : ''}">${esc(d.match)}</span> <code>${esc(d.token)}</code></td><td><code>${esc(d.use)}</code></td><td>${atRef(d.defined)}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: drift.length, sub: 'Exact or near (similar color) matches. `frontdex fix --tokens` replaces exact matches in stylesheets.' })
+          : `<div class="all-good">${I('check')} No hard-coded values match a token.</div>`,
+      duplicates: () =>
+        DUPES.length
+          ? `<div class="grid">${DUPES.map((d) => card(`${esc(nm(d.components[0]))} ~ ${esc(nm(d.components[1]))}`, ico('issue', 'siblings'), `<div class="chips">${d.components.map((id) => compChip(id)).join('')}</div><p class="small">${(d.reasons || []).map(esc).join(' · ')}</p>`, { count: `${Math.round(d.score * 100)}%` })).join('')}</div>`
+          : `<div class="all-good">${I('check')} No likely duplicate components.</div>`,
+    };
+    main.innerHTML = `
+      ${crumbs([{ href: '#/', html: `${I('sitemap', 'sm')}Site map` }, { html: `${I('palette', 'sm')}Design system` }])}
+      <div class="vh"><div class="vh-title">${ico('style', 'palette', 'lg')}<div><h1>Design system</h1><div class="sub">Tokens, the hard-coded values that drift from them, and components that look like duplicates.</div></div></div></div>
+      <nav class="tabs">${tabs.map(([k, label, icon, n]) => `<a href="#/design${qs({ tab: k, q: q || undefined })}" class="${k === tab ? 'active' : ''}">${I(icon, 'sm')}${label}${n ? `<span class="n">${n}</span>` : ''}</a>`).join('')}</nav>
+      ${tab !== 'duplicates' ? `<div class="toolbar" style="position:static"><input id="design-q" type="search" placeholder="Filter by token, value or file…" value="${esc(q)}" /></div>` : ''}
+      <div>${bodies[tab]()}</div>`;
+    $('#design-q')?.addEventListener('change', (e) => (location.hash = `#/design${qs({ tab, q: e.target.value || undefined })}`));
+  }
+
+  // ---------- view: custom hooks ----------
+  function viewHooks() {
+    const hooks = Object.entries(cat.hooks || {}).sort(([a], [b]) => natural(a, b));
+    main.innerHTML = `
+      ${crumbs([{ href: '#/', html: `${I('sitemap', 'sm')}Site map` }, { html: `${I('fn', 'sm')}Hooks` }])}
+      <div class="vh"><div class="vh-title">${ico('fn', 'fn', 'lg')}<div><h1>Custom hooks</h1><div class="sub">Where each hook lives, the contexts and stores it reads, the hooks it calls and the components using it. Check here before writing a new one.</div></div></div></div>
+      ${hooks.length ? card('Hooks', ico('fn', 'fn'), `<div class="table-wrap"><table><thead><tr><th>Hook</th><th>File</th><th>Reads</th><th>Calls</th><th>Used by</th></tr></thead><tbody>${hooks.map(([id, h]) => `<tr><td><code>${esc(id.split('@')[0])}</code></td><td>${fileRef(h.file, h.line)}</td><td>${(h.reads || []).map((r) => `<span class="chip plain mono">${esc(r)}</span>`).join(' ') || '–'}</td><td>${(h.calls || []).map((r) => `<span class="chip plain mono">${esc(r)}</span>`).join(' ') || '–'}</td><td>${(h.usedBy || []).map((x) => compChip(x)).join(' ') || '<span class="muted small">unused</span>'}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: hooks.length }) : '<div class="card"><p class="none">No custom hooks found.</p></div>'}`;
+  }
+
+  // ---------- view: changes (git diff report, served by `frontdex serve`) ----------
+  async function viewChanges(params) {
+    const base = params.get('base') || 'HEAD';
+    main.innerHTML = `
+      ${crumbs([{ href: '#/', html: `${I('sitemap', 'sm')}Site map` }, { html: `${I('swap', 'sm')}Changes` }])}
+      <div class="vh"><div class="vh-title">${ico('api', 'swap', 'lg')}<div><h1>Changes</h1><div class="sub">What the working tree does to the frontend compared with a git ref: components, pages and endpoints changed, pages each change reaches, issues introduced.</div></div></div></div>
+      <div class="toolbar" style="position:static"><label class="small">Compare with <input id="diff-base" value="${esc(base)}" placeholder="HEAD, origin/main, a commit…" /></label></div>
+      <div id="diff-body"><p class="none">Loading…</p></div>`;
+    $('#diff-base').addEventListener('change', (e) => (location.hash = `#/changes${qs({ base: e.target.value || undefined })}`));
+    const out = $('#diff-body');
+    if (!ROOT) return void (out.innerHTML = '<div class="card"><p class="none">Diffs need a git checkout: run <code>frontdex serve</code>, or <code>frontdex diff</code> in a terminal.</p></div>');
+    let r;
+    try {
+      const res = await fetch(`api/diff${qs({ base })}`);
+      r = await res.json();
+      if (!res.ok) throw new Error(r.error || res.statusText);
+    } catch (err) {
+      return void (out.innerHTML = `<div class="card"><p class="none">${esc(err.message)}</p></div>`);
+    }
+    const changeBadge = (c) => `<span class="badge${c === 'removed' ? ' danger' : ''}">${esc(c)}</span>`;
+    out.innerHTML = `
+      <div class="stats">
+        <div class="stat"><div><div class="v">${r.components.length}</div><div class="k">components changed</div></div></div>
+        <div class="stat"><div><div class="v">${r.affectedPages.length}</div><div class="k">pages affected</div></div></div>
+        <div class="stat"><div><div class="v">${r.newIssues.length}</div><div class="k">new issues</div></div></div>
+        <div class="stat"><div><div class="v">${r.fixedIssues}</div><div class="k">issues fixed</div></div></div>
+      </div>
+      ${r.components.length ? card('Components', ico('cube', 'cube'), `<div class="table-wrap"><table><thead><tr><th>Component</th><th>Change</th><th>Pages reached</th><th>Dependents</th></tr></thead><tbody>${r.components.map((c) => `<tr><td>${C[c.id] ? compChip(c.id) : `<code>${esc(c.id)}</code>`}</td><td>${changeBadge(c.change)} ${c.details.map((d) => `<div class="small mono">${esc(d)}</div>`).join('')}</td><td>${c.pages.map(pageChip).join(' ') || '–'}</td><td>${c.dependents.length || '–'}</td></tr>`).join('')}</tbody></table></div>`, { wide: true, count: r.components.length }) : `<div class="all-good">${I('check')} No component changes compared with ${esc(base)}.</div>`}
+      ${r.pages.length || r.endpoints.length ? card('Routes and endpoints', ico('route', 'globe'), `<ul class="plain">${r.pages.map((p) => `<li>${changeBadge(p.change)} ${P[p.route] ? pageChip(p.route) : `<code>${esc(p.route)}</code>`} <span class="small">${p.details.map(esc).join(' · ')}</span></li>`).join('')}${r.endpoints.map((e) => `<li>${changeBadge(e.change)} endpoint <code>${esc(e.key)}</code></li>`).join('')}</ul>`, { wide: true }) : ''}
+      ${r.newIssues.length ? card('New issues', ico('issue', 'alert'), issueList(r.newIssues.map((i) => ({ ...i, id: i.component }))), { wide: true, count: r.newIssues.length }) : ''}`;
   }
 
   // ---------- graph ----------
@@ -1459,7 +1544,7 @@
         location.reload();
       } else toast(`${I('check', 'sm')} Up to date · ${r.delta.parsed} file(s) re-parsed, ${r.delta.reused} unchanged`);
     } catch {
-      toast(`${I('alert', 'sm')} Rescan failed. Is <code>rcat serve</code> still running?`);
+      toast(`${I('alert', 'sm')} Rescan failed. Is <code>frontdex serve</code> still running?`);
     } finally {
       btn.disabled = false;
       btn.classList.remove('spin');
@@ -1472,6 +1557,9 @@
     ['grid', 'Components', '#/components', ['components', 'f', 'c']],
     ['layers', 'State', '#/state', ['state']],
     ['pulse', 'Health', '#/health', ['health']],
+    ['palette', 'Design', '#/design', ['design']],
+    ['fn', 'Hooks', '#/hooks', ['hooks']],
+    ['swap', 'Changes', '#/changes', ['changes']],
     ['graph', 'Graph', '#/g', ['g']],
     ['history', 'History', '#/history', ['history']],
   ];
@@ -1521,6 +1609,9 @@
     else if (type === 'f') viewComponents(arg, params.get('q') || '');
     else if (type === 'state') viewState(params);
     else if (type === 'health') viewHealth(params);
+    else if (type === 'design') viewDesign(params);
+    else if (type === 'hooks') viewHooks();
+    else if (type === 'changes') viewChanges(params);
     else if (type === 'g') viewGraph(params);
     else if (type === 'history') viewHistory(params.get('q') || '');
     else viewSiteMap();

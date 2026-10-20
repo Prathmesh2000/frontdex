@@ -1,0 +1,53 @@
+name: frontdex PR report
+description: Comments on a pull request with its frontend impact (components and pages changed, pages affected, new issues) and can fail on new high-severity issues.
+branding:
+  icon: layers
+  color: blue
+inputs:
+  working-directory:
+    description: Folder of the app that has frontdex installed (where frontdex.config.json lives).
+    default: .
+  fail-on:
+    description: Fail the job when the PR introduces issues at or above this severity (high, medium or low). Empty never fails.
+    default: ''
+  comment:
+    description: Post (or update) the report as a PR comment.
+    default: 'true'
+  github-token:
+    description: Token used to comment. Needs pull-requests write.
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - name: Build report
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        BASE: origin/${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+        # The base branch must be fetched (actions/checkout with fetch-depth: 0).
+        git rev-parse --verify --quiet "$BASE" >/dev/null || git fetch --no-tags origin "${BASE#origin/}"
+        npx --no-install frontdex check --quiet || echo "::warning::frontdex.yaml is out of date in this PR; run 'frontdex scan' and commit it"
+        npx --no-install frontdex pr-comment "$BASE" > "$RUNNER_TEMP/frontdex-report.md"
+        cat "$RUNNER_TEMP/frontdex-report.md" >> "$GITHUB_STEP_SUMMARY"
+    - name: Comment on the PR
+      if: inputs.comment == 'true' && github.event.pull_request.number
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        set -euo pipefail
+        # One sticky comment per PR: update the previous report instead of adding a new one each push.
+        id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq '.[] | select(.body | contains("<!-- frontdex-pr-report -->")) | .id' | tail -n 1)
+        if [ -n "$id" ]; then
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F "body=@$RUNNER_TEMP/frontdex-report.md" >/dev/null
+        else
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/frontdex-report.md"
+        fi
+    - name: Gate on new issues
+      if: inputs.fail-on != ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npx --no-install frontdex diff "origin/${{ github.base_ref }}" --fail-on "${{ inputs.fail-on }}" > /dev/null

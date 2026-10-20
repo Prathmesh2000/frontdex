@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { listSourceFiles, STYLE_EXT } from './files.js';
+import { findDuplicates } from './analyzers/duplicates.js';
+import { cssValues, tailwindTokens, tokenReport } from './analyzers/tokens.js';
 
 /*
  * Cross-file insights computed after linking:
@@ -25,15 +26,32 @@ function parseStylesheet(file) {
     const line = text.slice(0, m.index + m[0].length - selector.trimStart().length).split('\n').length;
     for (const c of selector.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) classes[c[1]] ??= line;
   }
-  return classes;
+  return { classes, ...cssValues(text) };
 }
 
-export function buildProjectInsights({ config, modules, entries, components, pages, rel, resolveImport }) {
+/**
+ * `styleFiles` comes from the same directory walk as the sources. `styleCache` maps a stylesheet's relative path to
+ * its last parse ({ mtimeMs, size, classes }); unchanged sheets are not re-read. Returns the next cache in `styleCache`.
+ */
+export function buildProjectInsights({ modules, entries, components, pages, rel, resolveImport, styleFiles, styleCache = {}, touched, roots = [] }) {
+  const sheetValues = {};
   const idOfLocal = new Map(entries.map(({ mod, c }) => [`${mod.file}#${c.name}`, c.id]));
 
   // ---------- styles ----------
   const sheets = {};
-  for (const file of listSourceFiles(config, STYLE_EXT)) sheets[rel(file)] = { module: /\.module\.\w+$/.test(file), classes: parseStylesheet(file), importedBy: [] };
+  const nextStyleCache = {};
+  let stylesParsed = 0;
+  for (const file of styleFiles) {
+    const key = rel(file);
+    const prev = styleCache[key];
+    // `touched` (watcher fast path): sheets the watcher did not report are trusted without a stat.
+    const stat = touched && prev && !touched.has(file) ? null : fs.statSync(file);
+    const entry = prev && (!stat || (prev.mtimeMs === stat.mtimeMs && prev.size === stat.size)) ? prev : (stylesParsed++, { mtimeMs: stat.mtimeMs, size: stat.size, ...parseStylesheet(file) });
+    nextStyleCache[key] = entry;
+    sheets[key] = { module: /\.module\.\w+$/.test(file), classes: entry.classes, importedBy: [] };
+    sheetValues[key] = { tokens: entry.tokens, literals: entry.literals, vars: entry.vars };
+  }
+  const styleCacheDirty = stylesParsed > 0 || Object.keys(styleCache).length !== styleFiles.length;
   const globalIndex = new Map();
   for (const [file, sheet] of Object.entries(sheets)) {
     if (sheet.module) continue;
@@ -84,11 +102,19 @@ export function buildProjectInsights({ config, modules, entries, components, pag
     };
   }
   const add = (list, id) => !list.includes(id) && list.push(id);
+  // First match wins, as Object.keys(stores).find() did: a scan per read was quadratic in stores × components.
+  const sliceByKey = new Map();
+  const sliceByAction = new Map();
+  for (const [k, s] of Object.entries(stores)) {
+    if (s.kind !== 'redux-slice') continue;
+    if (!sliceByKey.has(s.key)) sliceByKey.set(s.key, k);
+    for (const a of [...(s.actions ?? []), ...(s.thunks ?? [])]) if (!sliceByAction.has(a)) sliceByAction.set(a, k);
+  }
   for (const { c } of entries) {
     const comp = components[c.id];
     for (const r of comp.store?.reads ?? []) {
       let sid;
-      if (r.kind === 'redux') sid = Object.keys(stores).find((k) => stores[k].kind === 'redux-slice' && r.path && r.path.split('.')[0] === stores[k].key);
+      if (r.kind === 'redux') sid = r.path ? sliceByKey.get(r.path.split('.')[0]) : undefined;
       else if (r.kind === 'zustand') sid = `zustand:${r.store}`;
       else if (r.kind === 'context') sid = `context:${r.store}`;
       if (!sid || !stores[sid]) continue;
@@ -97,7 +123,7 @@ export function buildProjectInsights({ config, modules, entries, components, pag
       add(isAction ? stores[sid].writers : stores[sid].readers, c.id);
     }
     for (const w of comp.store?.writes ?? []) {
-      const sid = Object.keys(stores).find((k) => stores[k].kind === 'redux-slice' && (stores[k].actions?.includes(w.action) || stores[k].thunks?.includes(w.action)));
+      const sid = sliceByAction.get(w.action);
       if (!sid) continue;
       w.storeId = sid;
       add(stores[sid].writers, c.id);
@@ -148,7 +174,7 @@ export function buildProjectInsights({ config, modules, entries, components, pag
       if (target) importedFiles.add(target);
     }
   }
-  const isEntry = (file) => FRAMEWORK_FILE.test(path.basename(file)) || /(^|\/)(pages|app)\//.test(rel(file)) || [...modules.get(file)?.routes ?? []].length > 0;
+  const isEntry = (file) => FRAMEWORK_FILE.test(path.basename(file)) || /(^|\/)(pages|app)\//.test(rel(file)) || ((modules.get(file)?.routes?.length ?? 0) > 0 && !modules.get(file).staleRoutes);
   const unusedFiles = [];
   const unusedExports = [];
   for (const mod of modules.values()) {
@@ -169,6 +195,13 @@ export function buildProjectInsights({ config, modules, entries, components, pag
     .map(([id]) => id);
   const unusedImports = [...modules.values()].flatMap((mod) => (mod.unusedImports ?? []).map((u) => ({ file: rel(mod.file), ...u })));
 
+  // Analyzers that add issues must run before the totals below.
+  const duplicates = findDuplicates(components, pages);
+  const themes = [...modules.values()].flatMap((mod) => Object.entries(mod.themeTokens ?? {}).map(([name, t]) => [name, { value: t.value, at: `${rel(mod.file)}:${t.line}`, source: 'theme' }]));
+  // Styled components carry their CSS literals on the parse record (entries), keyed here by component id.
+  const styled = entries.filter(({ c }) => c.cssLiterals?.length).map(({ mod, c }) => ({ id: c.id, file: rel(mod.file), literals: c.cssLiterals }));
+  const tokens = tokenReport({ sheets: sheetValues, components, tailwind: { ...Object.fromEntries(themes), ...tailwindTokens(roots, rel) }, styled });
+
   const counts = Object.fromEntries(SEVERITIES.map((s) => [s, 0]));
   const byType = {};
   for (const comp of Object.values(components)) {
@@ -188,5 +221,5 @@ export function buildProjectInsights({ config, modules, entries, components, pag
     ...(unusedFiles.length && { unusedFiles }),
     ...(unusedImports.length && { unusedImports }),
   };
-  return { stores, styles, health };
+  return { stores, styles, health, duplicates, tokens, styleCache: nextStyleCache, styleCacheDirty };
 }
