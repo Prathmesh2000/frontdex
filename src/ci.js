@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import YAML from 'yaml';
 import { loadConfig } from './config.js';
-import { diffCatalogues, formatDetail, formatSummary } from './history.js';
+import { diffCatalogues, formatDetail, formatSummary, keyed, withoutLines } from './history.js';
 import { scanProject } from './scanner/graph.js';
 import { assembleShards, readCatalogue, shardDir } from './spec.js';
 
@@ -80,6 +80,47 @@ function reach(catalogue, id) {
 
 const issueKey = (i) => `${i.type}|${i.message}`;
 
+const CELL = 90;
+const clip = (s) => (s.length > CELL ? `${s.slice(0, CELL - 1)}…` : s);
+/** One value in a diff cell, written the way a reviewer reads it in code (props as `?: type = default`). */
+function show(field, v) {
+  if (v === undefined) return undefined;
+  if (field === 'props' && v && typeof v === 'object') return clip(`${v.required ? '' : '?'}: ${v.type ?? 'unknown'}${v.default !== undefined ? ` = ${v.default}` : ''}`);
+  if (field === 'state' && v && typeof v === 'object') return clip(`${v.source ?? 'state'}${v.initial !== undefined ? ` = ${v.initial}` : ''}`);
+  if (Array.isArray(v) && v.every((x) => typeof x === 'string')) return clip(v.join(' | '));
+  return clip(typeof v === 'string' ? v : JSON.stringify(withoutLines(v)));
+}
+
+/**
+ * A component change field by field, with values: [{ field, from, to }] for plain values, or
+ * [{ field, added: [{ key, after }], removed: [{ key, before }], modified: [{ key, before, after }] }] for maps and lists
+ * (props, state, children, conditions …). The same keys as the history diff, so entries line up with it.
+ */
+function fieldChanges(before = {}, after = {}, details = []) {
+  return details.map((d) => {
+    if ('from' in d || 'to' in d) return { field: d.field, from: show(d.field, d.from), to: show(d.field, d.to) };
+    const a = keyed(before[d.field]);
+    const b = keyed(after[d.field]);
+    const modified = (d.modified ?? []).filter((k) => k !== 'order');
+    // In plain lists (renders, navigatesTo) the value is the entry itself: showing it twice is noise.
+    const value = (key, v) => (v === key ? undefined : v);
+    return {
+      field: d.field,
+      ...(d.added && { added: d.added.map((key) => ({ key, after: value(key, show(d.field, b.get(key))) })) }),
+      ...(d.removed && { removed: d.removed.map((key) => ({ key, before: value(key, show(d.field, a.get(key))) })) }),
+      ...(modified.length && { modified: modified.map((key) => ({ key, before: show(d.field, a.get(key)), after: show(d.field, b.get(key)) })) }),
+      ...(d.modified?.includes('order') && { reordered: true }),
+    };
+  });
+}
+
+/** "props +1 −1 ~1 · renders +2" for a component's fields. */
+export function fieldSummary(fields) {
+  return fields
+    .map((f) => ('from' in f || 'to' in f ? `${f.field} changed` : [f.field, f.added && `+${f.added.length}`, f.removed && `−${f.removed.length}`, f.modified && `~${f.modified.length}`, f.reordered && 'reordered'].filter(Boolean).join(' ')))
+    .join(' · ');
+}
+
 /** Diff + blast radius + issues introduced by `head` relative to `base`. */
 export function buildReport(base, head, { baseLabel = 'base', headLabel = 'head' } = {}) {
   // Issues are reported on their own (new/fixed); ownership and test files are metadata, not a change to the UI.
@@ -91,7 +132,8 @@ export function buildReport(base, head, { baseLabel = 'base', headLabel = 'head'
       // Removed components are traced in the base catalogue: those pages lost something.
       const { pages, dependents } = reach(c.change === 'removed' ? base : head, c.key);
       pages.forEach((p) => affectedPages.add(p));
-      return { id: c.key, ...(c.from && { from: c.from }), change: c.change, details: (c.details ?? []).map(formatDetail), pages, dependents, file: (head.components[c.key] ?? base.components[c.key])?.file };
+      const fields = fieldChanges(base.components[c.from ?? c.key], head.components[c.key], c.details ?? []);
+      return { id: c.key, ...(c.from && { from: c.from }), change: c.change, details: (c.details ?? []).map(formatDetail), fields, pages, dependents, file: (head.components[c.key] ?? base.components[c.key])?.file };
     });
   for (const c of changes) if (c.kind === 'pages') affectedPages.add(c.key);
 
@@ -132,9 +174,15 @@ export function buildReport(base, head, { baseLabel = 'base', headLabel = 'head'
 export function formatText(report) {
   const lines = [`frontdex diff ${report.base} → ${report.head}: ${formatSummary(report.summary)}`];
   for (const c of report.components) {
-    lines.push(`  ${{ added: '+', removed: '−', changed: '~', renamed: '→' }[c.change]} ${c.from ? `${c.from} → ` : ''}${c.id}${c.details.length ? `  ${c.details.join(' · ')}` : ''}`);
-    if (c.pages.length) lines.push(`      pages: ${c.pages.join(', ')}${c.dependents.length ? ` · dependents: ${c.dependents.length}` : ''}`);
+    lines.push('', `${{ added: '+', removed: '−', changed: '~', renamed: '→' }[c.change]} ${c.from ? `${c.from} → ` : ''}${c.id}${c.file ? `  ${c.file}` : ''}`);
+    // One line per changed entry, field name once, so a reviewer (or an agent) sees exactly what moved.
+    for (const f of c.fields ?? []) {
+      const rows = 'from' in f || 'to' in f ? [`~ ${f.from ?? '∅'} → ${f.to ?? '∅'}`] : [...(f.added ?? []).map((e) => `+ ${e.key}${e.after ? ` ${e.after}` : ''}`), ...(f.removed ?? []).map((e) => `− ${e.key}`), ...(f.modified ?? []).map((e) => `~ ${e.key}: ${e.before ?? '∅'} → ${e.after ?? '∅'}`), ...(f.reordered ? ['~ order'] : [])];
+      rows.forEach((row, i) => lines.push(`    ${(i ? '' : f.field).padEnd(13)}${row}`));
+    }
+    if (c.pages.length || c.dependents.length) lines.push(`    ${'reaches'.padEnd(13)}${c.pages.length ? c.pages.join(', ') : 'no page'}${c.dependents.length ? ` · ${c.dependents.length} dependent component(s)` : ''}`);
   }
+  if (report.components.length) lines.push('');
   for (const p of report.pages) lines.push(`  ${{ added: '+', removed: '−', changed: '~' }[p.change]} page ${p.route}${p.details.length ? `  ${p.details.join(' · ')}` : ''}`);
   for (const e of report.endpoints) lines.push(`  ${{ added: '+', removed: '−', changed: '~' }[e.change]} endpoint ${e.key}`);
   lines.push(`Pages affected: ${report.affectedPages.length ? report.affectedPages.join(', ') : 'none'}`);
@@ -149,6 +197,63 @@ export function formatText(report) {
 // Messages contain markup like <select>; GitHub would render it as HTML.
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// Table cells: escaped markup, and pipes that would end the cell.
+const cell = (t) => (t === undefined || t === '' ? '' : `\`${String(t).replace(/`/g, "'").replace(/\|/g, '\\|')}\``);
+const MAX_GRAPH_PAGES = 6;
+
+/**
+ * A Mermaid flowchart GitHub renders inline: each changed component (coloured by kind of change, with its field
+ * summary) linked to the pages it reaches. Gives a reviewer the blast radius before the details.
+ */
+function impactGraph(components) {
+  const label = (s) => String(s).replace(/"/g, '#quot;');
+  const pageIds = new Map();
+  const lines = ['```mermaid', 'flowchart LR'];
+  components.forEach((c, i) => {
+    const summary = fieldSummary(c.fields ?? []);
+    const deps = c.dependents.length ? `<br/>${c.dependents.length} dependent(s)` : '';
+    lines.push(`  c${i}["${label(c.id)}${summary ? `<br/><small>${label(summary)}</small>` : ''}${deps}"]:::${c.change}`);
+    for (const p of c.pages.slice(0, MAX_GRAPH_PAGES)) {
+      if (!pageIds.has(p)) pageIds.set(p, `p${pageIds.size}`), lines.push(`  ${pageIds.get(p)}(["${label(p)}"]):::page`);
+      lines.push(`  c${i} --> ${pageIds.get(p)}`);
+    }
+    if (c.pages.length > MAX_GRAPH_PAGES) lines.push(`  c${i} --> more${i}(["+${c.pages.length - MAX_GRAPH_PAGES} more page(s)"]):::page`);
+  });
+  lines.push(
+    '  classDef changed fill:#fef3c7,stroke:#d97706,color:#111',
+    '  classDef added fill:#dcfce7,stroke:#16a34a,color:#111',
+    '  classDef removed fill:#fee2e2,stroke:#dc2626,color:#111',
+    '  classDef renamed fill:#e0f2fe,stroke:#0284c7,color:#111',
+    '  classDef page fill:#eef2ff,stroke:#4f46e5,color:#111',
+    '```',
+  );
+  return lines;
+}
+
+/** A collapsible section per component: what changed, entry by entry, before and after. */
+function componentBlock(c, icon) {
+  const summary = fieldSummary(c.fields ?? []) || c.change;
+  const reach = `${c.pages.length} page(s)${c.dependents.length ? `, ${c.dependents.length} dependent(s)` : ''}`;
+  const out = [`<details><summary>${icon} <code>${esc(c.from ? `${c.from} → ${c.id}` : c.id)}</code> · ${esc(summary)} · reaches ${reach}</summary>`, ''];
+  if (c.file) out.push(`\`${c.file}\``, '');
+  const rows = [];
+  for (const f of c.fields ?? []) {
+    if ('from' in f || 'to' in f) rows.push([f.field, '✏️', '', f.from, f.to]);
+    for (const e of f.added ?? []) rows.push([f.field, '➕', e.key, '', e.after]);
+    for (const e of f.removed ?? []) rows.push([f.field, '➖', e.key, e.before, '']);
+    for (const e of f.modified ?? []) rows.push([f.field, '✏️', e.key, e.before, e.after]);
+    if (f.reordered) rows.push([f.field, '↕️', 'order', '', '']);
+  }
+  if (rows.length) {
+    out.push('| Field | | Entry | Before | After |', '|---|---|---|---|---|');
+    for (const [field, mark, key, before, after] of rows) out.push(`| ${field} | ${mark} | ${cell(key)} | ${cell(before)} | ${cell(after)} |`);
+    out.push('');
+  }
+  if (c.pages.length) out.push(`Pages: ${c.pages.map((p) => `\`${p}\``).join(' ')}`, '');
+  out.push('</details>');
+  return out;
+}
+
 export function formatMarkdown(report, { maxRows = 30 } = {}) {
   const high = report.newIssues.filter((i) => i.severity === 'high').length;
   const icon = { added: '🆕', removed: '🗑️', changed: '✏️', renamed: '🚚' };
@@ -159,11 +264,9 @@ export function formatMarkdown(report, { maxRows = 30 } = {}) {
     `**${formatSummary(report.summary)}** · **${report.affectedPages.length} page(s) affected** · ${report.newIssues.length} new issue(s)${high ? ` (**${high} high**)` : ''}${report.fixedIssues ? ` · ${report.fixedIssues} fixed` : ''}`,
   ];
   if (report.components.length) {
-    out.push('', '| | Component | Change | Pages | Dependents |', '|---|---|---|---|---|');
-    for (const c of report.components.slice(0, maxRows)) {
-      out.push(`| ${icon[c.change]} | \`${c.id}\` | ${c.details.length ? c.details.map(esc).join('<br>').replace(/\|/g, '\\|') : c.change} | ${c.pages.slice(0, 5).map((p) => `\`${p}\``).join(' ') || '–'}${c.pages.length > 5 ? ` +${c.pages.length - 5}` : ''} | ${c.dependents.length || '–'} |`);
-    }
-    if (report.components.length > maxRows) out.push(`| | … ${report.components.length - maxRows} more | | | |`);
+    out.push('', ...impactGraph(report.components.slice(0, maxRows)));
+    for (const c of report.components.slice(0, maxRows)) out.push('', ...componentBlock(c, icon[c.change]));
+    if (report.components.length > maxRows) out.push('', `_… ${report.components.length - maxRows} more component(s); run \`npx frontdex diff\` for all of them._`);
   }
   if (report.pages.length || report.endpoints.length) {
     out.push('', '**Routes and endpoints**', '');

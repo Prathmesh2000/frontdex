@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, appUrl, type Component, type ComponentRow, type Issue } from './api';
 import { Card, CompLink, FileRef, Header, Issues, Loading, PageLink, Swatch, useApi } from './lib';
 
@@ -586,77 +586,6 @@ export function State() {
   );
 }
 
-const CHANGE_CLS = { added: 'sev-info', removed: 'danger', changed: 'sev-low' } as const;
-
-/** What changed in the UI between two git refs (or a ref and the working tree), the same report as `frontdex diff`. */
-export function Changes({ base, head }: { base: string; head?: string }) {
-  const navigate = useNavigate();
-  const { data: r, error } = useApi(() => api.diff(base, head), [base, head]);
-  const submit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    navigate({ to: '/changes', search: { base: String(f.get('base') || 'HEAD'), head: String(f.get('head') || '') || undefined } });
-  };
-  return (
-    <>
-      <Header title="Changes" sub="Components, pages and endpoints that changed between two git refs, the pages they reach, and new issues." />
-      <form className="toolbar" style={{ position: 'static' }} onSubmit={submit}>
-        <input name="base" defaultValue={base} placeholder="base (e.g. main)" />
-        <input name="head" defaultValue={head ?? ''} placeholder="head (empty = working tree)" />
-        <button className="btn">Compare</button>
-      </form>
-      {!r ? (
-        <Loading error={error} />
-      ) : (
-        <>
-          <Card title="Components" count={r.components.length} sub={`${r.base} → ${r.head}`}>
-            {r.components.length ? (
-              <table>
-                <tbody>
-                  {r.components.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <span className={`badge ${CHANGE_CLS[c.change]}`}>{c.change}</span>
-                      </td>
-                      <td>{c.change === 'removed' ? <code>{c.id}</code> : <CompLink id={c.id} />}</td>
-                      <td className="small">{c.details.join('; ')}</td>
-                      <td className="muted small">
-                        {c.pages.length} pages · {c.dependents.length} dependents
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="none">No component changes.</p>
-            )}
-          </Card>
-          <Card title="Pages affected" count={r.affectedPages.length}>
-            <div className="chips">
-              {r.affectedPages.map((p) => (
-                <Link key={p} className="chip mono" to="/page" search={{ route: p }}>
-                  {p}
-                </Link>
-              ))}
-            </div>
-          </Card>
-          {r.endpoints.length > 0 && (
-            <Card title="Endpoints" count={r.endpoints.length}>
-              {r.endpoints.map((e) => (
-                <div key={e.key}>
-                  <span className={`badge ${CHANGE_CLS[e.change]}`}>{e.change}</span> <code>{e.key}</code>
-                </div>
-              ))}
-            </Card>
-          )}
-          <Card title="New issues" count={r.newIssues.length} sub={r.fixedIssues ? `${r.fixedIssues} fixed` : undefined}>
-            <Issues items={r.newIssues} />
-          </Card>
-        </>
-      )}
-    </>
-  );
-}
 
 export function History() {
   const { data, error } = useApi(api.history, []);

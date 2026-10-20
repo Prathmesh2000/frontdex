@@ -7,7 +7,8 @@ import { api, appUrl } from './api';
 import { GraphView } from './graph';
 import { SourceContext, SourcePanel, useApi } from './lib';
 import { Palette } from './palette';
-import { Changes, ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
+import { Changes } from './changes';
+import { ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
 
 // The previous UI sits beside this one, wherever the app is mounted.
 const CLASSIC = appUrl('classic/');

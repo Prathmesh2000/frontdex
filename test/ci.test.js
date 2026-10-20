@@ -70,3 +70,28 @@ test('git refs that look like options are rejected before reaching git', () => {
   assert.throws(() => catalogueAtRef(config, '--output=/tmp/x'), /Invalid git ref/);
   assert.throws(() => catalogueAtRef(config, 'no-such-ref-xyz'));
 });
+
+test('the diff report shows each changed entry with its before and after values', async () => {
+  const { buildReport, formatText, formatMarkdown } = await import('../src/ci.js');
+  const comp = (extra) => ({ name: 'Cart', file: 'src/Cart.tsx', kind: 'function', ...extra });
+  const base = { catalogue: '1.1', info: { title: 't' }, pages: { '/cart': { router: 'next-app', file: 'app/cart/page.tsx', component: 'Cart', components: ['Cart'] } }, components: {
+    Cart: comp({ props: { open: { type: 'boolean', required: true }, legacy: { type: 'string', required: false } }, renders: ['Spinner'], rendersWhen: { Spinner: ['loading'] }, pages: ['/cart'] }),
+    Spinner: { name: 'Spinner', file: 'src/Spinner.tsx', kind: 'function', usedBy: ['Cart'], pages: ['/cart'] },
+  } };
+  const head = structuredClone(base);
+  head.components.Cart.props = { open: { type: 'boolean', required: false, default: 'false' }, coupon: { type: 'string', required: false } };
+  head.components.Cart.rendersWhen = { Spinner: ['isLoading'] };
+  const report = buildReport(base, head);
+  const fields = Object.fromEntries(report.components[0].fields.map((f) => [f.field, f]));
+  assert.deepEqual(fields.props.added, [{ key: 'coupon', after: '?: string' }]);
+  assert.deepEqual(fields.props.removed, [{ key: 'legacy', before: '?: string' }]);
+  assert.deepEqual(fields.props.modified, [{ key: 'open', before: ': boolean', after: '?: boolean = false' }]);
+  assert.deepEqual(fields.rendersWhen.modified, [{ key: 'Spinner', before: 'loading', after: 'isLoading' }]);
+  const text = formatText(report);
+  assert.match(text, /props {8}\+ coupon \?: string/);
+  assert.match(text, /~ open: : boolean → \?: boolean = false/);
+  const md = formatMarkdown(report);
+  assert.match(md, /```mermaid\nflowchart LR/);
+  assert.match(md, /\| props \| ✏️ \| `open` \| `: boolean` \| `\?: boolean = false` \|/);
+  assert.match(md, /<details><summary>✏️ <code>Cart<\/code> · props \+1 −1 ~1 · rendersWhen ~1/);
+});

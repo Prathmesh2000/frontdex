@@ -33,9 +33,19 @@ export interface PageInfo { router?: string; file?: string; component?: string; 
 export interface Store { kind: string; name: string; file: string; line?: number; default?: string; readers?: string[]; writers?: string[]; providers?: string[] }
 export interface Graph { total: number; truncated: boolean; pages: Record<string, { component?: string; layouts: string[] }>; nodes: Record<string, { name: string; file: string; renders: string[]; usedBy: string[] }> }
 type Change = 'added' | 'removed' | 'changed';
+/** A changed field: `from`/`to` for plain values, or the entries added, removed and modified in a map or list. */
+export interface DiffField {
+  field: string;
+  from?: string; to?: string;
+  added?: { key: string; after?: string }[];
+  removed?: { key: string; before?: string }[];
+  modified?: { key: string; before?: string; after?: string }[];
+  reordered?: boolean;
+}
+export interface DiffComponent { id: string; from?: string; change: Change | 'renamed'; details: string[]; fields?: DiffField[]; pages: string[]; dependents: string[]; file?: string }
 export interface DiffReport {
   base: string; head: string; error?: string;
-  components: { id: string; change: Change; details: string[]; pages: string[]; dependents: string[]; file?: string }[];
+  components: DiffComponent[];
   pages: { route: string; change: Change; details: string[] }[];
   endpoints: { key: string; change: Change }[];
   affectedPages: string[]; newIssues: Issue[]; fixedIssues: number;
