@@ -212,11 +212,13 @@ flowchart LR
 | Field | Type | Owner | Description |
 |---|---|---|---|
 | `router` | see `info.routers` | gen | Params keep the router's syntax: `[id]` (Next, Gatsby, SolidStart, Qwik), `:id` (React Router, Remix), `$id` (TanStack). |
-| `file` | string | gen | File that declares the route (page file, or the file containing `<Route>`). |
+| `file` | string | gen | File that declares the route (page file, or the file containing `<Route>` or the route objects). React Router paths built from constants (`ROUTES.HOME`, template literals, `.slice()`) are resolved, also across files; routes declared in a component rendered by a `/parent/*` route are listed under `/parent`; route files the app never loads (not reachable from its entry) are ignored. |
 | `workspace` | string | gen | Workspace package serving the page (monorepos only). When two apps serve the same route, the second page is keyed `<route> (<workspace>)`. |
-| `component` | ComponentId | gen | Root component. Absent if unresolved. |
+| `component` | ComponentId | gen | Root component. Absent if unresolved (a redirect such as `<Navigate>`, or a component from a package). For a route element wrapped in guards or providers, the inner component. |
 | `params` | string[] | gen | Dynamic segments. |
 | `layouts` | ComponentId[] | gen | Outermost first: `layout.tsx` chain, `_app`, `root.tsx` + parent routes (Remix/React Router), `__root` + parent routes (TanStack). |
+| `wrappers` | ComponentId[] | gen | Guards and providers wrapping the page component in the route element, outermost first (`<RequireAuth><Admin/></RequireAuth>` → component `Admin`, wrappers `[RequireAuth]`). |
+| `alternates` | ComponentId[] | gen | Other components the route can show instead: the loader or redirect branch of `loading ? <Spinner/> : <Page/>`. |
 | `metadata` | `static` \| `dynamic` | gen | Next.js: the page exports `metadata` (static) or `generateMetadata` (dynamic). |
 | `components` | ComponentId[] | gen | Every project component in the page tree, layouts included. |
 | `description` | string | manual | |

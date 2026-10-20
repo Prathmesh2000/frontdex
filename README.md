@@ -207,6 +207,20 @@ The `.mcp.json` entry written by `frontdex agents` runs `npx frontdex mcp`, whic
 
 ## The UI
 
+`frontdex serve` (or `/__frontdex/` on a Vite dev server) opens the **React UI**. It loads data page by page from the HTTP API, so it stays fast at 20k components:
+
+```
+Overview · Site map · Components (virtualized, query language) · Folders · State · Health · Design · Hooks · Changes · Graph · History
+ └─ Component: props, used by, renders, pages, story examples, issues, live preview (Vite + React) with a props editor
+ └─ Page: rendering component, layouts, every component in its tree, "show in graph"
+```
+
+- **Search:** `Ctrl K` (or `/`) jumps to pages and components; filters like `uses:Button` work there too.
+- **Source:** every `file:line` opens the source in a side panel, with an "Open in VS Code" link.
+- **Live:** with auto-update the open view refreshes after each save; "analysing…" shows while project-wide findings settle.
+
+The **classic UI** at `/classic/` holds the deeper per-component views below. It embeds the whole catalogue in the page, and it is what `frontdex build` exports as a static site:
+
 ```
 Site map ─ URL map (route → layouts → page component, API/state/issue counts) · "What to do next" · global state
  └─ Page /checkout ─ Structure tree · Data & APIs · live Preview (iframe of your dev server) · Health · Graph
@@ -221,12 +235,7 @@ Site map ─ URL map (route → layouts → page component, API/state/issue coun
 Global state · Health (all issues, dead code, API map + server endpoints) · Design (tokens, drift, duplicates) · Hooks · Changes (diff vs a git ref) · Components explorer · Graph · History
 ```
 
-- **Sidebar:** the same page-first tree. Expand a route into its layouts and components, and expand a component into its State / Props / Functions / Effects / Timers / API / Store / Issues.
-- **Source:** every `file:line` opens the source in a side panel, and there's a VS Code button.
-- **Rescan:** the top bar has a Rescan button, and auto-update keeps the open tab live.
-- **Search:** `Ctrl K` searches pages, components, stores, endpoints, folders and hooks.
-- **Component header:** kind, client/server rendering, custom-element tag or styled element, CODEOWNERS, tests; the overview starts with usage examples from stories.
-- **Two UIs:** `frontdex serve` opens the React UI at `/`, which loads everything page by page from the API below. The previous UI, which embeds the whole catalogue, stays at `/classic/`, and it is what `frontdex build` exports as a static site.
+- **Classic sidebar:** the same page-first tree. Expand a route into its layouts and components, and a component into its State / Props / Functions / Effects / Timers / API / Store / Issues. A Rescan button sits in the top bar.
 - **HTTP API** (while `frontdex serve` runs, localhost only): `/api/info`, `/api/components?q=&offset=&limit=` (paged, query language), `/api/component?id=` (old ids resolve through `aliases`), `/api/issues?severity=&offset=&limit=`, `/api/folders?path=`, `/api/graph?focus=&depth=&dir=`, `/api/section?name=tokens|duplicates|hooks|stores|endpoints|styles|health`, `/api/pages`, `/api/diff?base=&head=`, `/api/catalogue`, `/api/history`.
 
 Query language (combine freely, prefix `-` to negate):
