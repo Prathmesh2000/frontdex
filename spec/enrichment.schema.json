@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Prathmesh2000/frontdex/spec/enrichment.schema.json",
+  "title": "Component docs written by a coding agent",
+  "description": "What an agent writes through the frontdex MCP server (catalogue_enrich_write) after reading a component: what it is for and how to use it. Stored per component in .frontdex/enrichment/.",
+  "type": "object",
+  "required": ["purpose"],
+  "additionalProperties": false,
+  "properties": {
+    "purpose": { "type": "string", "minLength": 1, "maxLength": 600, "description": "What the component is for, in one or two sentences." },
+    "summary": { "type": "string", "maxLength": 2000, "description": "How it works: what it renders, what it reads and changes, when it shows what." },
+    "props": {
+      "type": "object",
+      "description": "Per prop: what it does and how to pass it.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description"],
+        "additionalProperties": false,
+        "properties": {
+          "description": { "type": "string", "maxLength": 600 },
+          "howToPass": { "type": "string", "maxLength": 600, "description": "Expected values, shape, who usually provides it, what happens if omitted." },
+          "example": { "type": "string", "maxLength": 400 }
+        }
+      }
+    },
+    "functions": {
+      "type": "object",
+      "description": "Per function or handler inside the component (or callback prop): what it does and when it runs.",
+      "additionalProperties": { "type": "string", "maxLength": 600 }
+    },
+    "usage": {
+      "type": "array",
+      "maxItems": 8,
+      "description": "Usage examples: a title and a code snippet.",
+      "items": {
+        "type": "object",
+        "required": ["title", "code"],
+        "additionalProperties": false,
+        "properties": { "title": { "type": "string", "maxLength": 200 }, "code": { "type": "string", "maxLength": 3000 } }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "maxItems": 12,
+      "description": "Gotchas, constraints, accessibility or performance notes, things to keep in mind when changing it.",
+      "items": { "type": "string", "maxLength": 600 }
+    }
+  }
+}
