@@ -26,6 +26,7 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
   if (c.description) lines.push('', c.description);
   lines.push('');
   if (c.codeowners?.length) lines.push(`- Owners: ${c.codeowners.join(', ')}`);
+  if (c.testedBy?.length) lines.push(`- Covered by tests: ${c.testedBy.slice(0, 5).map(code).join(', ')}${c.testedBy.length > 5 ? ` (+${c.testedBy.length - 5} more)` : ''} (MCP \`catalogue_tests\` gives the run command)`);
   if (c.tests?.length || c.stories?.length) lines.push(`- Tests: ${c.tests?.join(', ') ?? 'none'}${c.stories?.length ? ` · Stories: ${c.stories.join(', ')}` : ''}`);
   if (c.examples?.length) lines.push(`- Examples: ${c.examples.slice(0, 5).map((e) => `${e.story.split('#')[1]}(${Object.entries(e.args ?? {}).map(([k, v]) => `${k}=${v}`).join(', ')})`).join('; ')}`);
   const props = Object.entries(c.props ?? {});

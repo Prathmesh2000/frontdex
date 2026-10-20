@@ -206,6 +206,199 @@
         }
       }
     },
+    "tests": {
+      "type": "object",
+      "description": "Unit and E2E test files mapped onto components and pages: which runner runs each, its cases, and what it covers.",
+      "additionalProperties": false,
+      "required": [
+        "runners",
+        "suites"
+      ],
+      "properties": {
+        "runners": {
+          "type": "object",
+          "description": "Test runners found (jest, vitest, playwright, cypress), keyed by name; a second project folder using the same runner is keyed \"<name> (<cwd>)\".",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cwd"
+            ],
+            "properties": {
+              "cwd": {
+                "type": "string",
+                "description": "Folder the runner is started in, relative to the project root."
+              },
+              "config": {
+                "type": "string",
+                "description": "Runner config file in that folder."
+              },
+              "from": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "package.json",
+                    "scripts",
+                    "config",
+                    "import"
+                  ]
+                },
+                "description": "Where the runner was detected."
+              }
+            }
+          }
+        },
+        "suites": {
+          "type": "object",
+          "description": "One entry per test file, keyed by its path relative to the project root (may start with ../ for tests.dirs outside it).",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "cases"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unit",
+                  "e2e"
+                ]
+              },
+              "runner": {
+                "type": "string",
+                "enum": [
+                  "jest",
+                  "vitest",
+                  "playwright",
+                  "cypress"
+                ]
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Folder the runner starts in, relative to the project root."
+              },
+              "error": {
+                "type": "string",
+                "description": "Why the file could not be parsed."
+              },
+              "cases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "title"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "line": {
+                      "type": "integer"
+                    },
+                    "describe": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Enclosing describe titles, outermost first."
+                    }
+                  }
+                }
+              },
+              "components": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "ComponentIds: rendered by a unit test, or matched by an E2E locator."
+              },
+              "hooks": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "HookIds exercised with renderHook()."
+              },
+              "pages": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Page routes an E2E spec visits."
+              },
+              "matches": {
+                "type": "array",
+                "description": "E2E evidence: each visited URL or locator mapped to a page or component, with how sure the match is (high: test id or full URL; medium: role/label/placeholder name; low: plain text).",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "target",
+                    "confidence"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "page",
+                        "component"
+                      ]
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "via": {
+                      "type": "string"
+                    },
+                    "line": {
+                      "type": "integer"
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "unmatched": {
+                "type": "array",
+                "description": "E2E visits and locators that matched nothing, and why.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "what"
+                  ],
+                  "properties": {
+                    "what": {
+                      "type": "string"
+                    },
+                    "line": {
+                      "type": "integer"
+                    },
+                    "why": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "health": {
       "$ref": "#/definitions/Health"
     },
@@ -386,6 +579,13 @@
             "type": "string"
           },
           "description": "Test files for the component, relative to its folder."
+        },
+        "testedBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Test files (keys of tests.suites, relative to the project root) whose tests render this component or, for E2E specs, touch its text, labels or test ids."
         },
         "stories": {
           "type": "array",

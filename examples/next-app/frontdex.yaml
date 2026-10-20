@@ -6,8 +6,8 @@ info:
   framework: next
   routers:
     - next-app
-  generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:59:53.463Z
+  generator: frontdex 0.3.1
+  generatedAt: 2026-10-20T13:48:28.926Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -999,6 +999,8 @@ components:
       - /products
       - /search
     rendering: client
+    testedBy:
+      - src/components/ui/Button.test.tsx
   Card@src/components/ui/Card.tsx:
     name: Card
     file: src/components/ui/Card.tsx
@@ -6425,6 +6427,17 @@ hooks:
       - AddToCartButton
       - ProductGrid
       - ToastViewport
+tests:
+  runners: {}
+  suites:
+    src/components/ui/Button.test.tsx:
+      kind: unit
+      cwd: .
+      cases:
+        - title: renders its label
+          line: 4
+      components:
+        - Button
 health:
   issues:
     high: 8
