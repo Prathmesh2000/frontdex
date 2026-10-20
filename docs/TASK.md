@@ -311,7 +311,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] `npm install`, `npm test` green on today's code.
 - [x] Record golden outputs: `catalogue.json`, agent cards and MCP responses for both examples. Done as `test/golden.test.js` against the committed example output; MCP responses are asserted in frontdex-mcp.
 - [x] Verify at start: `oxc-parser` API stability and platform coverage, `node:sqlite` unflagged Node version, current Next/Turbopack plugin surface. Record findings at the top of this file.
-- [ ] (GitHub done: repo renamed to `frontdex`, `origin` updated, `frontdex-mcp` created. npm placeholders still blocked on 2FA for the npm account.) **Confirm with the user**, then reserve the names before any other public step: publish `0.0.0` placeholders of `frontdex` and `frontdex-mcp` to npm, rename the GitHub repo `frontend-catalog` → `frontdex`, update the local `origin` remote. If either npm name has been taken since 2026-10-19, stop and ask.
+- [x] Names reserved 2026-10-20: `frontdex` and `frontdex-mcp` published as placeholders (registry lists `0.0.0-stage` as latest), maintainer prathmesh2000, 2FA auth-and-writes. GitHub: repo `frontdex`, `frontdex-mcp` created.
 
 **Foundation**
 - [x] ~~Convert repo 1 to a TypeScript pnpm workspace~~ dropped (CTO decision 2026-10-20): a full rewrite of a working, tested JS codebase with no user-facing gain; the package already publishes as one package with subpath exports. Kept: published `.d.ts` types and Schema 2.0 (next item).
