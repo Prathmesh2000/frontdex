@@ -13,7 +13,7 @@ on:
         default: patch
 
 permissions:
-  contents: write # release commit, tag, GitHub Release
+  contents: write # GitHub Release (the commit and tag are pushed with the deploy key)
   id-token: write # npm Trusted Publishing (OIDC) and provenance
 
 concurrency: release
@@ -23,9 +23,17 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      # main is protected by a ruleset; only this deploy key may push the release commit and tag.
+      # Checked before anything is published, so a missing key cannot leave npm ahead of git.
+      - name: Require the release deploy key
+        env:
+          HAS_KEY: ${{ secrets.RELEASE_DEPLOY_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != true ]; then echo "::error::Missing RELEASE_DEPLOY_KEY secret (a write deploy key allowed to bypass the main ruleset)."; exit 1; fi
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # tests and diffs read git history
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
