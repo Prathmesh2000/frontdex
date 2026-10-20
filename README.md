@@ -8,6 +8,8 @@
 
 Works with React, Next.js, Remix, TanStack, Vue, Nuxt, Svelte, SvelteKit, Astro, Angular, Web Components and plain HTML. No runtime code, no model calls, nothing added to your production build.
 
+![frontdex UI: site map, page, component, health and impact graph views](https://raw.githubusercontent.com/Prathmesh2000/frontdex/main/docs/assets/demo.gif)
+
 ## Why
 
 | Problem | What frontdex does |
