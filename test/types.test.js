@@ -10,7 +10,9 @@ import { validateCatalogue } from '../src/index.js';
 const root = path.resolve(import.meta.dirname, '..');
 
 test('spec/catalogue.d.ts is up to date with the JSON Schema', () => {
-  assert.equal(fs.readFileSync(path.join(root, 'spec/catalogue.d.ts'), 'utf8'), generate(), 'stale types: run npm run gen:types');
+  // Line endings aside: git may check the file out with CRLF on Windows.
+  const committed = fs.readFileSync(path.join(root, 'spec/catalogue.d.ts'), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(committed, generate(), 'stale types: run npm run gen:types');
 });
 
 test('src/index.d.ts declares exactly the public exports', async () => {
