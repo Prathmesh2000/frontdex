@@ -85,10 +85,18 @@ module.exports = withFrontdex({ reactStrictMode: true });
 ```
 
 ```js
-// vite.config.js
+// vite.config.js: also serves the catalogue UI on the dev server at /__frontdex/
 import frontdex from 'frontdex/vite';
 export default { plugins: [react(), frontdex()] };
 ```
+
+```js
+// webpack.config.js or rspack.config.js: runs while webpack-dev-server / `rspack dev` / --watch runs
+const FrontdexPlugin = require('frontdex/webpack'); // same plugin as 'frontdex/rspack'
+module.exports = { plugins: [new FrontdexPlugin()] };
+```
+
+None of them add anything to a production build: the Vite plugin applies to `serve` only, the webpack/Rspack plugin acts only in watch mode, and the Next wrapper only in `next dev`.
 
 or `"dev": "frontdex watch & next dev"` in `package.json`. A burst of saves (250 ms debounce) is patched in at once: only the edited files are re-parsed and their components re-linked. Project-wide findings (duplicates, token drift, page lists, dead code) and the YAML, agent cards and history follow with a full scan once edits pause for 1.5 s; the UI shows "analysing…" until then. Renaming a component or adding or removing a file goes straight to the full scan. A file that is broken mid-edit keeps its last good version instead of disappearing.
 

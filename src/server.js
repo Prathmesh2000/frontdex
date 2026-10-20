@@ -99,7 +99,11 @@ export function buildSite(config, catalogue, outDir) {
   fs.writeFileSync(path.join(outDir, 'data.js'), dataScript(catalogue, { history: historyLog(config), preview: config.preview }));
 }
 
-export function startServer(config, { port, watch, regenerate = true, log = console.log }) {
+/**
+ * The UI and HTTP API as a plain (req, res) handler with paths relative to where it is mounted: `frontdex serve` puts it
+ * at the root of its own server, the Vite plugin under /__frontdex/ on the dev server. `close()` stops the watcher.
+ */
+export function createApp(config, { watch, regenerate = true, log = console.log }) {
   const output = path.resolve(config.root, config.output);
   const clients = new Set();
   let settling = false;
@@ -126,13 +130,15 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
 
   const handler = (req, res) => {
     const url = new URL(req.url, 'http://localhost');
-    if (url.pathname === '/classic') return res.writeHead(301, { location: '/classic/' }).end();
+    // Relative, so it also lands right when the app is mounted under a prefix.
+    if (url.pathname === '/classic') return res.writeHead(301, { location: 'classic/' }).end();
     // The classic UI lives under /classic/: drop the prefix so its relative URLs (app.js, data.js, api/…) reach the
     // same handlers as before.
     const classic = url.pathname.startsWith('/classic/');
     if (classic) url.pathname = url.pathname.slice('/classic'.length);
     // The API reads source files and runs git: answer only requests addressed to this machine (blocks DNS rebinding).
-    if (url.pathname.startsWith('/api/') && !LOCAL_HOST.test(req.headers.host ?? '')) return res.writeHead(403).end('Forbidden');
+    // data.js embeds the whole catalogue, so it is guarded too: the app may be mounted on a dev server bound to the LAN.
+    if ((url.pathname.startsWith('/api/') || url.pathname === '/data.js') && !LOCAL_HOST.test(req.headers.host ?? '')) return res.writeHead(403).end('Forbidden');
     // The React UI is the default at / once built (and stays reachable at /v2/); a checkout without a build gets the classic UI.
     if (!classic && (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/assets/')) && fs.existsSync(new URL('index.html', V2_DIR))) return serveV2(url.pathname, res);
     if (url.pathname === '/v2' || url.pathname.startsWith('/v2/')) return serveV2(url.pathname.slice(3), res);
@@ -245,16 +251,24 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
     }
     res.writeHead(404).end('Not found');
   };
-  const server = http.createServer((req, res) => {
-    try {
-      handler(req, res);
-    } catch (err) {
-      log(`✖ ${req.url}: ${err.message}`);
-      if (!res.headersSent) res.writeHead(500);
-      res.end('Internal error');
-    }
-  });
+  return {
+    handler: (req, res) => {
+      try {
+        handler(req, res);
+      } catch (err) {
+        log(`✖ ${req.url}: ${err.message}`);
+        if (!res.headersSent) res.writeHead(500);
+        res.end('Internal error');
+      }
+    },
+    close: () => watcher?.close(),
+  };
+}
 
+export function startServer(config, { port, watch, regenerate = true, log = console.log }) {
+  const app = createApp(config, { watch, regenerate, log });
+  const server = http.createServer(app.handler);
+  server.once('close', app.close);
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     // Loopback only by default: the UI exposes source code. FRONTDEX_HOST=0.0.0.0 opts into LAN access.

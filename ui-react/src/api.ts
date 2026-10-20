@@ -37,9 +37,15 @@ export interface DiffReport {
 export interface Commit { id: string; time: string; git?: string; message?: string; changes: { kind: string; key: string; change: Change }[] }
 export interface Drift { value: string; at: string; property?: string; token: string; defined?: string; match: 'exact' | 'near'; use: string }
 
+/**
+ * A server path relative to where the app is mounted: `/` for `frontdex serve`, `/__frontdex/` inside the Vite dev
+ * server, or the legacy `/v2/` alias (one level down, so `..`).
+ */
+export const appUrl = (p: string) => (location.pathname.endsWith('/v2/') ? '../' : './') + p;
+
 async function get<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
-  const res = await fetch(`../api/${path}${qs.size ? `?${qs}` : ''}`);
+  const res = await fetch(appUrl(`api/${path}${qs.size ? `?${qs}` : ''}`));
   const body = await res.json();
   if (!res.ok) throw new Error(body.error ?? res.statusText);
   return body as T;
@@ -55,7 +61,7 @@ export const api = {
   pages: () => get<Record<string, PageInfo>>('pages'),
   folders: (path: string) => get<{ path: string; dirs: { name: string; path: string; count: number; withIssues: number }[]; items: ComponentRow[] }>('folders', { path }),
   source: async (file: string) => {
-    const res = await fetch(`../api/source?file=${encodeURIComponent(file)}`);
+    const res = await fetch(appUrl(`api/source?file=${encodeURIComponent(file)}`));
     if (!res.ok) throw new Error(res.status === 404 ? 'source not available' : res.statusText);
     return res.text();
   },

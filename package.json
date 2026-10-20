@@ -14,6 +14,8 @@
     ".": "./src/index.js",
     "./next": "./src/plugins/next.cjs",
     "./vite": "./src/plugins/vite.js",
+    "./webpack": "./src/plugins/webpack.cjs",
+    "./rspack": "./src/plugins/webpack.cjs",
     "./query": "./src/query.cjs",
     "./schema.json": "./spec/catalogue.schema.json"
   },

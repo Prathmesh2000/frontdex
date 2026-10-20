@@ -314,7 +314,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [ ] (GitHub done: repo renamed to `frontdex`, `origin` updated, `frontdex-mcp` created. npm placeholders still blocked on 2FA for the npm account.) **Confirm with the user**, then reserve the names before any other public step: publish `0.0.0` placeholders of `frontdex` and `frontdex-mcp` to npm, rename the GitHub repo `frontend-catalog` → `frontdex`, update the local `origin` remote. If either npm name has been taken since 2026-10-19, stop and ask.
 
 **Foundation**
-- [ ] Convert repo 1 to a TypeScript pnpm workspace with the layout above; build to one published package.
+- [x] ~~Convert repo 1 to a TypeScript pnpm workspace~~ dropped (CTO decision 2026-10-20): a full rewrite of a working, tested JS codebase with no user-facing gain; the package already publishes as one package with subpath exports. Kept: published `.d.ts` types and Schema 2.0 (next item).
 - [ ] `packages/spec`: types + Schema 2.0; `frontdex validate` passes on 1.x and 2.0 documents.
 - [x] ~~Port the JSX scanner from Babel to oxc~~ dropped (see Baseline findings). Done instead: single directory walk, stylesheet cache, watch sessions with deferred YAML, worker-thread parsing; "keep last good parse" kept.
 - [x] Memory: a 22.5k-file scan runs within a 1 GB heap (`--max-old-space-size=1024`) at full speed: cold 75 s, watch save 152 ms, peak RSS 1,155 MB (heap + 2 parse workers). Uncapped, V8 grows the heap lazily to 1.8–2.6 GB. A watch session retains ~300 MB at 22.5k. Done: streaming parse workers, copy-only-mutated deserialize, catalogue hash instead of JSON in the session, linear duplicate issues.
@@ -345,7 +345,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] New UI (option B: React + Vite + TanStack Router/Virtual, pre-built on `prepack`), the default UI at `/` (also `/v2/`); classic UI moved to `/classic/`. All classic views ported plus folders, command palette (Ctrl+K) and source panel. `/` falls back to classic in a checkout without `npm run build:ui`.
 - [ ] Preview through the user's dev server (Vite virtual route, Next generated dev-only route), props playground, `screenshot`.
 - [ ] Dev-only overlay.
-- [ ] Integrations: Next (no webpack plugin), Vite, webpack, Rspack.
+- [x] Integrations: Next (`withFrontdex`, no webpack plugin), Vite (watcher + UI/API mounted at `/__frontdex/` on the dev server, `apply: serve`), webpack and Rspack (one plugin, `frontdex/webpack` = `frontdex/rspack`, watch mode only). Per CTO decision 2026-10-20.
 - [x] Agent rules updated (duplicate check via `catalogue_find_existing`, tokens). Hook messages unchanged.
 - [x] CI: `diff`, `pr-comment`, GitHub Action (sticky PR comment, job summary, `fail-on`). Not done: commit-keyed parse cache in CI.
 

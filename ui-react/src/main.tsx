@@ -3,14 +3,14 @@ import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 // Same look as the classic UI: the stylesheet is shared, not duplicated.
 import '../../ui/styles.css';
-import { api } from './api';
+import { api, appUrl } from './api';
 import { GraphView } from './graph';
 import { SourceContext, SourcePanel, useApi } from './lib';
 import { Palette } from './palette';
 import { Changes, ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
 
-// The server serves this UI at / and the previous one at /classic/; resolve from the page so /v2/ keeps working too.
-const CLASSIC = new URL('/classic/', location.href).href;
+// The previous UI sits beside this one, wherever the app is mounted.
+const CLASSIC = appUrl('classic/');
 
 const NAV: [string, string][] = [
   ['/', 'Overview'],
@@ -34,7 +34,7 @@ function Shell() {
   const [source, setSource] = useState<{ file: string; line?: number }>();
   const { data: info } = useApi(api.info, [version]);
   useEffect(() => {
-    const events = new EventSource('../api/events');
+    const events = new EventSource(appUrl('api/events'));
     events.onmessage = () => setVersion((v) => v + 1);
     return () => events.close();
   }, []);
