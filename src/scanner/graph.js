@@ -195,23 +195,67 @@ export function scanProject(config, { cache, known, previous } = {}) {
     return { external: `${imp.source}#${exported === 'default' || exported === '*' ? head : exported}` };
   };
 
-  /** Value of a constant reference such as ROUTES.HOME.LIST in `file`, following imports (route path constants). */
+  // JSON files imported as data (route manifests, nav configs): read once per scan.
+  const jsonFiles = new Map();
+  const readJsonFile = (file) => {
+    if (!jsonFiles.has(file)) {
+      try {
+        jsonFiles.set(file, JSON.parse(fs.readFileSync(file, 'utf8')));
+      } catch {
+        jsonFiles.set(file, undefined);
+      }
+    }
+    return jsonFiles.get(file);
+  };
+
+  /**
+   * Value of a constant reference such as ROUTES.HOME.LIST in `file`: literal consts, aliases (`const NAV = nav.groups`)
+   * and imports, including imported JSON files (route path constants, route data).
+   */
   const constValue = (file, ref, depth = 0) => {
     const mod = modules.get(file);
-    if (!mod || depth > 4) return undefined;
+    if (!mod || depth > 6) return undefined;
     const [head, ...rest] = ref.split('.');
     let value = mod.consts?.[head];
+    if (value === undefined && mod.constRefs?.[head]) return constValue(file, [mod.constRefs[head], ...rest].join('.'), depth + 1);
     if (value === undefined) {
       const imp = mod.imports.get(head);
       const target = imp && resolveImport(file, imp.source);
-      const tmod = target && modules.get(target);
-      if (!tmod) return undefined;
-      if (imp.imported === '*') return rest.length ? constValue(target, rest.join('.'), depth + 1) : undefined;
-      const local = tmod.exports.get(imp.imported) ?? imp.imported;
-      return constValue(target, [local, ...rest].join('.'), depth + 1);
+      if (target?.endsWith('.json') && !modules.has(target)) {
+        value = readJsonFile(target);
+        if (imp.imported !== 'default' && imp.imported !== '*') value = value?.[imp.imported];
+      } else {
+        const tmod = target && modules.get(target);
+        if (!tmod) return undefined;
+        if (imp.imported === '*') return rest.length ? constValue(target, rest.join('.'), depth + 1) : undefined;
+        const local = tmod.exports.get(imp.imported) ?? imp.imported;
+        return constValue(target, [local, ...rest].join('.'), depth + 1);
+      }
     }
     for (const key of rest) value = value?.[key];
     return value;
+  };
+
+  /** The string values a data path reaches: { ref: 'DOC_NAV', path: ['[]', 'items', '[]', 'route'] } ('[]' = each element). */
+  const dataValues = (file, data) => {
+    let values = [constValue(file, data.ref)];
+    for (const step of data.path) values = step === '[]' ? values.flatMap((v) => (Array.isArray(v) ? v : [])) : values.map((v) => v?.[step]);
+    return [...new Set(values.filter((v) => typeof v === 'string'))];
+  };
+
+  /**
+   * One route per value when a path segment reads static data (`<Route path={item.route}>` over a const array or JSON
+   * file); the segments unchanged when the data cannot be read, so the route keeps its {item.route} placeholder.
+   */
+  const expandSegments = (file, segments) => {
+    for (const [si, seg] of segments.entries()) {
+      const pi = (seg ?? []).findIndex((part) => part?.data);
+      if (pi < 0) continue;
+      const values = dataValues(file, seg[pi].data).slice(0, 200);
+      if (!values.length) return [segments];
+      return values.flatMap((v) => expandSegments(file, segments.map((s, i) => (i === si ? s.map((part, j) => (j === pi ? v : part)) : s))));
+    }
+    return [segments];
   };
 
   const findExportedHook = (file, exported, depth) => {
@@ -486,7 +530,6 @@ export function scanProject(config, { cache, known, previous } = {}) {
     if (mod.staleRoutes) continue;
     const ids = (names) => (names ?? []).map((l) => idOf(resolveLocal(mod.file, l))).filter(Boolean);
     for (const r of mod.routes) {
-      const route = routePath(r.segments, (ref) => constValue(mod.file, ref));
       const page = {
         router: depsFor(mod.file)?.['vue-router'] ? 'vue-router' : depsFor(mod.file)?.['@angular/router'] ? 'angular-router' : 'react-router',
         file: rel(mod.file),
@@ -496,7 +539,7 @@ export function scanProject(config, { cache, known, previous } = {}) {
         alternates: ids(r.alternates),
         extras: ids(r.extras),
       };
-      routeRecords.push({ file: mod.file, route, page });
+      for (const segments of expandSegments(mod.file, r.segments)) routeRecords.push({ file: mod.file, route: routePath(segments, (ref) => constValue(mod.file, ref)), page });
     }
   }
 

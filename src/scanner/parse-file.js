@@ -176,6 +176,11 @@ function pathLiteral(node) {
   if (node?.type === 'CallExpression' && memberText(node.callee) === 'Object.freeze') node = node.arguments[0];
   const text = node?.type === 'StringLiteral' ? node.value : node?.type === 'TemplateLiteral' && !node.expressions.length ? node.quasis[0].value.cooked : undefined;
   if (text !== undefined) return PATH_LIKE.test(text) ? text : undefined;
+  // Arrays of route data (`[{ id, route: '/x' }]`) feed routes generated with .map(); elements keep their position.
+  if (node?.type === 'ArrayExpression' && node.elements.length <= 500) {
+    const items = node.elements.map((e) => pathLiteral(e) ?? null);
+    return items.some((x) => x !== null) ? items : undefined;
+  }
   if (node?.type !== 'ObjectExpression') return undefined;
   const out = {};
   for (const p of node.properties) {
@@ -209,6 +214,8 @@ function scanDeclarations(programPath, mod) {
       for (const d of decl.declarations) {
         const value = d.id.type === 'Identifier' ? pathLiteral(d.init) : undefined;
         if (value !== undefined) mod.consts[d.id.name] = value;
+        // `const DOC_NAV = nav.groups`: an alias graph.js follows to the data (a const, an import, a JSON file).
+        else if (d.id.type === 'Identifier' && /^(Identifier|MemberExpression)$/.test(d.init?.type ?? '') && memberText(d.init)) (mod.constRefs ??= {})[d.id.name] = memberText(d.init);
       }
     }
     if (stmt.type === 'ExportDefaultDeclaration') {
@@ -528,7 +535,7 @@ function jsxRoute(p, mod) {
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);
   }
-  mod.routes.push({ segments, ...pick, layouts, extras, line: p.node.loc?.start.line });
+  mod.routes.push({ segments: withDataSources(segments, p.scope), ...pick, layouts, extras, line: p.node.loc?.start.line });
 }
 
 function objectProps(node) {
@@ -566,6 +573,53 @@ function lowerComponent(value, mod) {
   return undefined;
 }
 
+const ITERATORS = /\.(map|flatMap|forEach|filter)$/;
+
+/**
+ * Where an expression's values come from, as a static path from a module-level name: `item` in
+ * `DOC_NAV.flatMap((g) => g.items.map((item) => …))` is { ref: 'DOC_NAV', path: ['[]', 'items', '[]'] } ('[]' = each
+ * element). Follows callback parameters of map/flatMap/forEach/filter and parameter defaults (`docNav = DOC_NAV`).
+ * Null when the data is not static (props, state, fetched).
+ */
+function sourceOf(exprPath, depth = 0) {
+  const n = exprPath.node;
+  if (depth > 8 || !n) return null;
+  if (n.type === 'MemberExpression' && !n.computed && n.property.type === 'Identifier') {
+    const base = sourceOf(exprPath.get('object'), depth + 1);
+    return base && { ref: base.ref, path: [...base.path, n.property.name] };
+  }
+  if (n.type !== 'Identifier') return null;
+  const binding = exprPath.scope.getBinding(n.name);
+  if (!binding) return null;
+  if (binding.kind === 'module' || binding.scope.block.type === 'Program') return { ref: n.name, path: [] };
+  if (binding.kind !== 'param') return null;
+  let param = binding.path;
+  if (param.parentPath?.isAssignmentPattern()) param = param.parentPath;
+  if (param.isAssignmentPattern()) return sourceOf(param.get('right'), depth + 1);
+  const fn = param.parentPath;
+  const call = fn?.parentPath;
+  if (param.key === 0 && fn?.listKey === 'arguments' && fn.key === 0 && call?.isCallExpression() && ITERATORS.test(memberText(call.node.callee) ?? '')) {
+    const list = sourceOf(call.get('callee.object'), depth + 1);
+    return list && { ref: list.ref, path: [...list.path, '[]'] };
+  }
+  return null;
+}
+
+/** Marks path refs that read static data (`item.route` over a const array or JSON file), so graph.js can expand them. */
+function withDataSources(segments, scope) {
+  for (const seg of segments) {
+    for (const part of seg ?? []) {
+      if (!part?.ref || part.ref === 'dynamic') continue;
+      const [head, ...rest] = part.ref.split('.');
+      const binding = scope.getBinding(head);
+      if (binding?.kind !== 'param') continue;
+      const base = sourceOf(binding.path.parentPath?.isAssignmentPattern() ? binding.path.parentPath.get('left') : binding.path);
+      if (base) part.data = { ref: base.ref, path: [...base.path, ...rest] };
+    }
+  }
+  return segments;
+}
+
 function objectRoute(p, mod) {
   const own = objectProps(p.node);
   if (own.path == null && own.index !== true) return;
@@ -587,5 +641,5 @@ function objectRoute(p, mod) {
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);
   }
-  mod.routes.push({ segments, ...pick, layouts, extras, line: p.node.loc?.start.line });
+  mod.routes.push({ segments: withDataSources(segments, p.scope), ...pick, layouts, extras, line: p.node.loc?.start.line });
 }

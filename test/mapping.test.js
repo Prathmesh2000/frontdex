@@ -102,3 +102,37 @@ test('navigation is resolved to pages: constants, templates with params', () => 
   assert.deepEqual(c.Users.navigatesTo, ['/settings', '/users/:id']);
   assert.deepEqual(pages['/users'].linksTo, ['/settings', '/users/:id']);
 });
+
+test('routes generated from static data are expanded (const arrays, aliases, JSON files, nested Routes)', () => {
+  const cat = scanFixture({
+    'src/index.jsx': "import App from './App';\nexport default App;\n",
+    'src/nav.json': JSON.stringify({ groups: [{ items: [{ id: 'intro', route: 'intro' }, { id: 'api', route: 'api' }] }, { items: [{ id: 'faq', route: 'faq' }] }] }),
+    'src/docs.config.js': "import nav from './nav.json';\nexport const DOC_NAV = nav.groups;\nexport const LEGAL = [{ path: '/terms' }, { path: '/privacy' }];\n",
+    // The docs routes live in a helper rendered by the page mounted at /docs/*, as in a real app.
+    'src/docRoutes.jsx': [
+      "import { Route } from 'react-router-dom';",
+      "import { DOC_NAV } from './docs.config';",
+      "import { Section } from './pages';",
+      'export function docRoutes(docNav = DOC_NAV) {',
+      '  return docNav.flatMap((group) => group.items.map((item) => <Route key={item.id} path={item.route} element={<Section id={item.id} />} />));',
+      '}',
+    ].join('\n'),
+    'src/Docs.jsx': "import { Routes } from 'react-router-dom';\nimport { docRoutes } from './docRoutes';\nexport default function Docs() { return <Routes>{docRoutes()}</Routes>; }\n",
+    'src/App.jsx': [
+      "import { Routes, Route } from 'react-router-dom';",
+      "import { LEGAL } from './docs.config';",
+      "import { Legal } from './pages';",
+      "import Docs from './Docs';",
+      'export default function App() {',
+      '  return <Routes>',
+      '    <Route path="/docs/*" element={<Docs />} />',
+      '    {LEGAL.map((l) => <Route key={l.path} path={l.path} element={<Legal />} />)}',
+      '  </Routes>;',
+      '}',
+    ].join('\n'),
+    'src/pages.jsx': 'export const Section = () => <article />;\nexport const Legal = () => <p />;\n',
+  });
+  for (const r of ['/terms', '/privacy']) assert.equal(cat.pages[r]?.component, 'Legal', r);
+  for (const r of ['/docs/intro', '/docs/api', '/docs/faq']) assert.equal(cat.pages[r]?.component, 'Section', r);
+  assert.ok(!Object.keys(cat.pages).some((r) => r.includes('{')), 'no placeholder routes left');
+});
