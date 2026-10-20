@@ -9,8 +9,8 @@ const PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>fr
 
 /**
  * The preview page's entry: renders one component, found by catalogue id, through the dev server's own module graph
- * (so its imports, CSS and HMR work as in the app). Props come from ?props= and from postMessage (the catalogue UI's
- * props editor); `previewWrapper` in frontdex.config.json may name a file whose default export wraps every preview in
+ * (so its imports, CSS and HMR work as in the app). Props come by postMessage from the catalogue UI's props editor;
+ * `previewWrapper` in frontdex.config.json may name a file whose default export wraps every preview in
  * the app's providers (router, theme, store).
  */
 const previewModule = (wrapperFile) => `
@@ -31,11 +31,15 @@ class Boundary extends Component {
   }
 }
 
-function Preview({ Comp, initial }) {
-  const [props, setProps] = useState(initial);
+// Props arrive only from the catalogue UI embedding this page (same origin, our parent window), never from the URL:
+// a crafted link could otherwise pass dangerouslySetInnerHTML and run script on the dev server's origin.
+function Preview({ Comp }) {
+  const [props, setProps] = useState({});
   useEffect(() => {
-    const onMessage = (e) => e.origin === location.origin && e.data?.type === 'frontdex:props' && setProps(e.data.props ?? {});
+    const onMessage = (e) => e.source === parent && e.origin === location.origin && e.data?.type === 'frontdex:props' && setProps(e.data.props ?? {});
     addEventListener('message', onMessage);
+    // Ask for the props once listening, so none sent while the component was still loading are lost.
+    if (parent !== window) parent.postMessage({ type: 'frontdex:ready' }, location.origin);
     return () => removeEventListener('message', onMessage);
   }, []);
   // A new key per props change resets a boundary that caught the previous props' error.
@@ -52,7 +56,7 @@ async function main() {
     const mod = await import(/* @vite-ignore */ \`/@fs/\${info.root.replaceAll('\\\\', '/')}/\${c.file}\`);
     const Comp = c.export === 'default' ? mod.default : mod[c.name];
     if (!Comp) return fail(\`\${c.file} does not export \${c.name}\`);
-    root.render(h(Preview, { Comp, initial: JSON.parse(params.get('props') || '{}') }));
+    root.render(h(Preview, { Comp }));
   } catch (err) {
     fail(String(err?.message ?? err));
   }

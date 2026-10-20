@@ -125,24 +125,33 @@ const argsToJson = (args: Record<string, string> = {}) =>
 function LivePreview({ path, c }: { path: string; c: Component }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [text, setText] = useState(() => argsToJson(c.examples?.[0]?.args));
-  const [src] = useState(() => appUrl(`${path}?id=${encodeURIComponent(c.id)}&props=${encodeURIComponent(JSON.stringify(JSON.parse(text)))}`));
   const [error, setError] = useState<string>();
-  const apply = () => {
+  const src = appUrl(`${path}?id=${encodeURIComponent(c.id)}`);
+  const apply = (from = text) => {
     try {
-      const props = JSON.parse(text);
+      const props = JSON.parse(from);
       setError(undefined);
       frame.current?.contentWindow?.postMessage({ type: 'frontdex:props', props }, location.origin);
     } catch (err) {
       setError((err as Error).message);
     }
   };
+  // The preview asks for its props once it has loaded the component (props never travel in its URL).
+  const textRef = useRef(text);
+  textRef.current = text;
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => e.source === frame.current?.contentWindow && e.data?.type === 'frontdex:ready' && apply(textRef.current);
+    addEventListener('message', onMessage);
+    return () => removeEventListener('message', onMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads the latest text through the ref
+  }, []);
   return (
     <Card title="Live preview" sub="Rendered by your Vite dev server with the props on the right (JSON).">
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 12 }}>
         <iframe ref={frame} src={src} title={`${c.name} preview`} style={{ width: '100%', height: 360, border: '1px solid var(--border)', borderRadius: 8, background: '#fff' }} />
         <div>
           <textarea value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} style={{ width: '100%', height: 300, fontFamily: 'var(--mono)', fontSize: 12 }} />
-          <button className="btn" onClick={apply}>
+          <button className="btn" onClick={() => apply()}>
             Apply props
           </button>
           {error && <p className="none">Not valid JSON: {error}</p>}

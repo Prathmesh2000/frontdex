@@ -105,7 +105,7 @@ With the Vite plugin, every component page in the catalogue UI (`/__frontdex/`) 
 { "previewWrapper": "src/frontdex.preview.tsx" }   // default export: ({ children }) => <Providers>{children}</Providers>
 ```
 
-The preview page is `/__frontdex/preview?id=<component id>&props=<json>`, so agents can load it with a browser tool (Playwright, Chrome DevTools MCP) to look at or screenshot a component. Next.js gets the page-level Preview tab only: a component route there would end up in `next build`.
+The preview page is `/__frontdex/preview?id=<component id>`; it takes props only by `postMessage` from the catalogue UI that embeds it, never from its URL (a link could otherwise inject markup). Agents can load it with a browser tool (Playwright, Chrome DevTools MCP) to look at or screenshot a component. Next.js gets the page-level Preview tab only: a component route there would end up in `next build`.
 
 ### Component overlay (React, development only)
 
