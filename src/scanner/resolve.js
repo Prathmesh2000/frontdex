@@ -99,12 +99,26 @@ export function createResolver(root, { workspaces = [] } = {}) {
     return baseUrl ? tryFile(path.resolve(baseUrl, spec)) : undefined;
   };
 
+  // Cache keys name what an answer depends on, not who asked: a relative import by its absolute target, a bare one by
+  // the tsconfig in force (compilerFor returns one shared object per config). Keyed per importing file, every file that
+  // imports `react` re-probed ~17 paths under baseUrl; that was most of the link time on large projects.
+  const bareCache = new WeakMap();
   return function resolve(fromFile, spec) {
-    const key = fromFile + '\0' + spec;
-    if (cache.has(key)) return cache.get(key);
-    const result = spec.startsWith('.') ? tryFile(path.resolve(path.dirname(fromFile), spec)) : resolveBare(fromFile, spec);
-    cache.set(key, result);
-    return result;
+    if (spec.startsWith('.')) {
+      const target = path.resolve(path.dirname(fromFile), spec);
+      if (!cache.has(target)) cache.set(target, tryFile(target));
+      return cache.get(target);
+    }
+    // $lib depends on the importing folder (nearest src/lib), so it keeps a per-file key.
+    if (spec === '$lib' || spec.startsWith('$lib/')) {
+      const key = fromFile + '\0' + spec;
+      if (!cache.has(key)) cache.set(key, resolveBare(fromFile, spec));
+      return cache.get(key);
+    }
+    const compiler = compilerFor(path.dirname(fromFile));
+    const byConfig = bareCache.get(compiler) ?? bareCache.set(compiler, new Map()).get(compiler);
+    if (!byConfig.has(spec)) byConfig.set(spec, resolveBare(fromFile, spec));
+    return byConfig.get(spec);
   };
 }
 

@@ -37,38 +37,50 @@ const FILES_PER_WORKER = 200;
 // Node exposes no physical core count, so half the logical CPUs minus one stands in for it.
 const MAX_THREADS = Math.max(2, Math.floor(os.availableParallelism() / 2) - 1);
 // Without limits each worker's heap grew to ~200 MB before collecting (1.6 GB RSS for 7k files); with them ~500 MB.
-// ponytail: a worker that exceeds the old-generation limit dies and we only notice at the deadline below; per-worker
-// progress counters would detect it sooner if that ever happens in practice.
 const WORKER_LIMITS = { maxYoungGenerationSizeMb: 16, maxOldGenerationSizeMb: 256 };
+// Files per message from a worker: small enough that a worker's heap stays flat, large enough that messaging is noise.
+export const CHUNK = 25;
+// No message from any worker for this long means one died (a crash, or a file too big for its heap limit): the main
+// thread loads what is missing. A chunk of 25 files takes well under a second, so this only fires on a real failure.
+const STALL_MS = 20_000;
 
 /**
  * Runs loadOne() over [file, prevHash] jobs, returning results in job order. Large batches (cold scans) are split across
  * a few worker threads, which then read and hash in parallel too.
- * Stays synchronous so scan() keeps its sync API: the main thread blocks on a shared counter and pulls each worker's
- * result with receiveMessageOnPort. Anything a worker fails to deliver is parsed on the main thread instead.
+ * Stays synchronous so scan() keeps its sync API: the main thread blocks on a shared counter and drains each worker's
+ * chunks with receiveMessageOnPort as they arrive. Anything a worker fails to deliver is loaded on the main thread.
  */
 export function loadMany(jobs) {
   const threads = Math.min(MAX_THREADS, Math.floor(jobs.length / FILES_PER_WORKER));
   if (jobs.length < MIN_FILES || threads < 2) return jobs.map(([file, prevHash]) => loadOne(file, prevHash));
 
-  const done = new Int32Array(new SharedArrayBuffer(4));
+  const signal = new Int32Array(new SharedArrayBuffer(4));
   const size = Math.ceil(jobs.length / threads);
-  const slices = Array.from({ length: threads }, (_, i) => jobs.slice(i * size, (i + 1) * size)).filter((s) => s.length);
-  const workers = slices.map((slice) => {
+  const workers = [];
+  for (let offset = 0; offset < jobs.length; offset += size) {
     const { port1, port2 } = new MessageChannel();
-    const worker = new Worker(new URL('./parse-worker.js', import.meta.url), { workerData: { jobs: slice, port: port2, done }, transferList: [port2], resourceLimits: WORKER_LIMITS });
+    const worker = new Worker(new URL('./parse-worker.js', import.meta.url), { workerData: { jobs: jobs.slice(offset, offset + size), port: port2, signal }, transferList: [port2], resourceLimits: WORKER_LIMITS });
     worker.unref();
-    return { worker, port: port1, slice };
-  });
+    workers.push({ worker, port: port1, offset, ended: false });
+  }
 
-  // A worker that dies without reaching its `finally` never bumps the counter; the deadline stops us waiting forever.
-  const deadline = Date.now() + 60_000 + jobs.length * 20;
-  for (let seen; (seen = Atomics.load(done, 0)) < workers.length && Date.now() < deadline; ) Atomics.wait(done, 0, seen, 1000);
-
-  return workers.flatMap(({ worker, port, slice }) => {
-    const message = receiveMessageOnPort(port)?.message;
+  const results = new Array(jobs.length);
+  let lastMessage = Date.now();
+  while (workers.some((w) => !w.ended) && Date.now() - lastMessage < STALL_MS) {
+    // Read the counter before draining: a chunk posted after the drain changes it, so the wait below returns at once.
+    const seen = Atomics.load(signal, 0);
+    for (const w of workers) {
+      for (let m; !w.ended && (m = receiveMessageOnPort(w.port)); lastMessage = Date.now()) {
+        if (m.message.end) w.ended = true;
+        else m.message.results.forEach((r, i) => (results[w.offset + m.message.from + i] = r));
+      }
+    }
+    if (workers.some((w) => !w.ended)) Atomics.wait(signal, 0, seen, 1000);
+  }
+  for (const { worker, port } of workers) {
     port.close();
     worker.terminate();
-    return Array.isArray(message) ? message : slice.map(([file, prevHash]) => loadOne(file, prevHash));
-  });
+  }
+  for (let i = 0; i < jobs.length; i++) results[i] ??= loadOne(...jobs[i]);
+  return results;
 }

@@ -102,11 +102,19 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
     };
   }
   const add = (list, id) => !list.includes(id) && list.push(id);
+  // First match wins, as Object.keys(stores).find() did: a scan per read was quadratic in stores × components.
+  const sliceByKey = new Map();
+  const sliceByAction = new Map();
+  for (const [k, s] of Object.entries(stores)) {
+    if (s.kind !== 'redux-slice') continue;
+    if (!sliceByKey.has(s.key)) sliceByKey.set(s.key, k);
+    for (const a of [...(s.actions ?? []), ...(s.thunks ?? [])]) if (!sliceByAction.has(a)) sliceByAction.set(a, k);
+  }
   for (const { c } of entries) {
     const comp = components[c.id];
     for (const r of comp.store?.reads ?? []) {
       let sid;
-      if (r.kind === 'redux') sid = Object.keys(stores).find((k) => stores[k].kind === 'redux-slice' && r.path && r.path.split('.')[0] === stores[k].key);
+      if (r.kind === 'redux') sid = r.path ? sliceByKey.get(r.path.split('.')[0]) : undefined;
       else if (r.kind === 'zustand') sid = `zustand:${r.store}`;
       else if (r.kind === 'context') sid = `context:${r.store}`;
       if (!sid || !stores[sid]) continue;
@@ -115,7 +123,7 @@ export function buildProjectInsights({ modules, entries, components, pages, rel,
       add(isAction ? stores[sid].writers : stores[sid].readers, c.id);
     }
     for (const w of comp.store?.writes ?? []) {
-      const sid = Object.keys(stores).find((k) => stores[k].kind === 'redux-slice' && (stores[k].actions?.includes(w.action) || stores[k].thunks?.includes(w.action)));
+      const sid = sliceByAction.get(w.action);
       if (!sid) continue;
       w.storeId = sid;
       add(stores[sid].writers, c.id);
