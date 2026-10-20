@@ -101,6 +101,9 @@ Three-step checkout state machine: address → payment → review. Persists a dr
 - CSS module `src/features/checkout/Checkout.module.css`: wizard, step
 - ⚠ LOW unused-prop L45: prop `userEmail` is destructured but never used. Fix: remove it from the props or use it
 - Renders: StepIndicator(current, completed), AddressStep(draft, onNext), PaymentForm(amount, onPaid, onBack), CartItem(key, line, readOnly), Button(onClick, loading), OrderSummary(lines, coupon, readOnly)
+- Renders only when: AddressStep (state.step === 0); PaymentForm (state.step === 1); CartItem (state.step === 2 && each of items); Button (state.step === 2)
+- Views by `state.step`: 0 → AddressStep; 1 → PaymentForm; 2 → CartItem, Button
+- Navigates to: `/checkout/success`
 - Used by: CheckoutPage
 - Pages: /checkout
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".

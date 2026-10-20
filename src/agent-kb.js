@@ -54,6 +54,11 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
   for (const mo of c.styles?.modules ?? []) lines.push(`- CSS module ${code(mo.file)}: ${mo.classes.map((x) => x.name).join(', ')}`);
   for (const i of c.issues ?? []) lines.push(`- ⚠ ${i.severity.toUpperCase()} ${i.type}${i.line ? ` L${i.line}` : ''}: ${i.message}${i.fix ? `. Fix: ${i.fix}` : ''}`);
   if (c.renders?.length) lines.push(`- Renders: ${c.renders.map((id) => `${idx.C[id]?.name ?? id}${c.passes?.[id]?.length ? `(${c.passes[id].map((p) => p.name).join(', ')})` : ''}`).join(', ')}`);
+  // When each conditional child shows: an agent changing one branch needs to know the others exist.
+  const conditional = Object.entries(c.rendersWhen ?? {});
+  if (conditional.length) lines.push(`- Renders only when: ${conditional.map(([id, when]) => `${idx.C[id]?.name ?? id} (${when.join(' | ')})`).join('; ')}`);
+  for (const v of c.views ?? []) lines.push(`- Views by \`${v.on}\`: ${Object.entries(v.cases).map(([value, ids]) => `${value} → ${ids.map((id) => idx.C[id]?.name ?? id).join(', ')}`).join('; ')}`);
+  if (c.navigatesTo?.length) lines.push(`- Navigates to: ${c.navigatesTo.map(code).join(', ')}`);
   if (c.externals?.length) lines.push(`- Libraries: ${c.externals.join(', ')}`);
   lines.push(`- Used by: ${c.usedBy?.length ? c.usedBy.map((id) => idx.C[id]?.name ?? id).join(', ') : 'nothing (unused or entry point)'}`);
   if (c.pages?.length) lines.push(`- Pages: ${c.pages.join(', ')}`);
@@ -67,7 +72,7 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
 function indexMarkdown(cat, idx, files, kb) {
   const info = cat.info;
   const shared = idx.comps.filter((m) => m.usedBy >= SHARED_THRESHOLD || m.pages >= SHARED_THRESHOLD).sort((a, b) => b.usedBy - a.usedBy || b.pages - a.pages).slice(0, INDEX_COMPONENT_LIMIT);
-  const pageRows = Object.entries(cat.pages).map(([r, p]) => `| ${code(r)} | ${p.component ?? '?'} | ${code(p.file)} | ${(p.layouts ?? []).join(' > ') || '-'} | ${p.components?.length ?? 0} |`);
+  const pageRows = Object.entries(cat.pages).map(([r, p]) => `| ${code(r)} | ${p.component ?? '?'} | ${code(p.file)} | ${(p.layouts ?? []).join(' > ') || '-'} | ${p.components?.length ?? 0} | ${p.linksTo?.length ? `${p.linksTo.slice(0, 4).join(', ')}${p.linksTo.length > 4 ? ` +${p.linksTo.length - 4}` : ''}` : '-'} |`);
   const folderRows = [...files.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dir, list]) => `| ${code(dir || '.')} | ${list.length} | ${code(`${kb}/agent/${cardPath(dir)}`)} | ${list.slice(0, 8).map((m) => m.name).join(', ')}${list.length > 8 ? ', …' : ''} |`);
   return `# Frontend knowledge base: ${info.title}
 
@@ -84,9 +89,9 @@ ${idx.comps.length} components · ${Object.keys(cat.pages).length} pages · rout
 
 ## Pages
 
-| Route | Root component | File | Layouts | Components |
-|---|---|---|---|---|
-${pageRows.join('\n') || '| - | - | - | - | - |'}
+| Route | Root component | File | Layouts | Components | Links to |
+|---|---|---|---|---|---|
+${pageRows.join('\n') || '| - | - | - | - | - | - |'}
 
 ## Folders
 

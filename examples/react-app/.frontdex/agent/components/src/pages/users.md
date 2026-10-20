@@ -28,6 +28,8 @@ Edit page, lazy-loaded by the router.
 - API CALL `fetchUser()` via service in useEffect L12 (line 14)
 - API CALL `updateUser()` via service in handler handleSave (line 19)
 - Renders: UserForm(initial, onSubmit, submitLabel)
+- Renders only when: UserForm (user)
+- Navigates to: `/users/:userId`
 - Used by: nothing (unused or entry point)
 - Pages: /users/:userId/edit
 - Impact: changing the props/export affects 0 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -47,6 +49,7 @@ User list with search and multi-select.
 - CSS classes: table (src/styles.css:4)
 - ⚠ MEDIUM a11y-field-label L18: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - ⚠ MEDIUM a11y-field-label L24: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
+- Navigates to: `/users/:userId`
 - Libraries: react-router-dom#Link
 - Used by: nothing (unused or entry point)
 - Pages: /users

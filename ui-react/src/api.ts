@@ -21,10 +21,15 @@ export interface Component {
   props?: Record<string, { type: string; required: boolean; default?: string }>;
   state?: Record<string, { source: string; initial?: string }>;
   renders?: string[]; usedBy?: string[]; pages?: string[]; issues?: Issue[];
+  /** Children rendered only under conditions: child id → the conditions (source text) of each place. */
+  rendersWhen?: Record<string, string[]>;
+  /** Screens switched by state: children per value of one expression. */
+  views?: { on: string; cases: Record<string, string[]> }[];
+  navigatesTo?: string[];
   apiCalls?: { via: string; method?: string; target?: string; in?: string; line?: number }[];
 }
 export interface Token { value: string; at: string; source?: string; uses?: number; usedBy?: string[] }
-export interface PageInfo { router?: string; file?: string; component?: string; layouts?: string[]; metadata?: string; rendering?: string; components?: string[] }
+export interface PageInfo { router?: string; file?: string; component?: string; layouts?: string[]; wrappers?: string[]; alternates?: string[]; metadata?: string; rendering?: string; components?: string[]; linksTo?: string[] }
 export interface Store { kind: string; name: string; file: string; line?: number; default?: string; readers?: string[]; writers?: string[]; providers?: string[] }
 export interface Graph { total: number; truncated: boolean; pages: Record<string, { component?: string; layouts: string[] }>; nodes: Record<string, { name: string; file: string; renders: string[]; usedBy: string[] }> }
 type Change = 'added' | 'removed' | 'changed';

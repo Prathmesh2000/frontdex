@@ -11,6 +11,7 @@
 - Variables: orderId
 - API CALL `trackEvent()` via service in useEffect L9 (line 10)
 - CSS classes: text-center, py-20
+- Navigates to: `/account/orders/[orderId]`
 - Libraries: next/link#Link
 - Used by: nothing (unused or entry point)
 - Pages: /checkout/success

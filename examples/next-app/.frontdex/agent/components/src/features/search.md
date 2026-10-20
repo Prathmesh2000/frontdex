@@ -15,6 +15,7 @@ Results list for a search term; re-fetches as the term changes.
 - API GET `term ? '/api/search?q=${encodeURIComponent(term)}&limit=${limit}' : null` via useSWR in render (line 10)
 - CSS classes: hint, grid (app/globals.css:6)
 - Renders: Spinner(label), ProductCard(key, product, compact)
+- Renders only when: Spinner (term && isLoading && !data); ProductCard (term && !(isLoading && !data))
 - Used by: SearchPage
 - Pages: /search
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -41,6 +42,7 @@ Debounced search input with recent-term suggestions.
 - Validation (html): input [required, minLength]
 - CSS classes: search-bar, relative, suggestions, absolute
 - ⚠ MEDIUM a11y-field-label L44: <input> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
+- Navigates to: `/search`
 - Used by: SearchPage, Header
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 3 component(s) and 13 page(s); update every caller listed under "Used by".

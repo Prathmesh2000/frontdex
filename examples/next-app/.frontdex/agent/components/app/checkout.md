@@ -10,6 +10,7 @@ Distraction-free checkout chrome.
 - Owners: @northwind/web
 - Props: `children: React.ReactNode`
 - CSS classes: checkout-shell, max-w-5xl, mx-auto, text-xs, text-gray-500
+- Navigates to: `/cart`
 - Libraries: next/link#Link
 - Used by: nothing (unused or entry point)
 - Pages: /checkout, /checkout/success

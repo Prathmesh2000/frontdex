@@ -17,6 +17,8 @@ Slide-over cart opened from the header. Visibility lives in Redux (ui.drawerOpen
 - Writes redux:ui: `toggleDrawer` via dispatch in handler close
 - CSS classes: empty
 - Renders: Modal(open, title, onClose, footer), Button(onClick, disabled), CartItem(key, line), OrderSummary(lines, coupon, readOnly)
+- Renders only when: CartItem (items.length && each of items)
+- Navigates to: `/checkout`
 - Used by: Header
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 2 component(s) and 13 page(s); update every caller listed under "Used by".
@@ -39,6 +41,7 @@ One cart line with quantity stepper and remove button.
 - Writes redux:cart: `removeItem` via dispatch in inline callback
 - CSS classes: cart-item, flex, items-center, gap-3, stepper
 - Renders: Button(variant, size, onClick)
+- Renders only when: Button (!readOnly)
 - Libraries: next/image#Image
 - Used by: CartPage, OrderTimeline, CartDrawer, CheckoutWizard
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
@@ -62,6 +65,7 @@ Totals, shipping and coupon entry.
 - Validation (html): Coupon [pattern]
 - CSS classes: text-green-600, text-xl, font-bold, flex, gap-2
 - Renders: Card, CardHeader(title), CardBody, Input(label, value, pattern, error, onChange), Button(variant, onClick)
+- Renders only when: Input (!readOnly); Button (!readOnly)
 - Used by: CartPage, CartDrawer, CheckoutWizard
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 6 component(s) and 13 page(s); update every caller listed under "Used by".

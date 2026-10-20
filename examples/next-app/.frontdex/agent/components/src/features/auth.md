@@ -15,6 +15,8 @@ Redirects to the login page when there is no session; optionally requires a role
 - Variables: allowed
 - Reads context:AuthContext via useAuth
 - Renders: Spinner(label)
+- Renders only when: Spinner (loading || !allowed)
+- Navigates to: `/account`
 - Used by: AccountLayout, AdminLayout, CheckoutPage
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /checkout
 - Impact: changing the props/export affects 3 component(s) and 6 page(s); update every caller listed under "Used by".

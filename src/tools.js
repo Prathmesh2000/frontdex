@@ -82,7 +82,18 @@ export function createTools(config) {
       if (!route) return Object.entries(cat.pages).map(([r, p]) => `- ${r} → ${p.component ?? '?'} \`${p.file}\` (${p.router})`).join('\n') || 'No pages detected.';
       const p = cat.pages[route];
       if (!p) return `No page "${route}". Known: ${Object.keys(cat.pages).join(', ')}`;
-      return [`# ${route}`, `\`${p.file}\` · ${p.router}`, `- Root component: ${p.component ?? 'unresolved'}`, `- Layouts: ${(p.layouts ?? []).join(' > ') || 'none'}`, `- Params: ${(p.params ?? []).join(', ') || 'none'}`, `- Components (${(p.components ?? []).length}): ${(p.components ?? []).join(', ')}`].join('\n');
+      const linkedFrom = Object.entries(cat.pages).filter(([r, q]) => r !== route && q.linksTo?.includes(route)).map(([r]) => r);
+      return [
+        `# ${route}`,
+        `\`${p.file}\` · ${p.router}`,
+        `- Root component: ${p.component ?? 'unresolved'}`,
+        `- Layouts: ${(p.layouts ?? []).join(' > ') || 'none'}`,
+        ...(p.wrappers?.length ? [`- Wrapped by: ${p.wrappers.join(' > ')}`] : []),
+        `- Params: ${(p.params ?? []).join(', ') || 'none'}`,
+        `- Components (${(p.components ?? []).length}): ${(p.components ?? []).join(', ')}`,
+        `- Links to: ${p.linksTo?.join(', ') || 'none'}`,
+        `- Linked from: ${linkedFrom.join(', ') || 'none found'}`,
+      ].join('\n');
     },
     catalogue_overview() {
       const { cat, idx } = refresh().state;

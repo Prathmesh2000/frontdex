@@ -2,7 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { api, appUrl, type Component, type ComponentRow, type Issue } from './api';
-import { Card, CompLink, FileRef, Header, Issues, Loading, Swatch, useApi } from './lib';
+import { Card, CompLink, FileRef, Header, Issues, Loading, PageLink, Swatch, useApi } from './lib';
 
 const PAGE = 100;
 
@@ -212,13 +212,58 @@ export function ComponentView({ id }: { id: string }) {
         <Card title="Used by" count={c.usedBy?.length ?? 0} wide={false}>
           <div className="chips">{c.usedBy?.map((x) => <CompLink key={x} id={x} />) ?? <p className="none">Nothing renders it.</p>}</div>
         </Card>
-        <Card title="Renders" count={c.renders?.length ?? 0} wide={false}>
-          <div className="chips">{c.renders?.map((x) => <CompLink key={x} id={x} />) ?? <p className="none">No child components.</p>}</div>
+        <Card title="Renders" count={c.renders?.length ?? 0} wide={false} sub={c.rendersWhen ? 'Children shown only under a condition list it below their name.' : undefined}>
+          {c.renders?.length ? (
+            <table>
+              <tbody>
+                {c.renders.map((x) => (
+                  <tr key={x}>
+                    <td>
+                      <CompLink id={x} />
+                    </td>
+                    <td className="small mono">{c.rendersWhen?.[x]?.join(' | ') ?? <span className="muted">always</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="none">No child components.</p>
+          )}
         </Card>
         <Card title="Pages" count={c.pages?.length ?? 0} wide={false}>
-          <div className="chips">{c.pages?.map((p) => <span key={p} className="chip mono">{p}</span>) ?? <p className="none">Not on any page.</p>}</div>
+          <div className="chips">{c.pages?.map((p) => <PageLink key={p} route={p} />) ?? <p className="none">Not on any page.</p>}</div>
         </Card>
+        {c.navigatesTo?.length ? (
+          <Card title="Navigates to" count={c.navigatesTo.length} wide={false} sub="Links, redirects and navigate() calls in this component.">
+            <div className="chips">{c.navigatesTo.map((p) => <PageLink key={p} route={p} />)}</div>
+          </Card>
+        ) : null}
       </div>
+      {c.views?.length ? (
+        <Card title="Views" count={c.views.length} sub="Screens this component switches between by state instead of routes (tabs, steps, popups).">
+          {c.views.map((v) => (
+            <table key={v.on} style={{ marginBottom: 8 }}>
+              <thead>
+                <tr>
+                  <th colSpan={2}>
+                    by <code>{v.on}</code>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(v.cases).map(([value, ids]) => (
+                  <tr key={value}>
+                    <td className="mono small">{value}</td>
+                    <td>
+                      <div className="chips">{ids.map((id) => <CompLink key={id} id={id} />)}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ))}
+        </Card>
+      ) : null}
       {c.examples?.length ? (
         <Card title="Usage examples (stories)" count={c.examples.length}>
           {c.examples.map((e) => (
@@ -444,6 +489,9 @@ export function PageView({ route }: { route: string }) {
   if (!data) return <Loading error={error} />;
   const p = data[route];
   if (!p) return <Loading error={`no page "${route}"`} />;
+  const linkedFrom = Object.entries(data)
+    .filter(([r, q]) => r !== route && q.linksTo?.includes(route))
+    .map(([r]) => r);
   return (
     <>
       <Header
@@ -470,6 +518,22 @@ export function PageView({ route }: { route: string }) {
         <Card title="Layouts" count={p.layouts?.length ?? 0} wide={false}>
           <div className="chips">{p.layouts?.length ? p.layouts.map((x) => <CompLink key={x} id={x} />) : <p className="none">No layouts.</p>}</div>
         </Card>
+      </div>
+      <div className="grid">
+        <Card title="Links to" count={p.linksTo?.length ?? 0} wide={false} sub="Where the components on this page navigate.">
+          <div className="chips">{p.linksTo?.map((r) => <PageLink key={r} route={r} />) ?? <p className="none">No links found.</p>}</div>
+        </Card>
+        <Card title="Linked from" count={linkedFrom.length} wide={false} sub="Pages whose components navigate here.">
+          <div className="chips">{linkedFrom.length ? linkedFrom.map((r) => <PageLink key={r} route={r} />) : <p className="none">No links found.</p>}</div>
+        </Card>
+        {p.wrappers?.length || p.alternates?.length ? (
+          <Card title="Guards and alternates" wide={false} sub="Wrappers around the page component, and what the route shows instead (loaders, redirects).">
+            <div className="chips">
+              {p.wrappers?.map((x) => <CompLink key={x} id={x} />)}
+              {p.alternates?.map((x) => <CompLink key={x} id={x} />)}
+            </div>
+          </Card>
+        ) : null}
       </div>
       <Card title="Components on this page" count={p.components?.length ?? 0}>
         <div className="chips">{p.components?.map((x) => <CompLink key={x} id={x} />)}</div>

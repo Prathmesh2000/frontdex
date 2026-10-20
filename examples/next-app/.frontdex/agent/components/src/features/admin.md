@@ -48,6 +48,7 @@ Dashboard KPI tile: design-system Card shell around the admin metric card.
 - Props from AdminDashboard: title="Today", metrics=[{ label: 'Revenue', value: '$12,480', delta: 8 }…
 - CSS classes: grid (app/globals.css:6), grid-cols-3, gap-2
 - Renders: Card(elevated), CardHeader(title), CardBody, Card(key, ...m)
+- Renders only when: Card (each of metrics)
 - Used by: AdminDashboard
 - Pages: /admin
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -71,6 +72,7 @@ Create or edit a product. `productId` undefined means "new".
 - Validation (html): Price (cents) [required, min, type=number]
 - Validation (html): Stock [min, type=number]
 - Renders: Spinner, Input(label, required, minLength, value, onChange, label, type, required, min, value, onChange, label, type, min, value, onChange), Button(type)
+- Renders only when: Spinner (loading); Input (!loading); Button (!loading)
 - Used by: AdminProductPage
 - Pages: /admin/products/[...slug]
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -134,6 +136,7 @@ Catches render errors in the admin area and reports them.
 - API POST `/api/errors` via fetch in componentDidCatch (line 17)
 - CSS classes: error-panel
 - Renders: Button(onClick)
+- Renders only when: Button (this.state.error)
 - Used by: AdminLayout
 - Pages: /admin/orders, /admin, /admin/products/[...slug]
 - Impact: changing the props/export affects 1 component(s) and 3 page(s); update every caller listed under "Used by".
@@ -157,6 +160,7 @@ Modal to change an order's status or delete it.
 - ⚠ LOW unused-variable L16: `unusedDraftNote` is declared but never used. Fix: remove it
 - ⚠ MEDIUM a11y-field-label L39: <select> has no label (no aria-label, and no id for a <label for>). Fix: wrap it in <label>, link one with id/for, or add aria-label
 - Renders: Modal(open, title, onClose, footer), Button(variant, onClick, loading, onClick), Card, CardHeader(title, action), Badge, CardBody
+- Renders only when: Card (order); CardHeader (order); Badge (order); CardBody (order)
 - Used by: AdminOrdersPage
 - Pages: /admin/orders
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -193,6 +197,7 @@ Latest orders table on the dashboard; also reused by the orders page.
 - Props from AdminDashboard: limit=5
 - API GET `/orders` via http.get in useEffect L20 (line 22)
 - Renders: DataTable(rows, columns, loading, onRowClick, emptyText), Badge
+- Renders only when: Badge (via COLUMNS)
 - Used by: AdminOrdersPage, AdminDashboard
 - Pages: /admin/orders, /admin
 - Impact: changing the props/export affects 2 component(s) and 2 page(s); update every caller listed under "Used by".
