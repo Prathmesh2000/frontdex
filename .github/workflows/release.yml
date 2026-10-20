@@ -1,7 +1,7 @@
 name: Release
 
 # Manual: Actions → Release → Run workflow (on main). Tests, bumps the version, dates the CHANGELOG section,
-# publishes to npm with provenance through npm Trusted Publishing (no token stored), then pushes the
+# publishes (or stages) to npm with provenance through npm Trusted Publishing (no token stored), then pushes the
 # release commit + tag and creates the GitHub Release from the CHANGELOG section.
 on:
   workflow_dispatch:
@@ -46,7 +46,13 @@ jobs:
           node scripts/release.js "$V" > "$RUNNER_TEMP/notes.md"
           echo "version=$V" >> "$GITHUB_OUTPUT"
 
-      - run: npm publish --provenance --access public
+      # A trusted publisher can be allowed to publish, to stage, or both. Staged versions go live once a
+      # maintainer approves them with 2FA: npmjs.com → package → Staged, or `npm stage list` + `npm stage approve <id>`.
+      - name: Publish (or stage) to npm
+        run: |
+          if npm publish --provenance --access public; then exit 0; fi
+          echo "::warning::npm refused a direct publish; staging instead. Approve it on npmjs.com to make it live."
+          npm stage publish --provenance --access public
 
       - name: Commit, tag and push
         env:
