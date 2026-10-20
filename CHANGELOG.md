@@ -4,10 +4,6 @@ All notable changes to frontdex (formerly react-catalogue). The format follows [
 
 ## 0.4.0 (unreleased)
 
-### Changed
-
-- **License: Apache-2.0** (was MIT). Free for any use, including commercial; redistributions keep the `LICENSE` and `NOTICE` files, which credit the author. Versions up to 0.3.x stay MIT.
-
 ### Added
 
 - **Antigravity**: `frontdex agents --targets antigravity` writes an always-on rule to `.agents/rules/frontdex.md` and registers the MCP server in `.agents/mcp_config.json`.
@@ -25,7 +21,12 @@ All notable changes to frontdex (formerly react-catalogue). The format follows [
 
 ### Changed
 
+- **License: Apache-2.0** (was MIT). Free for any use, including commercial; redistributions keep the `LICENSE` and `NOTICE` files, which credit the author. Versions up to 0.3.x stay MIT.
 - The npm package no longer includes the internal plan (`docs/TASK.md`); only `docs/SPEC.md` and `docs/MIGRATING.md` ship. (`46cef68`)
+
+### Fixed
+
+- `frontdex diff <ref>` and the PR comment rescanned the base ref instead of reading its committed `frontdex.yaml` when the project path was a Windows short (8.3) path, e.g. under `C:\Users\RUNNER~1` on GitHub-hosted Windows runners.
 
 ## 0.3.1 (2026-10-20)
 
