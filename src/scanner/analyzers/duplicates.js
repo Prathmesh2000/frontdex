@@ -88,8 +88,12 @@ export function findDuplicates(components, pages) {
   const candidates = new Map();
   for (const [key, list] of index) {
     if (list.length < 2 || (!key.startsWith('base:') && list.length > MAX_WORD_FANOUT)) continue;
+    // A base name shared by hundreds of components (an app copied per tenant) would make n² pairs; past the fan-out each
+    // one is compared with the first MAX_WORD_FANOUT only, which still finds it a match and keeps the work linear.
+    const width = list.length > MAX_WORD_FANOUT ? MAX_WORD_FANOUT : list.length;
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
+        if (i >= width && j >= width) break;
         const [a, b] = list[i].id < list[j].id ? [list[i], list[j]] : [list[j], list[i]];
         const pair = `${a.id}\0${b.id}`;
         const entry = candidates.get(pair) ?? candidates.set(pair, { a, b, props: 0 }).get(pair);
@@ -118,13 +122,21 @@ export function findDuplicates(components, pages) {
   }
   pairs.sort((x, y) => y.score - x.score || x.components[0].localeCompare(y.components[0]));
 
+  // One issue per component, naming its best match: one per pair grows with the square of a look-alike group.
+  const best = new Map();
   for (const pair of pairs) {
     const [a, b] = pair.components.map((id) => components[id]);
     const uses = (c) => (c.usedBy?.length ?? 0) + (c.pages?.length ?? 0);
     // Report on the one fewer things depend on: it is the cheaper one to fold into the other.
-    const [keep, fold] = uses(a) >= uses(b) ? [a, b] : [b, a];
-    const keepId = pair.components[keep === a ? 0 : 1];
-    (fold.issues ??= []).push({ type: 'possible-duplicate', severity: 'low', message: `${fold.name} looks like ${keepId} (${pair.reasons.join('; ')})`, fix: `reuse or extend ${keepId}, or merge the two` });
+    const [keepId, foldId] = uses(a) >= uses(b) ? pair.components : [...pair.components].reverse();
+    const hit = best.get(foldId);
+    if (hit) hit.more++;
+    else best.set(foldId, { keepId, pair, more: 0 });
+  }
+  for (const [foldId, { keepId, pair, more }] of best) {
+    const fold = components[foldId];
+    const others = more ? `, and ${more} more look-alike${more === 1 ? '' : 's'}` : '';
+    (fold.issues ??= []).push({ type: 'possible-duplicate', severity: 'low', message: `${fold.name} looks like ${keepId} (${pair.reasons.join('; ')})${others}`, fix: `reuse or extend ${keepId}, or merge the two` });
   }
   return pairs.slice(0, MAX_PAIRS);
 }

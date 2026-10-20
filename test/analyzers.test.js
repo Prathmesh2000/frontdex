@@ -79,3 +79,13 @@ test('CSS-in-JS: styled components, theme objects, Tailwind classes resolved to 
   assert.equal(C.Toolbar.styles.classes.find((c) => c.name === 'md:bg-brand-500').token, 'colors.brand.500');
   assert.deepEqual(cat.tokens.definitions['colors.brand.500'].usedBy, ['Toolbar']);
 });
+
+test('look-alike groups get one possible-duplicate issue per component, not one per pair', async () => {
+  const { findDuplicates } = await import('../src/scanner/analyzers/duplicates.js');
+  const components = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`Card@app-${i}/Card.tsx`, { name: 'Card', file: `app-${i}/Card.tsx`, props: { title: {}, body: {} } }]));
+  findDuplicates(components, {});
+  const counts = Object.values(components).map((c) => (c.issues ?? []).filter((i) => i.type === 'possible-duplicate').length);
+  assert.ok(counts.every((n) => n <= 1), 'at most one issue each');
+  assert.equal(counts.filter((n) => n === 1).length, 59, 'every copy but the one kept is flagged');
+  assert.ok(Object.values(components).some((c) => /and \d+ more look-alikes?$/.test(c.issues?.[0]?.message ?? '')), 'the rest of the group is counted, not listed');
+});
