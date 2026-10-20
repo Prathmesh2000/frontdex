@@ -33,6 +33,24 @@ export interface PageInfo { router?: string; file?: string; component?: string; 
 export interface Store { kind: string; name: string; file: string; line?: number; default?: string; readers?: string[]; writers?: string[]; providers?: string[] }
 export interface Graph { total: number; truncated: boolean; pages: Record<string, { component?: string; layouts: string[] }>; nodes: Record<string, { name: string; file: string; renders: string[]; usedBy: string[] }> }
 type Change = 'added' | 'removed' | 'changed';
+/** Docs a coding agent wrote for a component through MCP (spec/enrichment.schema.json). */
+export type DocState = 'none' | 'fresh' | 'stale';
+export interface Enrichment {
+  id: string; name: string; file: string; writtenAt: string; by?: string;
+  doc: {
+    purpose: string; summary?: string;
+    props?: Record<string, { description: string; howToPass?: string; example?: string }>;
+    functions?: Record<string, string>;
+    usage?: { title: string; code: string }[];
+    notes?: string[];
+  };
+}
+export interface EnrichmentOverview {
+  summary: { components: number; documented: number; fresh: number; stale: number };
+  documented: { id: string; name: string; file: string; purpose: string; writtenAt: string; by?: string; state: DocState }[];
+  next: { id: string; name: string; file: string; state: DocState; usedBy: number; pages: number }[];
+}
+
 /** A changed field: `from`/`to` for plain values, or the entries added, removed and modified in a map or list. */
 export interface DiffField {
   field: string;
@@ -86,5 +104,7 @@ export const api = {
   graph: (p: { focus?: string; depth?: number; dir?: string; force?: 1 }) => get<Graph>('graph', p),
   diff: (base: string, head?: string) => get<DiffReport>('diff', { base, head }),
   history: () => get<Commit[]>('history'),
+  enrichment: (id: string) => get<{ id: string; state: DocState; record: Enrichment | null }>('enrichment', { id }),
+  enrichmentOverview: () => get<EnrichmentOverview>('enrichment'),
   hooks: () => get<Record<string, { file: string; line?: number; reads?: string[]; calls?: string[]; usedBy?: string[] }> | null>('section', { name: 'hooks' }),
 };

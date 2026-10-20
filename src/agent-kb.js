@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { enrichmentState } from './enrichment.js';
 
 const require = createRequire(import.meta.url);
 const { createIndex, LEVELS } = require('./query.cjs');
@@ -20,10 +21,13 @@ export const cardPath = (dir) => `components/${dir || '_root'}.md`;
 
 const code = (s) => `\`${String(s).replace(/`/g, "'")}\``;
 
-export function componentCard(idx, m, { heading = '##' } = {}) {
+export function componentCard(idx, m, { heading = '##', docs } = {}) {
   const c = m.c;
   const lines = [`${heading} ${c.name}`, `${code(`${c.file}${c.line ? `:${c.line}` : ''}`)} · ${c.kind}${c.rendering ? ` · ${c.rendering} component` : ''} · ${c.export ?? 'none'} export · ${LEVELS[m.level]}${c.status ? ` · ${c.status.toUpperCase()}` : ''}${c.owner ? ` · owner ${c.owner}` : ''}`];
   if (c.description) lines.push('', c.description);
+  // Agent-written docs (src/enrichment.js): the purpose up front, the rest one tool call away.
+  const doc = docs?.get(m.id);
+  if (doc) lines.push('', `Purpose: ${doc.doc.purpose}${enrichmentState(doc, c) === 'stale' ? ' (docs stale: the component changed since; refresh them with catalogue_enrich_write)' : ''} Full docs: \`catalogue_docs\`.`);
   lines.push('');
   if (c.codeowners?.length) lines.push(`- Owners: ${c.codeowners.join(', ')}`);
   if (c.tests?.length || c.stories?.length) lines.push(`- Tests: ${c.tests?.join(', ') ?? 'none'}${c.stories?.length ? ` · Stories: ${c.stories.join(', ')}` : ''}`);
@@ -158,7 +162,7 @@ function healthLines(cat, idx) {
  * `written` (optional Map, kept by a watch session) remembers what was last written, so unchanged cards are not re-read.
  * `kb` is the knowledge folder relative to the project root, used in the paths the cards print.
  */
-export function writeAgentKnowledge(dir, cat, written = null, { kb = '.frontdex' } = {}) {
+export function writeAgentKnowledge(dir, cat, written = null, { kb = '.frontdex', docs } = {}) {
   const idx = createIndex(cat);
   const files = new Map();
   for (const m of idx.comps) (files.get(m.dir) ?? files.set(m.dir, []).get(m.dir)).push(m);
@@ -167,7 +171,7 @@ export function writeAgentKnowledge(dir, cat, written = null, { kb = '.frontdex'
   outputs.set('INDEX.md', indexMarkdown(cat, idx, files, kb));
   for (const [folder, list] of files) {
     list.sort((a, b) => (a.c.line ?? 0) - (b.c.line ?? 0) || a.c.file.localeCompare(b.c.file));
-    outputs.set(cardPath(folder), `# ${folder || '(project root)'}\n\n${list.length} component(s). Index: \`${kb}/agent/INDEX.md\`\n\n${list.map((m) => componentCard(idx, m)).join('\n\n')}\n`);
+    outputs.set(cardPath(folder), `# ${folder || '(project root)'}\n\n${list.length} component(s). Index: \`${kb}/agent/INDEX.md\`\n\n${list.map((m) => componentCard(idx, m, { docs })).join('\n\n')}\n`);
   }
   outputs.set(
     'graph.json',

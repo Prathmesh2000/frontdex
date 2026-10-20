@@ -8,6 +8,7 @@ import { GraphView } from './graph';
 import { SourceContext, SourcePanel, useApi } from './lib';
 import { Palette } from './palette';
 import { Changes } from './changes';
+import { Docs } from './docs';
 import { ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
 
 // The previous UI sits beside this one, wherever the app is mounted.
@@ -22,6 +23,7 @@ const NAV: [string, string][] = [
   ['/health', 'Health'],
   ['/design', 'Design'],
   ['/hooks', 'Hooks'],
+  ['/docs', 'Docs'],
   ['/changes', 'Changes'],
   ['/graph', 'Graph'],
   ['/history', 'History'],
@@ -130,6 +132,7 @@ const routeTree = root.addChildren([
   healthRoute,
   createRoute({ ...route('/design'), component: Design }),
   createRoute({ ...route('/hooks'), component: Hooks }),
+  createRoute({ ...route('/docs'), component: Docs }),
   changesRoute,
   graphRoute,
   createRoute({ ...route('/history'), component: History }),

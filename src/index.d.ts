@@ -1,6 +1,6 @@
 // Public API of `frontdex`. Hand-written; test/types.test.js checks that it declares exactly what src/index.js exports.
 // The catalogue document types are generated from the JSON Schema (spec/catalogue.d.ts) and re-exported here.
-import type { Catalogue } from '../spec/catalogue.js';
+import type { Catalogue, Component } from '../spec/catalogue.js';
 
 export type * from '../spec/catalogue.js';
 
@@ -122,6 +122,35 @@ export interface History {
   checkout(id: string): { entry: HistoryCommit; catalogue: Catalogue } | null;
 }
 export function createHistory(dir: string): History;
+
+/** Docs a coding agent wrote for one component (spec/enrichment.schema.json). */
+export interface ComponentDocs {
+  purpose: string;
+  summary?: string;
+  props?: Record<string, { description: string; howToPass?: string; example?: string }>;
+  functions?: Record<string, string>;
+  usage?: { title: string; code: string }[];
+  notes?: string[];
+}
+/** A stored docs record: the docs plus the signature of the component they describe. */
+export interface EnrichmentRecord {
+  id: string;
+  name: string;
+  file: string;
+  sourceHash: string;
+  writtenAt: string;
+  by?: string;
+  doc: ComponentDocs;
+}
+export function listEnrichment(config: Config): Map<string, EnrichmentRecord>;
+export function readEnrichment(config: Config, id: string): EnrichmentRecord | null;
+/** Validates and stores docs; throws on schema errors, warns about props the component does not have. */
+export function writeEnrichment(config: Config, catalogue: Catalogue, id: string, doc: ComponentDocs, options?: { by?: string }): { record: EnrichmentRecord; warnings: string[] };
+/** fresh: written against the current component; stale: it changed since; none: no docs. */
+export function enrichmentState(record: EnrichmentRecord | null | undefined, component: Component | undefined): 'none' | 'fresh' | 'stale';
+export function enrichmentSummary(config: Config, catalogue: Catalogue): { components: number; documented: number; fresh: number; stale: number };
+/** Undocumented or stale components, most used first. */
+export function nextToEnrich(config: Config, catalogue: Catalogue, limit?: number): { id: string; c: Component; state: 'none' | 'stale'; score: number }[];
 
 /** The knowledge queries behind the CLI and the frontdex-mcp server (find, show, impact, duplicates, …). */
 export function createTools(config: Config): {

@@ -7,6 +7,22 @@ import { buildReport, catalogueAtRef, formatText } from './ci.js';
 import { similarTo } from './scanner/analyzers/duplicates.js';
 import { formatDetail, formatSummary } from './history.js';
 import { createHistory, knowledgeDir, scan } from './index.js';
+import { enrichmentDir, enrichmentState, enrichmentSummary, nextToEnrich, readEnrichment, writeEnrichment } from './enrichment.js';
+
+/** Agent-written docs as Markdown, for agents and the CLI. */
+function docsMarkdown(record, state) {
+  const d = record.doc;
+  const out = [`## Docs${state === 'stale' ? ' (stale: the component changed since they were written)' : ''}`, '', d.purpose];
+  if (d.summary) out.push('', d.summary);
+  const props = Object.entries(d.props ?? {});
+  if (props.length) out.push('', '### Props', ...props.map(([k, p]) => `- \`${k}\`: ${p.description}${p.howToPass ? ` How to pass: ${p.howToPass}` : ''}${p.example ? ` e.g. \`${p.example}\`` : ''}`));
+  const fns = Object.entries(d.functions ?? {});
+  if (fns.length) out.push('', '### Functions', ...fns.map(([k, v]) => `- \`${k}\`: ${v}`));
+  for (const u of d.usage ?? []) out.push('', `### ${u.title}`, '```jsx', u.code, '```');
+  if (d.notes?.length) out.push('', '### Notes', ...d.notes.map((n) => `- ${n}`));
+  out.push('', `_Written ${record.writtenAt.slice(0, 10)}${record.by ? ` by ${record.by}` : ''}._`);
+  return out.join('\n');
+}
 
 const require = createRequire(import.meta.url);
 const { createIndex } = require('./query.cjs');
@@ -66,7 +82,65 @@ export function createTools(config) {
     catalogue_component({ name }) {
       const { idx } = refresh().state;
       const r = resolve(idx, name);
-      return r.error ?? componentCard(idx, r.m, { heading: '#' });
+      if (r.error) return r.error;
+      const record = readEnrichment(config, r.m.id);
+      return [componentCard(idx, r.m, { heading: '#' }), ...(record ? ['', docsMarkdown(record, enrichmentState(record, r.m.c))] : [])].join('\n');
+    },
+    catalogue_enrich_next({ limit = 5 } = {}) {
+      const { cat, idx } = refresh().state;
+      const next = nextToEnrich(config, cat, Math.min(20, Number(limit) || 5));
+      if (!next.length) return 'Every component has up-to-date docs.';
+      const summary = enrichmentSummary(config, cat);
+      const out = [
+        `# Components to document (${summary.fresh}/${summary.components} documented and current, ${summary.stale} stale)`,
+        '',
+        'For each one: read its source file, then call `catalogue_enrich_write` with `name` and `doc`:',
+        '`{ purpose, summary?, props?: { <prop>: { description, howToPass?, example? } }, functions?: { <name>: what it does }, usage?: [{ title, code }], notes?: [] }`.',
+        'Write for a developer about to use or change it: what it is for, what each prop does and how to pass it, when each function runs, a realistic usage example, and pitfalls. Document only props and functions the component really has.',
+      ];
+      for (const { id, c, state: docState } of next) {
+        const callers = (c.usedBy ?? []).slice(0, 4).map((p) => `${idx.C[p]?.name ?? p}(${(idx.C[p]?.passes?.[id] ?? []).map((x) => `${x.name}=${x.value}`).join(', ')})`);
+        out.push(
+          '',
+          `## ${c.name}${docState === 'stale' ? ' (docs stale: the component changed since)' : ''}`,
+          `id \`${id}\` · \`${c.file}${c.line ? `:${c.line}` : ''}\` · used by ${c.usedBy?.length ?? 0} · on ${c.pages?.length ?? 0} page(s)`,
+          `- Props: ${Object.entries(c.props ?? {}).map(([k, p]) => `${k}${p.required ? '' : '?'}: ${p.type}${p.default !== undefined ? ` = ${p.default}` : ''}`).join('; ') || 'none'}`,
+          ...(c.functions?.length ? [`- Functions: ${c.functions.map((f) => f.name).join(', ')}`] : []),
+          ...(callers.length ? [`- How parents call it: ${callers.join('; ')}`] : []),
+          ...(c.examples?.length ? [`- Story args: ${c.examples.map((e) => `${e.story} ${JSON.stringify(e.args ?? {})}`).join('; ')}`] : []),
+        );
+      }
+      return out.join('\n');
+    },
+    catalogue_enrich_write({ name, doc, by } = {}) {
+      const { cat, idx } = refresh().state;
+      const r = resolve(idx, name);
+      if (r.error) return r.error;
+      let parsed = doc;
+      if (typeof doc === 'string') {
+        try {
+          parsed = JSON.parse(doc);
+        } catch {
+          return '`doc` must be an object (or a JSON string of one).';
+        }
+      }
+      try {
+        const { record, warnings } = writeEnrichment(config, cat, r.m.id, parsed, { by });
+        return [`Saved docs for ${r.m.name} (${path.relative(config.root, enrichmentDir(config)).split(path.sep).join('/')}).`, ...warnings.map((w) => `Warning: ${w}`), '', docsMarkdown(record, 'fresh')].join('\n');
+      } catch (err) {
+        return `Not saved: ${err.message}`;
+      }
+    },
+    catalogue_docs({ name } = {}) {
+      const { cat, idx } = refresh().state;
+      if (!name) {
+        const s = enrichmentSummary(config, cat);
+        return `${s.documented}/${s.components} components documented (${s.fresh} current, ${s.stale} stale). Use catalogue_enrich_next to see what to document next.`;
+      }
+      const r = resolve(idx, name);
+      if (r.error) return r.error;
+      const record = readEnrichment(config, r.m.id);
+      return record ? docsMarkdown(record, enrichmentState(record, r.m.c)) : `${r.m.name} has no docs yet. Use catalogue_enrich_next / catalogue_enrich_write.`;
     },
     catalogue_impact({ name }) {
       const { idx } = refresh().state;

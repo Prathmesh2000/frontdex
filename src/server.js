@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { buildReport, catalogueAtRef } from './ci.js';
 import { createHistory } from './history.js';
+import { enrichmentState, enrichmentSummary, listEnrichment, nextToEnrich, readEnrichment } from './enrichment.js';
 import { knowledgeDir, scan } from './index.js';
 import { SOURCE_EXT } from './scanner/files.js';
 import { readCatalogue } from './spec.js';
@@ -222,6 +223,19 @@ export function createApp(config, { watch, regenerate = true, log = console.log,
       return c ? json(res, { id, ...c }) : json(res, { error: `No component "${id}"` }, 404);
     }
     if (url.pathname === '/api/pages') return json(res, catalogue.pages);
+    // Agent-written component docs (see src/enrichment.js): one component's, or coverage plus what to document next.
+    if (url.pathname === '/api/enrichment') {
+      const asked = url.searchParams.get('id');
+      if (asked) {
+        const id = !Object.hasOwn(catalogue.components, asked) && Object.hasOwn(catalogue.aliases ?? {}, asked) ? catalogue.aliases[asked] : asked;
+        const record = readEnrichment(config, id);
+        return json(res, { id, state: enrichmentState(record, catalogue.components[id]), record });
+      }
+      const all = listEnrichment(config);
+      const documented = [...all].map(([id, r]) => ({ id, name: r.name, file: r.file, purpose: r.doc.purpose, writtenAt: r.writtenAt, by: r.by, state: enrichmentState(r, catalogue.components[id]) }));
+      const next = nextToEnrich(config, catalogue, 15).map(({ id, c, state }) => ({ id, name: c.name, file: c.file, state, usedBy: c.usedBy?.length ?? 0, pages: c.pages?.length ?? 0 }));
+      return json(res, { summary: enrichmentSummary(config, catalogue), documented, next });
+    }
     if (url.pathname === '/api/graph') {
       const p = url.searchParams;
       return json(res, subgraph(catalogue, { focus: p.get('focus') || undefined, depth: Math.min(8, Math.max(1, Number(p.get('depth')) || 2)), dir: p.get('dir') || undefined, force: p.get('force') === '1' }));

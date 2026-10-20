@@ -2,6 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useRef, useState } from 'react';
 import { api, appUrl, type Component, type ComponentRow, type Issue } from './api';
+import { ComponentDocs } from './docs';
 import { Card, CompLink, FileRef, Header, Issues, Loading, PageLink, Swatch, useApi } from './lib';
 
 const PAGE = 100;
@@ -186,6 +187,7 @@ export function ComponentView({ id }: { id: string }) {
       />
       {c.description && <p className="desc">{c.description}</p>}
       {info?.livePreview && <LivePreview key={c.id} path={info.livePreview} c={c} />}
+      <ComponentDocs c={c} />
       <div className="grid">
         <Card title="Props" count={props.length} wide={false}>
           {props.length ? (
