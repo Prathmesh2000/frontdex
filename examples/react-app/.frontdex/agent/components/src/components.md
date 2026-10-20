@@ -23,6 +23,7 @@ Router-level errorElement (404s, loader failures).
 
 - Hooks: useRouteError
 - CSS classes: error-screen (src/styles.css:9)
+- Navigates to: `/`
 - Libraries: react-router-dom#Link
 - Used by: nothing (unused or entry point)
 - Pages: /, /users, /users/:userId, /users/:userId/edit, /settings, /settings/profile, /settings/billing, /settings/security
@@ -44,6 +45,7 @@ Layout route: sidebar navigation + routed content.
 
 - CSS classes: shell (src/styles.css:1), nav (src/styles.css:2)
 - Renders: SelectionBar, ErrorBoundary
+- Navigates to: `/`, `/settings`, `/users`
 - Libraries: react-router-dom#NavLink, react-router-dom#Outlet
 - Used by: nothing (unused or entry point)
 - Pages: /, /users, /users/:userId, /users/:userId/edit, /settings, /settings/profile, /settings/billing, /settings/security

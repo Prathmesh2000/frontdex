@@ -1,3 +1,5 @@
+import { pathParts } from './paths.js';
+
 const MAX_TEXT = 80;
 const SIGNALS = { createSignal: 'signal', createStore: 'signal', createMemo: 'computed', useSignal: 'signal', useStore: 'signal', useComputed$: 'computed' };
 const MAX_CALLS = 12;
@@ -213,21 +215,77 @@ function buildProps({ members, destructured, accessed, propTypes, defaults }) {
 }
 
 function newRecord(name, kind, line) {
-  return { name, kind, line, props: {}, state: {}, context: [], refs: [], hooks: new Map(), lifecycle: [], jsx: [] };
+  return { name, kind, line, props: {}, state: {}, context: [], refs: [], hooks: new Map(), lifecycle: [], jsx: [], navigates: [], uses: [] };
 }
 
+const COND_MAX = 80;
+// A condition as source text, and its negation written the way a developer would read it.
+const condText = (code, node) => text(code, node, COND_MAX);
+function negate(code, node) {
+  if (node.type === 'UnaryExpression' && node.operator === '!') return condText(code, node.argument);
+  if (node.type === 'BinaryExpression' && /^[!=]==?$/.test(node.operator)) {
+    const flipped = { '===': '!==', '!==': '===', '==': '!=', '!=': '==' }[node.operator];
+    return `${condText(code, node.left)} ${flipped} ${condText(code, node.right)}`;
+  }
+  return /^(Identifier|MemberExpression|OptionalMemberExpression|CallExpression)$/.test(node.type) ? `!${condText(code, node)}` : `!(${condText(code, node)})`;
+}
+// A statement that always leaves the function: `return …`, `throw …`, or a block ending in one.
+const exits = (s) => s?.type === 'ReturnStatement' || s?.type === 'ThrowStatement' || (s?.type === 'BlockStatement' && exits(s.body.at(-1)));
+
+/**
+ * The conditions a JSX element renders under, outermost first, as source text: the ternary branch, `&&` / `||` guard,
+ * if/else branch or switch case around it, earlier early returns in the same block (`if (loading) return <Spinner/>`
+ * makes everything after it `!loading`), and `.map()` loops. Stops at the component's own function.
+ */
+function conditionsOf(p, root, code) {
+  const out = [];
+  for (let child = p, parent = p.parentPath; parent; child = parent, parent = parent.parentPath) {
+    const n = parent.node;
+    if (parent.isConditionalExpression() && child.key !== 'test') out.push(child.key === 'consequent' ? condText(code, n.test) : negate(code, n.test));
+    else if (parent.isLogicalExpression() && child.key === 'right' && n.operator !== '??') out.push(n.operator === '&&' ? condText(code, n.left) : negate(code, n.left));
+    else if (parent.isIfStatement() && child.key !== 'test') out.push(child.key === 'consequent' ? condText(code, n.test) : negate(code, n.test));
+    else if (parent.isSwitchCase()) {
+      const on = condText(code, parent.parentPath.node.discriminant);
+      out.push(n.test ? `${on} === ${condText(code, n.test)}` : `${on}: default`);
+    } else if (parent.isCallExpression() && child.listKey === 'arguments' && /\.(map|flatMap)$/.test(memberText(n.callee) ?? '')) out.push(`each of ${condText(code, n.callee.object)}`);
+    else if (parent.isBlockStatement() && child.listKey === 'body') {
+      // Early returns before this statement: each one is a branch this code only reaches when its test was false.
+      for (let i = child.key - 1; i >= 0; i--) {
+        const s = n.body[i];
+        if (s.type === 'IfStatement' && !s.alternate && exits(s.consequent)) out.push(negate(code, s.test));
+      }
+    }
+    if (parent === root) break;
+  }
+  return out.reverse();
+}
+
+const NAV_ELEMENTS = new Set(['Link', 'NavLink', 'Navigate', 'Redirect']);
+const NAV_CALLS = /^(navigate|router\.(push|replace)|history\.(push|replace)|redirect|permanentRedirect|navigateTo)$/;
+
+/**
+ * Child components (with the conditions they render under), navigation targets and the module-level names the
+ * component references. The last feed graph.js: a name bound to a registry of JSX (`const blocks = { code: () =>
+ * <CodeBlock/> }`) or to a component called as a function credits those components to this one.
+ */
 function addJsx(record, path, code) {
+  const nav = (via, node, line) => node && record.navigates.push({ via, to: pathParts(node.type === 'JSXExpressionContainer' ? node.expression : node), line });
+  const uses = new Set();
   path.traverse({
     JSXOpeningElement(p) {
       const n = p.node.name;
       const name = n.type === 'JSXIdentifier' ? n.name : n.type === 'JSXMemberExpression' ? jsxMemberName(n) : null;
+      const attr = (key) => p.node.attributes.find((a) => a.type === 'JSXAttribute' && a.name.name === key)?.value;
+      if (name === 'a' && attr('href')) nav('href', attr('href'), p.node.loc?.start.line);
       if (!name || !/^[A-Z]/.test(name) || /^(React\.)?Fragment$/.test(name)) return;
+      if (NAV_ELEMENTS.has(name.split('.').pop()) && (attr('to') || attr('href'))) nav(name, attr('to') ?? attr('href'), p.node.loc?.start.line);
       const props = p.node.attributes.map((a) =>
         a.type === 'JSXSpreadAttribute'
           ? { name: `...${text(code, a.argument, 30)}`, value: 'spread' }
           : { name: a.name.type === 'JSXNamespacedName' ? `${a.name.namespace.name}:${a.name.name.name}` : a.name.name, value: !a.value ? 'true' : a.value.type === 'StringLiteral' ? JSON.stringify(a.value.value) : text(code, a.value.expression ?? a.value, 50) },
       );
-      record.jsx.push({ name, line: p.node.loc?.start.line, props });
+      const when = conditionsOf(p.parentPath, path, code);
+      record.jsx.push({ name, line: p.node.loc?.start.line, props, ...(when.length && { when }) });
     },
     JSXAttribute(p) {
       const v = p.node.value;
@@ -235,7 +293,23 @@ function addJsx(record, path, code) {
         record.jsx.push({ name: v.expression.name, line: p.node.loc?.start.line, soft: true });
       }
     },
+    CallExpression(p) {
+      const callee = memberText(p.node.callee);
+      const target = p.node.arguments[0];
+      if (callee && NAV_CALLS.test(callee) && target && target.type !== 'NumericLiteral' && target.type !== 'UnaryExpression') {
+        // navigate({ pathname }) passes an object: its pathname is the target.
+        const to = target.type === 'ObjectExpression' ? target.properties.find((q) => q.type === 'ObjectProperty' && q.key.name === 'pathname')?.value : target;
+        nav(callee.split('.').pop(), to, p.node.loc?.start.line);
+      }
+    },
+    Identifier(p) {
+      if (!p.isReferencedIdentifier()) return;
+      const binding = p.scope.getBinding(p.node.name);
+      // Imports and top-level declarations only: locals cannot name another module's registry.
+      if (binding && (binding.kind === 'module' || binding.scope.block.type === 'Program')) uses.add(p.node.name);
+    },
   });
+  record.uses = [...uses];
 }
 
 function jsxMemberName(n) {

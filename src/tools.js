@@ -7,6 +7,23 @@ import { buildReport, catalogueAtRef, formatText } from './ci.js';
 import { similarTo } from './scanner/analyzers/duplicates.js';
 import { formatDetail, formatSummary } from './history.js';
 import { createHistory, knowledgeDir, scan } from './index.js';
+import { caseName, testCommand } from './test-runner.js';
+import { enrichmentDir, enrichmentState, enrichmentSummary, nextToEnrich, readEnrichment, writeEnrichment } from './enrichment.js';
+
+/** Agent-written docs as Markdown, for agents and the CLI. */
+function docsMarkdown(record, state) {
+  const d = record.doc;
+  const out = [`## Docs${state === 'stale' ? ' (stale: the component changed since they were written)' : ''}`, '', d.purpose];
+  if (d.summary) out.push('', d.summary);
+  const props = Object.entries(d.props ?? {});
+  if (props.length) out.push('', '### Props', ...props.map(([k, p]) => `- \`${k}\`: ${p.description}${p.howToPass ? ` How to pass: ${p.howToPass}` : ''}${p.example ? ` e.g. \`${p.example}\`` : ''}`));
+  const fns = Object.entries(d.functions ?? {});
+  if (fns.length) out.push('', '### Functions', ...fns.map(([k, v]) => `- \`${k}\`: ${v}`));
+  for (const u of d.usage ?? []) out.push('', `### ${u.title}`, '```jsx', u.code, '```');
+  if (d.notes?.length) out.push('', '### Notes', ...d.notes.map((n) => `- ${n}`));
+  out.push('', `_Written ${record.writtenAt.slice(0, 10)}${record.by ? ` by ${record.by}` : ''}._`);
+  return out.join('\n');
+}
 
 const require = createRequire(import.meta.url);
 const { createIndex } = require('./query.cjs');
@@ -66,7 +83,65 @@ export function createTools(config) {
     catalogue_component({ name }) {
       const { idx } = refresh().state;
       const r = resolve(idx, name);
-      return r.error ?? componentCard(idx, r.m, { heading: '#' });
+      if (r.error) return r.error;
+      const record = readEnrichment(config, r.m.id);
+      return [componentCard(idx, r.m, { heading: '#' }), ...(record ? ['', docsMarkdown(record, enrichmentState(record, r.m.c))] : [])].join('\n');
+    },
+    catalogue_enrich_next({ limit = 5 } = {}) {
+      const { cat, idx } = refresh().state;
+      const next = nextToEnrich(config, cat, Math.min(20, Number(limit) || 5));
+      if (!next.length) return 'Every component has up-to-date docs.';
+      const summary = enrichmentSummary(config, cat);
+      const out = [
+        `# Components to document (${summary.fresh}/${summary.components} documented and current, ${summary.stale} stale)`,
+        '',
+        'For each one: read its source file, then call `catalogue_enrich_write` with `name` and `doc`:',
+        '`{ purpose, summary?, props?: { <prop>: { description, howToPass?, example? } }, functions?: { <name>: what it does }, usage?: [{ title, code }], notes?: [] }`.',
+        'Write for a developer about to use or change it: what it is for, what each prop does and how to pass it, when each function runs, a realistic usage example, and pitfalls. Document only props and functions the component really has.',
+      ];
+      for (const { id, c, state: docState } of next) {
+        const callers = (c.usedBy ?? []).slice(0, 4).map((p) => `${idx.C[p]?.name ?? p}(${(idx.C[p]?.passes?.[id] ?? []).map((x) => `${x.name}=${x.value}`).join(', ')})`);
+        out.push(
+          '',
+          `## ${c.name}${docState === 'stale' ? ' (docs stale: the component changed since)' : ''}`,
+          `id \`${id}\` · \`${c.file}${c.line ? `:${c.line}` : ''}\` · used by ${c.usedBy?.length ?? 0} · on ${c.pages?.length ?? 0} page(s)`,
+          `- Props: ${Object.entries(c.props ?? {}).map(([k, p]) => `${k}${p.required ? '' : '?'}: ${p.type}${p.default !== undefined ? ` = ${p.default}` : ''}`).join('; ') || 'none'}`,
+          ...(c.functions?.length ? [`- Functions: ${c.functions.map((f) => f.name).join(', ')}`] : []),
+          ...(callers.length ? [`- How parents call it: ${callers.join('; ')}`] : []),
+          ...(c.examples?.length ? [`- Story args: ${c.examples.map((e) => `${e.story} ${JSON.stringify(e.args ?? {})}`).join('; ')}`] : []),
+        );
+      }
+      return out.join('\n');
+    },
+    catalogue_enrich_write({ name, doc, by } = {}) {
+      const { cat, idx } = refresh().state;
+      const r = resolve(idx, name);
+      if (r.error) return r.error;
+      let parsed = doc;
+      if (typeof doc === 'string') {
+        try {
+          parsed = JSON.parse(doc);
+        } catch {
+          return '`doc` must be an object (or a JSON string of one).';
+        }
+      }
+      try {
+        const { record, warnings } = writeEnrichment(config, cat, r.m.id, parsed, { by });
+        return [`Saved docs for ${r.m.name} (${path.relative(config.root, enrichmentDir(config)).split(path.sep).join('/')}).`, ...warnings.map((w) => `Warning: ${w}`), '', docsMarkdown(record, 'fresh')].join('\n');
+      } catch (err) {
+        return `Not saved: ${err.message}`;
+      }
+    },
+    catalogue_docs({ name } = {}) {
+      const { cat, idx } = refresh().state;
+      if (!name) {
+        const s = enrichmentSummary(config, cat);
+        return `${s.documented}/${s.components} components documented (${s.fresh} current, ${s.stale} stale). Use catalogue_enrich_next to see what to document next.`;
+      }
+      const r = resolve(idx, name);
+      if (r.error) return r.error;
+      const record = readEnrichment(config, r.m.id);
+      return record ? docsMarkdown(record, enrichmentState(record, r.m.c)) : `${r.m.name} has no docs yet. Use catalogue_enrich_next / catalogue_enrich_write.`;
     },
     catalogue_impact({ name }) {
       const { idx } = refresh().state;
@@ -82,7 +157,18 @@ export function createTools(config) {
       if (!route) return Object.entries(cat.pages).map(([r, p]) => `- ${r} → ${p.component ?? '?'} \`${p.file}\` (${p.router})`).join('\n') || 'No pages detected.';
       const p = cat.pages[route];
       if (!p) return `No page "${route}". Known: ${Object.keys(cat.pages).join(', ')}`;
-      return [`# ${route}`, `\`${p.file}\` · ${p.router}`, `- Root component: ${p.component ?? 'unresolved'}`, `- Layouts: ${(p.layouts ?? []).join(' > ') || 'none'}`, `- Params: ${(p.params ?? []).join(', ') || 'none'}`, `- Components (${(p.components ?? []).length}): ${(p.components ?? []).join(', ')}`].join('\n');
+      const linkedFrom = Object.entries(cat.pages).filter(([r, q]) => r !== route && q.linksTo?.includes(route)).map(([r]) => r);
+      return [
+        `# ${route}`,
+        `\`${p.file}\` · ${p.router}`,
+        `- Root component: ${p.component ?? 'unresolved'}`,
+        `- Layouts: ${(p.layouts ?? []).join(' > ') || 'none'}`,
+        ...(p.wrappers?.length ? [`- Wrapped by: ${p.wrappers.join(' > ')}`] : []),
+        `- Params: ${(p.params ?? []).join(', ') || 'none'}`,
+        `- Components (${(p.components ?? []).length}): ${(p.components ?? []).join(', ')}`,
+        `- Links to: ${p.linksTo?.join(', ') || 'none'}`,
+        `- Linked from: ${linkedFrom.join(', ') || 'none found'}`,
+      ].join('\n');
     },
     catalogue_overview() {
       const { cat, idx } = refresh().state;
@@ -234,6 +320,24 @@ export function createTools(config) {
       if (!list.length) return name ? `No custom hook named ${name}.` : 'No custom hooks found.';
       return list.map(([id, h]) => `- ${id} \`${h.file}${h.line ? `:${h.line}` : ''}\`${h.reads?.length ? ` reads ${h.reads.join(', ')}` : ''}${h.calls?.length ? ` · calls ${h.calls.join(', ')}` : ''} · used by ${h.usedBy?.join(', ') || 'nothing'}`).join('\n');
     },
+    catalogue_tests({ name, route, file } = {}) {
+      const { cat, idx } = refresh().state;
+      if (!cat.tests) return 'No test files found (unit tests next to components, or E2E specs in e2e/, tests/ or config `tests.dirs`).';
+      let found;
+      try {
+        found = data.tests({ name, route, file });
+      } catch (err) {
+        return err.message;
+      }
+      const runner = (k) => `${k} (cwd \`${cat.tests.runners[k]?.cwd ?? '.'}\`${cat.tests.runners[k]?.config ? `, ${cat.tests.runners[k].config}` : ''})`;
+      const head = name || route || file ? `# Tests for ${name ?? route ?? file}` : `# Tests: ${Object.keys(cat.tests.suites).length} file(s); runners: ${Object.keys(cat.tests.runners).map(runner).join(', ') || 'none detected'}`;
+      const lines = found.suites.map((s) => {
+        const how = s.matches?.filter((m) => m.target === found.id || m.target === route).map((m) => `${m.confidence}: ${m.reason}`) ?? [];
+        return [`- \`${s.file}\` ${s.kind}${s.runner ? `/${s.runner}` : ''} · ${s.cases.length} case(s)${s.components?.length ? ` · components ${s.components.join(', ')}` : ''}${s.pages?.length ? ` · pages ${s.pages.join(', ')}` : ''}`, ...(s.command ? [`    run: \`${s.command}\`${s.kind === 'e2e' ? ' (E2E: drives a real app; may create or delete data)' : ''}`] : ['    run: no runner detected']), ...how.slice(0, 5).map((h) => `    matched by ${h}`)].join('\n');
+      });
+      const uncovered = name || route || file ? [] : ['', `Components with no test: ${found.uncovered.length} of ${idx.comps.length}`];
+      return [head, '', ...(lines.length ? lines : ['No test covers it.']), ...uncovered].join('\n');
+    },
     catalogue_diff({ base = 'HEAD', head } = {}) {
       // Working tree vs a git ref (default: the last commit): what the current change does to the frontend.
       try {
@@ -311,6 +415,22 @@ export function createTools(config) {
       return { definitions: Object.fromEntries(Object.entries(t.definitions).filter(([k, v]) => includes(`${k} ${v.value}`, query))), drift: (t.drift ?? []).filter((d) => includes(`${d.token} ${d.at} ${d.value}`, query)) };
     },
     hooks: ({ name } = {}) => Object.fromEntries(Object.entries(refresh().state.cat.hooks ?? {}).filter(([id]) => !name || id === name || id.startsWith(`${name}@`))),
+    /** Suites covering a component (`name`), a page (`route`) or one file; all suites without arguments. */
+    tests: ({ name, route, file } = {}) => {
+      const { cat } = refresh().state;
+      const all = Object.entries(cat.tests?.suites ?? {}).map(([f, s]) => {
+        const cmd = testCommand(cat, config.root, { file: f, confirm: true });
+        return { file: f, ...s, ...(!cmd.error && { command: cmd.display }), caseNames: s.cases.map(caseName) };
+      });
+      let id;
+      let suites = all;
+      if (name) {
+        id = one(name).m.id;
+        suites = all.filter((s) => s.components?.includes(id) || s.hooks?.includes(id));
+      } else if (route) suites = all.filter((s) => s.pages?.includes(route));
+      else if (file) suites = all.filter((s) => s.file === file);
+      return { id, suites, uncovered: Object.entries(cat.components).filter(([, c]) => !c.testedBy?.length).map(([k]) => k) };
+    },
     owners: ({ name }) => {
       const { m } = one(name);
       return { id: m.id, file: m.c.file, codeowners: m.c.codeowners ?? [], tests: m.c.tests ?? [], stories: m.c.stories ?? [], git: gitActivity(config.root, m.c.file) };

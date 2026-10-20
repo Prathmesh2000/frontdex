@@ -6,8 +6,8 @@ info:
   framework: next
   routers:
     - next-app
-  generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:59:53.463Z
+  generator: frontdex 0.4.0
+  generatedAt: 2026-10-20T14:10:32.965Z
 components:
   AccountLayout:
     name: AccountLayout
@@ -87,6 +87,11 @@ components:
     renders:
       - ProfileForm
       - LoginForm
+    rendersWhen:
+      ProfileForm:
+        - user && !wantsLogin
+      LoginForm:
+        - "!(user && !wantsLogin)"
     passes:
       LoginForm:
         - name: onSuccess
@@ -850,6 +855,7 @@ components:
     usedBy:
       - OrderTimeline
       - OrderEditor
+      - RecentOrders
       - ProductCard
       - ProductInfo
       - ToastItem
@@ -950,6 +956,9 @@ components:
         - name: btn-
     renders:
       - Spinner
+    rendersWhen:
+      Spinner:
+        - loading
     passes:
       Spinner:
         - name: size
@@ -999,6 +1008,8 @@ components:
       - /products
       - /search
     rendering: client
+    testedBy:
+      - src/components/ui/Button.test.tsx
   Card@src/components/ui/Card.tsx:
     name: Card
     file: src/components/ui/Card.tsx
@@ -1320,6 +1331,9 @@ components:
       - Button
       - CartItem
       - OrderSummary
+    rendersWhen:
+      CartItem:
+        - items.length && each of items
     passes:
       Modal:
         - name: open
@@ -1376,6 +1390,8 @@ components:
       - /products/[id]
       - /products
       - /search
+    navigatesTo:
+      - /checkout
     rendering: client
   CartItem:
     name: CartItem
@@ -1435,6 +1451,9 @@ components:
         - name: stepper
     renders:
       - Button
+    rendersWhen:
+      Button:
+        - "!readOnly"
     passes:
       Button:
         - name: variant
@@ -1519,6 +1538,13 @@ components:
       - CartItem
       - OrderSummary
       - Button
+    rendersWhen:
+      CartItem:
+        - items.length && each of items
+      OrderSummary:
+        - items.length
+      Button:
+        - items.length
     passes:
       CartItem:
         - name: key
@@ -1547,6 +1573,9 @@ components:
       - "@northwind/web"
     pages:
       - /cart
+    navigatesTo:
+      - /checkout
+      - /products
     rendering: client
   CheckoutLayout:
     name: CheckoutLayout
@@ -1573,6 +1602,8 @@ components:
     pages:
       - /checkout
       - /checkout/success
+    navigatesTo:
+      - /cart
     rendering: server
   CheckoutPage:
     name: CheckoutPage
@@ -1726,6 +1757,25 @@ components:
       - CartItem
       - Button
       - OrderSummary
+    rendersWhen:
+      AddressStep:
+        - state.step === 0
+      PaymentForm:
+        - state.step === 1
+      CartItem:
+        - state.step === 2 && each of items
+      Button:
+        - state.step === 2
+    views:
+      - on: state.step
+        cases:
+          "0":
+            - AddressStep
+          "1":
+            - PaymentForm
+          "2":
+            - CartItem
+            - Button
     passes:
       StepIndicator:
         - name: current
@@ -1784,6 +1834,8 @@ components:
       - "@northwind/web"
     pages:
       - /checkout
+    navigatesTo:
+      - /checkout/success
     rendering: client
   DataTable:
     name: DataTable
@@ -1858,6 +1910,9 @@ components:
         fix: use a <button>, or add role="button", tabIndex={0} and a key handler
     renders:
       - Spinner
+    rendersWhen:
+      Spinner:
+        - loading
     passes:
       Spinner:
         - name: label
@@ -1914,6 +1969,9 @@ components:
         - name: error-panel
     renders:
       - Button
+    rendersWhen:
+      Button:
+        - this.state.error
     passes:
       Button:
         - name: onClick
@@ -1947,6 +2005,13 @@ components:
       - TabsTrigger
       - TabsPanel
       - ProductGrid
+    rendersWhen:
+      TabsTrigger:
+        - each of COLLECTIONS
+      TabsPanel:
+        - each of COLLECTIONS
+      ProductGrid:
+        - each of COLLECTIONS
     passes:
       TabsRoot:
         - name: defaultValue
@@ -2278,6 +2343,9 @@ components:
       - /products/[id]
       - /products
       - /search
+    navigatesTo:
+      - /
+      - /account
     rendering: client
   HeroBanner:
     name: HeroBanner
@@ -2762,6 +2830,9 @@ components:
         fix: use a <button>, or add role="button", tabIndex={0} and a key handler
     renders:
       - Button
+    rendersWhen:
+      Button:
+        - open
     passes:
       Button:
         - name: variant
@@ -2976,6 +3047,15 @@ components:
       - CardHeader
       - Badge
       - CardBody
+    rendersWhen:
+      Card@src/components/ui/Card.tsx:
+        - order
+      CardHeader:
+        - order
+      Badge:
+        - order
+      CardBody:
+        - order
     passes:
       Modal:
         - name: open
@@ -3120,6 +3200,11 @@ components:
       - CardBody
       - Input
       - Button
+    rendersWhen:
+      Input:
+        - "!readOnly"
+      Button:
+        - "!readOnly"
     passes:
       CardHeader:
         - name: title
@@ -3226,6 +3311,19 @@ components:
       - Badge
       - CardBody
       - CartItem
+    rendersWhen:
+      Spinner:
+        - "!order"
+      Card@src/components/ui/Card.tsx:
+        - order
+      CardHeader:
+        - order
+      Badge:
+        - order
+      CardBody:
+        - order
+      CartItem:
+        - order && each of order.lines
     passes:
       Spinner:
         - name: label
@@ -3504,6 +3602,12 @@ components:
       - Card@src/components/ui/Card.tsx
       - Badge
       - Tooltip
+    rendersWhen:
+      Badge:
+        - highlight
+        - lowStock
+      Tooltip:
+        - lowStock
     passes:
       Card@src/components/ui/Card.tsx:
         - name: elevated
@@ -3534,6 +3638,8 @@ components:
       - /products/[id]
       - /products
       - /search
+    navigatesTo:
+      - /products/[id]
     rendering: client
   ProductDetailPage:
     name: ProductDetailPage
@@ -3689,6 +3795,13 @@ components:
       - Spinner
       - Input
       - Button
+    rendersWhen:
+      Spinner:
+        - loading
+      Input:
+        - "!loading"
+      Button:
+        - "!loading"
     passes:
       Input:
         - name: label
@@ -3916,6 +4029,11 @@ components:
     renders:
       - Spinner
       - ProductCard
+    rendersWhen:
+      Spinner:
+        - isLoading
+      ProductCard:
+        - "!isLoading && !error"
     passes:
       Spinner:
         - name: label
@@ -4245,6 +4363,9 @@ components:
       writes: []
     renders:
       - Spinner
+    rendersWhen:
+      Spinner:
+        - loading || !allowed
     passes:
       Spinner:
         - name: label
@@ -4263,6 +4384,8 @@ components:
       - /admin
       - /admin/products/[...slug]
       - /checkout
+    navigatesTo:
+      - /account
     rendering: client
   RecentOrders:
     name: RecentOrders
@@ -4318,6 +4441,10 @@ components:
         line: 22
     renders:
       - DataTable
+      - Badge
+    rendersWhen:
+      Badge:
+        - via COLUMNS
     passes:
       DataTable:
         - name: rows
@@ -4410,6 +4537,9 @@ components:
         fix: add excludeId to the dependency array
     renders:
       - ProductCard
+    rendersWhen:
+      ProductCard:
+        - each of items
     passes:
       ProductCard:
         - name: key
@@ -4489,6 +4619,9 @@ components:
         fix: use an AbortController or an `ignore` flag set in the cleanup
     renders:
       - Spinner
+    rendersWhen:
+      Spinner:
+        - "!reviews"
     passes:
       Spinner:
         - name: label
@@ -4896,6 +5029,8 @@ components:
       - /products/[id]
       - /products
       - /search
+    navigatesTo:
+      - /search
     rendering: client
   SearchPage:
     name: SearchPage
@@ -4981,6 +5116,11 @@ components:
     renders:
       - Spinner
       - ProductCard
+    rendersWhen:
+      Spinner:
+        - term && isLoading && !data
+      ProductCard:
+        - term && !(isLoading && !data)
     passes:
       Spinner:
         - name: label
@@ -5074,6 +5214,9 @@ components:
       - CardHeader
       - CardBody
       - Card@src/features/admin/Card.tsx
+    rendersWhen:
+      Card@src/features/admin/Card.tsx:
+        - each of metrics
     passes:
       Card@src/components/ui/Card.tsx:
         - name: elevated
@@ -5208,6 +5351,8 @@ components:
       - "@northwind/web"
     pages:
       - /checkout/success
+    navigatesTo:
+      - /account/orders/[orderId]
     rendering: client
   TabsList:
     name: TabsList
@@ -5569,6 +5714,9 @@ components:
         - name: z-50
     renders:
       - ToastItem
+    rendersWhen:
+      ToastItem:
+        - each of toasts
     passes:
       ToastItem:
         - name: key
@@ -5695,6 +5843,11 @@ pages:
       - CardBody
       - Input
       - Tooltip
+    linksTo:
+      - /account
+      - /checkout
+      - /products/[id]
+      - /search
   /account:
     router: next-app
     file: app/(account)/account/page.tsx
@@ -5731,6 +5884,10 @@ pages:
       - Card@src/components/ui/Card.tsx
       - CardHeader
       - CardBody
+    linksTo:
+      - /
+      - /checkout
+      - /search
   /account/orders/[orderId]:
     router: next-app
     file: app/(account)/account/orders/[orderId]/page.tsx
@@ -5768,6 +5925,11 @@ pages:
       - Modal
       - OrderSummary
       - Input
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /search
   /admin:
     router: next-app
     file: app/(admin)/admin/page.tsx
@@ -5805,11 +5967,16 @@ pages:
       - Card@src/features/admin/Card.tsx
       - SalesChart
       - DataTable
+      - Badge
       - Modal
       - CartItem
       - OrderSummary
-      - Badge
       - Input
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /search
   /admin/orders:
     router: next-app
     file: app/(admin)/admin/orders/page.tsx
@@ -5840,14 +6007,19 @@ pages:
       - ToastItem
       - Spinner
       - DataTable
+      - Badge
       - Modal
       - Card@src/components/ui/Card.tsx
       - CardHeader
-      - Badge
       - CardBody
       - CartItem
       - OrderSummary
       - Input
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /search
   /admin/products/[...slug]:
     router: next-app
     file: app/(admin)/admin/products/[...slug]/page.tsx
@@ -5886,6 +6058,11 @@ pages:
       - Card@src/components/ui/Card.tsx
       - CardHeader
       - CardBody
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /search
   /blog/[[...slug]]:
     router: next-app
     file: app/blog/[[...slug]]/page.tsx
@@ -5919,6 +6096,11 @@ pages:
       - CardHeader
       - CardBody
       - Input
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /search
   /cart:
     router: next-app
     file: app/cart/page.tsx
@@ -5949,6 +6131,12 @@ pages:
       - Spinner
       - Modal
       - Badge
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /products
+      - /search
   /checkout:
     router: next-app
     file: app/checkout/page.tsx
@@ -5987,6 +6175,12 @@ pages:
       - Card@src/components/ui/Card.tsx
       - CardHeader
       - CardBody
+    linksTo:
+      - /
+      - /account
+      - /cart
+      - /checkout/success
+      - /search
   /checkout/success:
     router: next-app
     file: app/checkout/success/page.tsx
@@ -6019,6 +6213,13 @@ pages:
       - CardHeader
       - CardBody
       - Input
+    linksTo:
+      - /
+      - /account
+      - /account/orders/[orderId]
+      - /cart
+      - /checkout
+      - /search
   /products:
     router: next-app
     file: app/products/page.tsx
@@ -6053,6 +6254,12 @@ pages:
       - Tooltip
       - CardHeader
       - CardBody
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /products/[id]
+      - /search
   /products/[id]:
     router: next-app
     file: app/products/[id]/page.tsx
@@ -6092,6 +6299,11 @@ pages:
       - Tooltip
       - CardHeader
       - CardBody
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /search
   /search:
     router: next-app
     file: app/search/page.tsx
@@ -6125,6 +6337,11 @@ pages:
       - CardHeader
       - CardBody
       - Input
+    linksTo:
+      - /
+      - /account
+      - /checkout
+      - /products/[id]
 endpoints:
   /api/orders:
     kind: route-handler
@@ -6425,6 +6642,17 @@ hooks:
       - AddToCartButton
       - ProductGrid
       - ToastViewport
+tests:
+  runners: {}
+  suites:
+    src/components/ui/Button.test.tsx:
+      kind: unit
+      cwd: .
+      cases:
+        - title: renders its label
+          line: 4
+      components:
+        - Button
 health:
   issues:
     high: 8

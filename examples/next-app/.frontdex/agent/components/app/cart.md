@@ -14,6 +14,8 @@ Full cart page. Reads lines and coupon from Redux and passes them down as props.
 - Writes redux:cart: `clearCart` via dispatch in inline callback
 - CSS classes: grid (app/globals.css:6), md:grid-cols-3, gap-8, md:col-span-2, btn (app/globals.css:8), btn-primary (app/globals.css:9), btn-lg (app/globals.css:15)
 - Renders: CartItem(key, line), OrderSummary(lines, coupon), Button(variant, onClick)
+- Renders only when: CartItem (items.length && each of items); OrderSummary (items.length); Button (items.length)
+- Navigates to: `/checkout`, `/products`
 - Libraries: next/link#Link
 - Used by: nothing (unused or entry point)
 - Pages: /cart

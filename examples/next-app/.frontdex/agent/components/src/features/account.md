@@ -39,6 +39,7 @@ Order status with live polling until the order ships.
 - Timer `setInterval` in useEffect L15 (line 23): released
 - API GET `/api/orders/${orderId}` via fetch in useEffect L15 (line 18)
 - Renders: Spinner(label), Card, CardHeader(title, action), Badge(tone), CardBody, CartItem(key, line, readOnly)
+- Renders only when: Spinner (!order); Card (order); CardHeader (order); Badge (order); CardBody (order); CartItem (order && each of order.lines)
 - Used by: OrderDetailPage
 - Pages: /account/orders/[orderId]
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".

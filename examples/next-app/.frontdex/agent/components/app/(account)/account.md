@@ -23,6 +23,7 @@ Signed-in area wrapper.
 - Variables: wantsLogin
 - Reads context:AuthContext via useAuth
 - Renders: ProfileForm, LoginForm(onSuccess)
+- Renders only when: ProfileForm (user && !wantsLogin); LoginForm (!(user && !wantsLogin))
 - Used by: nothing (unused or entry point)
 - Pages: /account
 - Impact: changing the props/export affects 0 component(s) and 1 page(s); update every caller listed under "Used by".

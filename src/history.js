@@ -137,7 +137,7 @@ export function createHistory(dir) {
 }
 
 /** Drops `line` everywhere: inserting code above a component shifts every line number without changing behaviour. */
-function withoutLines(v) {
+export function withoutLines(v) {
   if (Array.isArray(v)) return v.map(withoutLines);
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter(([k]) => k !== 'line').map(([k, x]) => [k, withoutLines(x)]));
   // Labels such as "useEffect L26" or issue messages embed line numbers too.
@@ -145,14 +145,14 @@ function withoutLines(v) {
   return v;
 }
 
-const itemKey = (x) => {
+export const itemKey = (x) => {
   if (!x || typeof x !== 'object') return String(x);
   if (x.name) return x.name;
   if (x.via && x.phases) return `${x.via}${x.deps ? `[${x.deps.join(', ')}]` : ''}`;
   return [x.type, x.via, x.call, x.event, x.method, x.target, x.action, x.path, x.field, x.schema, x.fn].filter(Boolean).join(' ') || stable(x);
 };
 
-function keyed(v) {
+export function keyed(v) {
   if (Array.isArray(v)) {
     const out = new Map();
     v.forEach((x) => {

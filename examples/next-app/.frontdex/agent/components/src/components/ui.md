@@ -45,9 +45,9 @@ Inline loading indicator.
 - Props from ProductInfo: tone=inStock ? 'success' : 'danger'
 - Props from ToastItem: tone=toast.tone === 'error' ? 'danger' : 'success'
 - CSS classes: badge (app/globals.css:22), badge-
-- Used by: OrderTimeline, OrderEditor, ProductCard, ProductInfo, ToastItem
+- Used by: OrderTimeline, OrderEditor, RecentOrders, ProductCard, ProductInfo, ToastItem
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
-- Impact: changing the props/export affects 17 component(s) and 13 page(s); update every caller listed under "Used by".
+- Impact: changing the props/export affects 19 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Tooltip
 `src/components/ui/Tooltip.tsx:4` · function · client component · named export · moderate
@@ -125,6 +125,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 Design-system button. Use instead of raw <button> everywhere.
 
 - Owners: @northwind/design-system
+- Covered by tests: `src/components/ui/Button.test.tsx` (MCP `catalogue_tests` gives the run command)
 - Tests: Button.test.tsx · Stories: Button.stories.tsx
 - Examples: Primary(variant="primary", children="Save")
 - Props: `variant?: 'primary' | 'secondary' | 'ghost' | 'danger'` = `'primary'`, `size?: 'sm' | 'md' | 'lg'` = `'md'`, `loading?: boolean` = `false`, `icon?: React.ReactNode`, `children?: unknown`, `disabled?: unknown`
@@ -147,6 +148,7 @@ Design-system button. Use instead of raw <button> everywhere.
 - Props from Filters: onClick=handleApply, variant="ghost", onClick=() => dispatch({ type: 'reset' })
 - CSS classes: btn (app/globals.css:8), btn-
 - Renders: Spinner(size)
+- Renders only when: Spinner (loading)
 - Used by: CartPage, Header, HeroBanner, Modal, ProfileForm, ErrorBoundary, OrderEditor, ProductEditor, LoginForm, CartDrawer, CartItem, OrderSummary, AddressForm, CheckoutWizard, PaymentForm, AddToCartButton, Filters
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 30 component(s) and 13 page(s); update every caller listed under "Used by".
@@ -167,6 +169,7 @@ Accessible dialog rendered into document.body. Locks page scroll and closes on E
 - CSS classes: backdrop (app/globals.css:35)
 - ⚠ LOW a11y-click-handler L36: click handler on <div> without a role or keyboard handler; keyboard users cannot trigger it. Fix: use a <button>, or add role="button", tabIndex={0} and a key handler
 - Renders: Button(variant, onClick)
+- Renders only when: Button (open)
 - Used by: OrderEditor, CartDrawer
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
 - Impact: changing the props/export affects 5 component(s) and 13 page(s); update every caller listed under "Used by".
@@ -206,6 +209,7 @@ Generic sortable, paginated table used by every admin list.
 - CSS classes: empty
 - ⚠ LOW a11y-click-handler L43: click handler on <tr> without a role or keyboard handler; keyboard users cannot trigger it. Fix: use a <button>, or add role="button", tabIndex={0} and a key handler
 - Renders: Spinner(label)
+- Renders only when: Spinner (loading)
 - Used by: RecentOrders
 - Pages: /admin/orders, /admin
 - Impact: changing the props/export affects 3 component(s) and 2 page(s); update every caller listed under "Used by".

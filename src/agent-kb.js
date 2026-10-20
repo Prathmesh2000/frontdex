@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { enrichmentState } from './enrichment.js';
 
 const require = createRequire(import.meta.url);
 const { createIndex, LEVELS } = require('./query.cjs');
@@ -20,12 +21,16 @@ export const cardPath = (dir) => `components/${dir || '_root'}.md`;
 
 const code = (s) => `\`${String(s).replace(/`/g, "'")}\``;
 
-export function componentCard(idx, m, { heading = '##' } = {}) {
+export function componentCard(idx, m, { heading = '##', docs } = {}) {
   const c = m.c;
   const lines = [`${heading} ${c.name}`, `${code(`${c.file}${c.line ? `:${c.line}` : ''}`)} · ${c.kind}${c.rendering ? ` · ${c.rendering} component` : ''} · ${c.export ?? 'none'} export · ${LEVELS[m.level]}${c.status ? ` · ${c.status.toUpperCase()}` : ''}${c.owner ? ` · owner ${c.owner}` : ''}`];
   if (c.description) lines.push('', c.description);
+  // Agent-written docs (src/enrichment.js): the purpose up front, the rest one tool call away.
+  const doc = docs?.get(m.id);
+  if (doc) lines.push('', `Purpose: ${doc.doc.purpose}${enrichmentState(doc, c) === 'stale' ? ' (docs stale: the component changed since; refresh them with catalogue_enrich_write)' : ''} Full docs: \`catalogue_docs\`.`);
   lines.push('');
   if (c.codeowners?.length) lines.push(`- Owners: ${c.codeowners.join(', ')}`);
+  if (c.testedBy?.length) lines.push(`- Covered by tests: ${c.testedBy.slice(0, 5).map(code).join(', ')}${c.testedBy.length > 5 ? ` (+${c.testedBy.length - 5} more)` : ''} (MCP \`catalogue_tests\` gives the run command)`);
   if (c.tests?.length || c.stories?.length) lines.push(`- Tests: ${c.tests?.join(', ') ?? 'none'}${c.stories?.length ? ` · Stories: ${c.stories.join(', ')}` : ''}`);
   if (c.examples?.length) lines.push(`- Examples: ${c.examples.slice(0, 5).map((e) => `${e.story.split('#')[1]}(${Object.entries(e.args ?? {}).map(([k, v]) => `${k}=${v}`).join(', ')})`).join('; ')}`);
   const props = Object.entries(c.props ?? {});
@@ -54,6 +59,11 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
   for (const mo of c.styles?.modules ?? []) lines.push(`- CSS module ${code(mo.file)}: ${mo.classes.map((x) => x.name).join(', ')}`);
   for (const i of c.issues ?? []) lines.push(`- ⚠ ${i.severity.toUpperCase()} ${i.type}${i.line ? ` L${i.line}` : ''}: ${i.message}${i.fix ? `. Fix: ${i.fix}` : ''}`);
   if (c.renders?.length) lines.push(`- Renders: ${c.renders.map((id) => `${idx.C[id]?.name ?? id}${c.passes?.[id]?.length ? `(${c.passes[id].map((p) => p.name).join(', ')})` : ''}`).join(', ')}`);
+  // When each conditional child shows: an agent changing one branch needs to know the others exist.
+  const conditional = Object.entries(c.rendersWhen ?? {});
+  if (conditional.length) lines.push(`- Renders only when: ${conditional.map(([id, when]) => `${idx.C[id]?.name ?? id} (${when.join(' | ')})`).join('; ')}`);
+  for (const v of c.views ?? []) lines.push(`- Views by \`${v.on}\`: ${Object.entries(v.cases).map(([value, ids]) => `${value} → ${ids.map((id) => idx.C[id]?.name ?? id).join(', ')}`).join('; ')}`);
+  if (c.navigatesTo?.length) lines.push(`- Navigates to: ${c.navigatesTo.map(code).join(', ')}`);
   if (c.externals?.length) lines.push(`- Libraries: ${c.externals.join(', ')}`);
   lines.push(`- Used by: ${c.usedBy?.length ? c.usedBy.map((id) => idx.C[id]?.name ?? id).join(', ') : 'nothing (unused or entry point)'}`);
   if (c.pages?.length) lines.push(`- Pages: ${c.pages.join(', ')}`);
@@ -67,7 +77,7 @@ export function componentCard(idx, m, { heading = '##' } = {}) {
 function indexMarkdown(cat, idx, files, kb) {
   const info = cat.info;
   const shared = idx.comps.filter((m) => m.usedBy >= SHARED_THRESHOLD || m.pages >= SHARED_THRESHOLD).sort((a, b) => b.usedBy - a.usedBy || b.pages - a.pages).slice(0, INDEX_COMPONENT_LIMIT);
-  const pageRows = Object.entries(cat.pages).map(([r, p]) => `| ${code(r)} | ${p.component ?? '?'} | ${code(p.file)} | ${(p.layouts ?? []).join(' > ') || '-'} | ${p.components?.length ?? 0} |`);
+  const pageRows = Object.entries(cat.pages).map(([r, p]) => `| ${code(r)} | ${p.component ?? '?'} | ${code(p.file)} | ${(p.layouts ?? []).join(' > ') || '-'} | ${p.components?.length ?? 0} | ${p.linksTo?.length ? `${p.linksTo.slice(0, 4).join(', ')}${p.linksTo.length > 4 ? ` +${p.linksTo.length - 4}` : ''}` : '-'} |`);
   const folderRows = [...files.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dir, list]) => `| ${code(dir || '.')} | ${list.length} | ${code(`${kb}/agent/${cardPath(dir)}`)} | ${list.slice(0, 8).map((m) => m.name).join(', ')}${list.length > 8 ? ', …' : ''} |`);
   return `# Frontend knowledge base: ${info.title}
 
@@ -84,9 +94,9 @@ ${idx.comps.length} components · ${Object.keys(cat.pages).length} pages · rout
 
 ## Pages
 
-| Route | Root component | File | Layouts | Components |
-|---|---|---|---|---|
-${pageRows.join('\n') || '| - | - | - | - | - |'}
+| Route | Root component | File | Layouts | Components | Links to |
+|---|---|---|---|---|---|
+${pageRows.join('\n') || '| - | - | - | - | - | - |'}
 
 ## Folders
 
@@ -153,7 +163,7 @@ function healthLines(cat, idx) {
  * `written` (optional Map, kept by a watch session) remembers what was last written, so unchanged cards are not re-read.
  * `kb` is the knowledge folder relative to the project root, used in the paths the cards print.
  */
-export function writeAgentKnowledge(dir, cat, written = null, { kb = '.frontdex' } = {}) {
+export function writeAgentKnowledge(dir, cat, written = null, { kb = '.frontdex', docs } = {}) {
   const idx = createIndex(cat);
   const files = new Map();
   for (const m of idx.comps) (files.get(m.dir) ?? files.set(m.dir, []).get(m.dir)).push(m);
@@ -162,7 +172,7 @@ export function writeAgentKnowledge(dir, cat, written = null, { kb = '.frontdex'
   outputs.set('INDEX.md', indexMarkdown(cat, idx, files, kb));
   for (const [folder, list] of files) {
     list.sort((a, b) => (a.c.line ?? 0) - (b.c.line ?? 0) || a.c.file.localeCompare(b.c.file));
-    outputs.set(cardPath(folder), `# ${folder || '(project root)'}\n\n${list.length} component(s). Index: \`${kb}/agent/INDEX.md\`\n\n${list.map((m) => componentCard(idx, m)).join('\n\n')}\n`);
+    outputs.set(cardPath(folder), `# ${folder || '(project root)'}\n\n${list.length} component(s). Index: \`${kb}/agent/INDEX.md\`\n\n${list.map((m) => componentCard(idx, m, { docs })).join('\n\n')}\n`);
   }
   outputs.set(
     'graph.json',

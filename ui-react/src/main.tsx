@@ -7,7 +7,10 @@ import { api, appUrl } from './api';
 import { GraphView } from './graph';
 import { SourceContext, SourcePanel, useApi } from './lib';
 import { Palette } from './palette';
-import { Changes, ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
+import { Changes } from './changes';
+import { Docs } from './docs';
+import { ComponentView, Components, Design, Folders, Health, History, Hooks, Overview, PageView, Pages, State } from './views';
+import { Tests } from './tests';
 
 // The previous UI sits beside this one, wherever the app is mounted.
 const CLASSIC = appUrl('classic/');
@@ -21,6 +24,8 @@ const NAV: [string, string][] = [
   ['/health', 'Health'],
   ['/design', 'Design'],
   ['/hooks', 'Hooks'],
+  ['/docs', 'Docs'],
+  ['/tests', 'Tests'],
   ['/changes', 'Changes'],
   ['/graph', 'Graph'],
   ['/history', 'History'],
@@ -129,6 +134,8 @@ const routeTree = root.addChildren([
   healthRoute,
   createRoute({ ...route('/design'), component: Design }),
   createRoute({ ...route('/hooks'), component: Hooks }),
+  createRoute({ ...route('/docs'), component: Docs }),
+  createRoute({ ...route('/tests'), component: Tests }),
   changesRoute,
   graphRoute,
   createRoute({ ...route('/history'), component: History }),

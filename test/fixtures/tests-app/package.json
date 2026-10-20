@@ -1,0 +1,7 @@
+{
+  "name": "tests-app-repo",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

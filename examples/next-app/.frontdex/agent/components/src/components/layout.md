@@ -100,6 +100,7 @@ Sticky top navigation: search, account, theme toggle and the cart drawer trigger
 - Writes redux:ui: `toggleDrawer` via dispatch in handler onToggleCart
 - CSS classes: site-header (app/globals.css:4), sticky, top-0, shadow-md, compact (app/globals.css:5), logo
 - Renders: SearchBar(placeholder), Button(variant, size, onClick, aria-label, variant, size, onClick, variant, size, onClick, icon), CartBadge, CartDrawer
+- Navigates to: `/`, `/account`
 - Libraries: next/link#Link
 - Used by: RootLayout
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search

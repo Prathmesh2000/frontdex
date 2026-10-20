@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeAgentKnowledge } from './agent-kb.js';
+import { listEnrichment } from './enrichment.js';
 import { createHistory } from './history.js';
 import { sameSourcesIn, SOURCE_EXT } from './scanner/files.js';
 import { patchProject, scanProject } from './scanner/graph.js';
@@ -12,6 +13,7 @@ export { scanProject } from './scanner/graph.js';
 export { readCatalogue, writeCatalogue, validateCatalogue, mergeManual, isSharded, shardDir } from './spec.js';
 export { createHistory } from './history.js';
 export { createTools } from './tools.js';
+export { enrichmentState, enrichmentSummary, listEnrichment, nextToEnrich, readEnrichment, writeEnrichment } from './enrichment.js';
 
 export const knowledgeDir = (config) => path.resolve(config.root, config.knowledgeDir);
 
@@ -195,10 +197,13 @@ function refreshAgentKnowledge(config, catalogue, changed, memo) {
   const kb = knowledgeDir(config);
   const agentDir = path.join(kb, 'agent');
   const stamp = path.join(kb, 'cache', 'agent-format');
-  if (!changed && readText(stamp) === AGENT_FORMAT && fs.existsSync(path.join(agentDir, 'INDEX.md'))) return null;
-  const written = writeAgentKnowledge(agentDir, catalogue, memo, { kb: path.relative(config.root, kb).split(path.sep).join('/') });
+  // Docs written through MCP change the cards without changing the catalogue, so they are part of the stamp too.
+  const docs = listEnrichment(config);
+  const format = docs.size ? `${AGENT_FORMAT}:${createHash('sha1').update([...docs].map(([id, r]) => `${id}@${r.writtenAt}`).sort().join('\n')).digest('hex').slice(0, 12)}` : AGENT_FORMAT;
+  if (!changed && readText(stamp) === format && fs.existsSync(path.join(agentDir, 'INDEX.md'))) return null;
+  const written = writeAgentKnowledge(agentDir, catalogue, memo, { kb: path.relative(config.root, kb).split(path.sep).join('/'), docs });
   fs.mkdirSync(path.dirname(stamp), { recursive: true });
-  fs.writeFileSync(stamp, AGENT_FORMAT);
+  fs.writeFileSync(stamp, format);
   return written;
 }
 

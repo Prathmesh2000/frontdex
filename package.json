@@ -1,6 +1,6 @@
 {
   "name": "frontdex",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A living index of your frontend for developers and coding agents: components, pages, state, APIs, design tokens and health. React, Next.js, Vue, Svelte, Astro, Angular, Web Components and plain HTML.",
   "type": "module",
   "bin": {
@@ -41,8 +41,9 @@
     "src",
     "ui",
     "spec",
-    "docs",
-    "ui-react/dist"
+    "ui-react/dist",
+    "docs/SPEC.md",
+    "docs/MIGRATING.md"
   ],
   "scripts": {
     "test": "node --test test/*.test.js",

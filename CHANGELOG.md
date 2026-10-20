@@ -2,9 +2,26 @@
 
 All notable changes to frontdex (formerly react-catalogue). The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Short hashes point at the commit that made the change.
 
+## 0.4.0 (unreleased)
+
+### Added
+
+- **Conditional rendering**: every child records the conditions it renders under (ternary branch, `&&`/`||`, if/else, switch case, earlier early returns, `.map` loops) as `rendersWhen`; screens switched by state (tabs, steps, popups) as `views`. Shown on component pages, in agent cards and in `catalogue_component`. (`fd49956`, `442e747`)
+- **Navigation**: `Link`/`NavLink`/`Navigate`, `<a href>`, `navigate()` and `router.push` targets resolved to pages (`navigatesTo` on components, `linksTo` on pages; "Links to" and "Linked from" in the page view). (`fd49956`)
+- **Registry renders**: components rendered from block registries, column `renderCell` definitions and helper functions are credited to the components that use them. (`fd49956`)
+- **Routes from static data**: `<Route path={item.route}>` inside `.map()` over const arrays, const aliases or imported JSON files is expanded into one page per value. (`70d4775`)
+- **Reviewable diffs**: `frontdex diff`, `catalogue_diff`, the PR comment and the UI Changes view show each changed entry with its value before and after; the PR comment and the UI add an impact graph. (`463c9d5`)
+- **Tests**: unit tests (Jest, Vitest, Testing Library) and E2E specs (Playwright, Cypress) mapped to components and pages; a Tests view with run buttons (no shell; E2E asks for confirmation); `frontdex tests`; `catalogue_tests`; `"tests": { "dirs": [...] }` for specs outside the scanned folder. (`7d16c79`)
+- **Component docs from coding agents**: through frontdex-mcp an agent writes a component's purpose, props and how to pass them, functions, usage and notes into `.frontdex/enrichment/`; a Storybook-style Docs card per component and a Docs view; docs go stale when the component changes. Public API: `listEnrichment`, `readEnrichment`, `writeEnrichment`, `enrichmentState`, `enrichmentSummary`, `nextToEnrich`. (`eedfa4e`, `e08ec62`)
+- Agent rules ask agents to run the tests covering a change and to keep component docs current.
+
+### Changed
+
+- The npm package no longer includes the internal plan (`docs/TASK.md`); only `docs/SPEC.md` and `docs/MIGRATING.md` ship. (`46cef68`)
+
 ## 0.3.1 (2026-10-20)
 
-First release under the frontdex name. 0.3.0 was never released: a staged publish of it lapsed and npm does not allow a version number to be reused.
+First release under the frontdex name. 0.3.0 contains the same code: its staged publish went live only after 0.3.1 had been prepared, so both are on npm. Use 0.3.1.
 
 Everything after 0.2.0 (`f4e0a9b`). The package is renamed in this release; see [docs/MIGRATING.md](docs/MIGRATING.md) to move a react-catalogue 0.2 project over.
 

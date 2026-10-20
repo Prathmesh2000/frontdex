@@ -146,7 +146,9 @@ npx frontdex diff v1.2 v1.3 --json
 npx frontdex diff origin/main --fail-on high   # exit 1 when new high-severity issues appear
 ```
 
-The GitHub Action posts the same report as one PR comment, updated on every push, and adds it to the job summary:
+Each changed component is listed entry by entry with its value before and after: a prop's type and default (`open: : boolean → ?: boolean = false`), a child added, the condition it now renders under, a new link. The UI's **Changes** view shows the same data as an impact graph (changed component → components that render it → pages) and one card per component with coloured `+`/`−`/`~` rows; agents get it from the `catalogue_diff` MCP tool.
+
+The GitHub Action posts the report as one PR comment, updated on every push, and adds it to the job summary. The comment starts with a Mermaid impact graph (GitHub draws it) and gives each component a collapsible Field / Entry / Before / After table:
 
 ```yaml
 # .github/workflows/frontdex.yml
@@ -248,6 +250,28 @@ has:state|props|effects|context|refs|children|docs|api|store|validation|issues|l
 is:unused|shared|heavy|page|layout|leaf|deprecated|undocumented|leaky
 ```
 
+## Tests
+
+frontdex finds the project's unit tests (Jest, Vitest, Testing Library) and E2E specs (Playwright, Cypress) and maps them:
+
+- **Unit tests** to the components and hooks each file imports and renders (`render(<Cart />)`, `renderHook(useCart)`), with every `describe`/`it` case.
+- **E2E specs** to the pages they visit (`page.goto`, `cy.visit`, resolved like routes) and the components they touch: a `getByRole('button', { name: 'New group' })`, `getByText`, `getByLabel`, `getByPlaceholder` or `getByTestId` is matched to the component whose JSX contains that text or test id, with a confidence and the reason.
+
+The **Tests** view lists every suite with its cases and mapped components and pages, plus the components no test covers; component and page views show the tests that cover them. Each file or case has a **Run** button: frontdex starts your own runner (`npx jest <file> -t <case>`, `npx playwright test <file> -g <case>`, …) without a shell and streams the output; E2E runs ask for confirmation first, since specs may create or delete real data. `frontdex tests <Name>` and the `catalogue_tests` MCP tool answer "which tests cover this, and how do I run them".
+
+E2E specs outside the scanned folder (a repo-level `tests/` next to `frontend/`) are found when `frontdex.config.json` names them: `"tests": { "dirs": ["../tests"] }`.
+
+## Component docs from your coding agent
+
+With [frontdex-mcp](https://github.com/Prathmesh2000/frontdex-mcp) connected, a coding agent can write docs for components into the knowledge base: what the component is for, what each prop does and **how to pass it**, what each function does and when it runs, usage examples and pitfalls.
+
+- `catalogue_enrich_next` hands the agent the components that most need docs (undocumented or stale, most used first) with the facts to write them: prop types, how parents call it, story args.
+- `catalogue_enrich_write` validates the docs and saves them in `.frontdex/enrichment/` (one JSON file per component, commit it); `catalogue_docs` reads them back.
+- Each component page in the UI then gets a Storybook-style **Docs** card (props table with the type from the code and the agent's guidance, usage examples, notes); the **Docs** view shows coverage and what to document next. Agent cards start with the documented purpose.
+- Docs record a signature of the component they describe. When its props, state, functions or children change, they are marked **stale** so the next agent refreshes them.
+
+frontdex itself makes no model calls: the agent you already use writes the docs.
+
 ## Configuration
 
 `frontdex.config.json` (every key optional):
@@ -305,7 +329,8 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 | Props | TS param types, `FC<Props>`, `forwardRef<Ref, Props>`, interfaces with `extends`, intersections, `PropsWithChildren`, destructuring defaults, `propTypes`, `defaultProps`, `props.x` usage |
 | State | `useState`, `useReducer`, class `state` / `this.state`, Solid `createSignal`/`createStore`/`createMemo`, Qwik `useSignal`/`useStore`/`useComputed$` |
 | Lifecycle | effect hooks (deps → mount/update, cleanup → unmount) and all class lifecycle methods, with the functions each one calls |
-| Routing | Next.js App Router (groups, parallel slots, dynamic segments, nested layouts), Pages Router (`_app`), React Router JSX and object routes, React Router v7 framework mode (`app/routes.ts`, `flatRoutes()`), Remix v2 flat routes, TanStack Router file routes, Gatsby, SolidStart, Qwik City |
+| Routing | Next.js App Router (groups, parallel slots, dynamic segments, nested layouts), Pages Router (`_app`), React Router JSX and object routes (paths from constants, templates and `.slice()`, also across files; guards and providers around the element; `loading ? <Spinner/> : <Page/>`; nested `<Routes>` under a `/parent/*` route; routes generated with `.map()` over const arrays or JSON files; route files the app never loads are ignored), React Router v7 framework mode (`app/routes.ts`, `flatRoutes()`), Remix v2 flat routes, TanStack Router file routes, Gatsby, SolidStart, Qwik City |
+| Rendering and navigation | The condition each child renders under (ternary branch, `&&`, if/else, switch case, early returns, `.map` loops); screens a component switches by state (`tab === 'users'`, steps, popups) as views; children rendered from registries, column `renderCell` and helper functions; navigation (`Link`, `NavLink`, `Navigate`, `<a href>`, `navigate()`, `router.push`) resolved to pages, with links in and out per page |
 | Server side | Next.js route handlers (with their HTTP methods), Pages Router API routes, middleware, server actions (and who imports them), Remix/React Router resource routes, page `metadata`, and each App Router component's client/server rendering |
 | Imports | relative paths, tsconfig aliases (per-folder configs, `extends`), workspace packages, barrels, namespace imports, `lazy()` / `next/dynamic`, compound components (`<Tabs.List>`, `Card.Header = …`, `Object.assign`) |
 | Global state | Redux Toolkit (`createSlice`, `configureStore`, thunks, `useSelector`/`useAppSelector`, `dispatch`, `connect`), React context (incl. through custom hooks), zustand |

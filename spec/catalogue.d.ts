@@ -59,6 +59,58 @@ export interface Catalogue {
       usedBy?: string[];
     };
   };
+  /** Unit and E2E test files mapped onto components and pages: which runner runs each, its cases, and what it covers. */
+  tests?: {
+    /** Test runners found (jest, vitest, playwright, cypress), keyed by name; a second project folder using the same runner is keyed "<name> (<cwd>)". */
+    runners: {
+      [k: string]: {
+        /** Folder the runner is started in, relative to the project root. */
+        cwd: string;
+        /** Runner config file in that folder. */
+        config?: string;
+        /** Where the runner was detected. */
+        from?: ("package.json" | "scripts" | "config" | "import")[];
+      };
+    };
+    /** One entry per test file, keyed by its path relative to the project root (may start with ../ for tests.dirs outside it). */
+    suites: {
+      [k: string]: {
+        kind: "unit" | "e2e";
+        runner?: "jest" | "vitest" | "playwright" | "cypress";
+        /** Folder the runner starts in, relative to the project root. */
+        cwd?: string;
+        /** Why the file could not be parsed. */
+        error?: string;
+        cases: {
+          title: string;
+          line?: number;
+          /** Enclosing describe titles, outermost first. */
+          describe?: string[];
+        }[];
+        /** ComponentIds: rendered by a unit test, or matched by an E2E locator. */
+        components?: string[];
+        /** HookIds exercised with renderHook(). */
+        hooks?: string[];
+        /** Page routes an E2E spec visits. */
+        pages?: string[];
+        /** E2E evidence: each visited URL or locator mapped to a page or component, with how sure the match is (high: test id or full URL; medium: role/label/placeholder name; low: plain text). */
+        matches?: ({
+          kind: "page" | "component";
+          target: string;
+          via?: string;
+          line?: number;
+          confidence: "high" | "medium" | "low";
+          reason?: string;
+        })[];
+        /** E2E visits and locators that matched nothing, and why. */
+        unmatched?: {
+          what: string;
+          line?: number;
+          why?: string;
+        }[];
+      };
+    };
+  };
   health?: Health;
   aliases?: Aliases;
   [k: `x-${string}`]: unknown;
@@ -108,6 +160,8 @@ export interface Component {
   codeowners?: string[];
   /** Test files for the component, relative to its folder. */
   tests?: string[];
+  /** Test files (keys of tests.suites, relative to the project root) whose tests render this component or, for E2E specs, touch its text, labels or test ids. */
+  testedBy?: string[];
   /** Story files (Storybook/Ladle CSF) for the component, relative to its folder. */
   stories?: string[];
   /** Stories (CSF) as usage examples: "<file>#<Story>" and the args (props) each renders with. */
@@ -128,6 +182,19 @@ export interface Component {
   hooks?: Hook[];
   lifecycle?: LifecycleEvent[];
   renders?: StringList;
+  /** Children rendered only under conditions: child id → the conditions (source text) of each place it is rendered, e.g. "!loading && tab === 'users'", "each of items", "via blockRegistry". */
+  rendersWhen?: {
+    [k: string]: StringList;
+  };
+  /** Screens switched by state rather than routes: children shown for each value of one expression (tabs, steps). */
+  views?: {
+    on: string;
+    cases: {
+      [k: string]: StringList;
+    };
+  }[];
+  /** Pages (route keys) or paths this component links or navigates to: Link/NavLink/Navigate, <a href>, navigate(), router.push. */
+  navigatesTo?: StringList;
   externals?: StringList;
   usedBy?: StringList;
   pages?: StringList;
@@ -191,6 +258,8 @@ export interface Page {
   wrappers?: StringList;
   /** Other components the route can show instead of the page (loaders, redirects, conditional branches). */
   alternates?: StringList;
+  /** Pages (route keys) or paths the components of this page link or navigate to. */
+  linksTo?: StringList;
   /** Next.js metadata export: a metadata object or generateMetadata. */
   metadata?: "static" | "dynamic";
   components?: StringList;

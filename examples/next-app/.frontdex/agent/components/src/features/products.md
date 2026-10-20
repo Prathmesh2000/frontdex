@@ -51,6 +51,7 @@ Title, price, stock and the add-to-cart controls.
 - CSS classes: related, grid (app/globals.css:6), grid-cols-4, gap-4
 - ⚠ LOW missing-dependency L11: useEffect L11 reads excludeId but its dependency array is [category, limit]: stale values possible. Fix: add excludeId to the dependency array
 - Renders: ProductCard(key, product, compact)
+- Renders only when: ProductCard (each of items)
 - Used by: ProductDetailPage
 - Pages: /products/[id]
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -71,6 +72,7 @@ Customer reviews, loaded lazily below the fold.
 - CSS classes: reviews
 - ⚠ MEDIUM unsafe-async-update L12: useEffect L12 sets state (setReviews) after async work with no cleanup; it can run after unmount or out of order. Fix: use an AbortController or an `ignore` flag set in the cleanup
 - Renders: Spinner(label)
+- Renders only when: Spinner (!reviews)
 - Used by: ProductDetailPage
 - Pages: /products/[id]
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -107,6 +109,7 @@ Tabbed product collections on the homepage (compound Tabs).
 - Props: `defaultTab?: string` = `'new'`
 - Props from HomePage: defaultTab="bestsellers"
 - Renders: TabsRoot(defaultValue), TabsList, TabsTrigger(key, value), TabsPanel(key, value), ProductGrid(category, pageSize)
+- Renders only when: TabsTrigger (each of COLLECTIONS); TabsPanel (each of COLLECTIONS); ProductGrid (each of COLLECTIONS)
 - Used by: HomePage
 - Pages: /
 - Impact: changing the props/export affects 1 component(s) and 1 page(s); update every caller listed under "Used by".
@@ -151,6 +154,7 @@ Responsive grid of products for a category. Column count follows the container w
 - Writes redux:cart: `addItem` via dispatch in handler handleAdd
 - CSS classes: error (app/globals.css:34), grid (app/globals.css:6)
 - Renders: Spinner(label), ProductCard(key, product, onAdd, highlight)
+- Renders only when: Spinner (isLoading); ProductCard (!isLoading && !error)
 - Used by: ProductsPage, FeaturedCollections
 - Pages: /, /products
 - Impact: changing the props/export affects 3 component(s) and 2 page(s); update every caller listed under "Used by".
@@ -169,6 +173,8 @@ Product tile used in grids, search results and related products.
 - CSS classes: btn (app/globals.css:8), btn-primary (app/globals.css:9), btn-sm (app/globals.css:13)
 - CSS module `src/features/products/ProductCard.module.css`: card, compact, soldOut, image, price
 - Renders: Card(elevated), Badge(tone, tone), Tooltip(text)
+- Renders only when: Badge (highlight | lowStock); Tooltip (lowStock)
+- Navigates to: `/products/[id]`
 - Libraries: next/link#Link, next/image#Image
 - Used by: ProductGrid, RelatedProducts, SearchResults
 - Pages: /, /products/[id], /products, /search

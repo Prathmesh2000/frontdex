@@ -63,6 +63,16 @@ export const CompLink = ({ id }: { id: string }) => (
 export const SourceContext = createContext<(file: string, line?: number) => void>(() => {});
 
 /** `src/x.tsx:12` as a link that opens the file in the source panel at that line. */
+/** A route as a chip linking to its page view; plain text for paths that match no page. */
+export const PageLink = ({ route }: { route: string }) =>
+  route.startsWith('/') ? (
+    <Link className="chip mono" to="/page" search={{ route }}>
+      {route}
+    </Link>
+  ) : (
+    <span className="chip mono">{route}</span>
+  );
+
 export function FileRef({ at }: { at?: string }) {
   const open = useContext(SourceContext);
   if (!at) return null;

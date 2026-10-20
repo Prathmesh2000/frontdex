@@ -8,6 +8,7 @@ import { extractAngularComponent, isAngularComponent } from './angular.js';
 import { jsxA11y } from './analyzers/a11y.js';
 import { styledLiterals, styledTarget, themeTokens } from './analyzers/cssinjs.js';
 import { jsxText } from './analyzers/i18n.js';
+import { pathParts } from './paths.js';
 import { definedTags, extractCustomElement, isElementClass } from './webcomponents.js';
 
 const traverse = _traverse.default ?? _traverse;
@@ -58,6 +59,7 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8'), { syntaxFi
         scanDeclarations(p, mod);
         analyzeModule(p, mod);
         scanComponents(p, mod);
+        scanModuleRenders(p, mod);
         scanRouteModule(p, mod);
         const theme = themeTokens(p.node);
         if (Object.keys(theme).length) mod.themeTokens = theme;
@@ -174,6 +176,11 @@ function pathLiteral(node) {
   if (node?.type === 'CallExpression' && memberText(node.callee) === 'Object.freeze') node = node.arguments[0];
   const text = node?.type === 'StringLiteral' ? node.value : node?.type === 'TemplateLiteral' && !node.expressions.length ? node.quasis[0].value.cooked : undefined;
   if (text !== undefined) return PATH_LIKE.test(text) ? text : undefined;
+  // Arrays of route data (`[{ id, route: '/x' }]`) feed routes generated with .map(); elements keep their position.
+  if (node?.type === 'ArrayExpression' && node.elements.length <= 500) {
+    const items = node.elements.map((e) => pathLiteral(e) ?? null);
+    return items.some((x) => x !== null) ? items : undefined;
+  }
   if (node?.type !== 'ObjectExpression') return undefined;
   const out = {};
   for (const p of node.properties) {
@@ -207,6 +214,8 @@ function scanDeclarations(programPath, mod) {
       for (const d of decl.declarations) {
         const value = d.id.type === 'Identifier' ? pathLiteral(d.init) : undefined;
         if (value !== undefined) mod.consts[d.id.name] = value;
+        // `const DOC_NAV = nav.groups`: an alias graph.js follows to the data (a const, an import, a JSON file).
+        else if (d.id.type === 'Identifier' && /^(Identifier|MemberExpression)$/.test(d.init?.type ?? '') && memberText(d.init)) (mod.constRefs ??= {})[d.id.name] = memberText(d.init);
       }
     }
     if (stmt.type === 'ExportDefaultDeclaration') {
@@ -314,8 +323,85 @@ function lazyImport(p) {
   return found;
 }
 
+// Function nodes recognised as components, per parse record: JSX outside them is a module-level render (see below).
+// A WeakMap rather than a field, so nothing extra is cached or posted between worker threads.
+const componentNodes = new WeakMap();
+
+/**
+ * JSX written outside any component, grouped by the top-level binding that holds it: block registries
+ * (`const blocks = { code: (p) => <CodeBlock/> }`), table column definitions with renderCell, helper functions that
+ * return elements. graph.js credits these children to every component that references the binding.
+ * mod.moduleRenders: { [binding]: [{ name, line }] }.
+ */
+function scanModuleRenders(programPath, mod) {
+  const inside = componentNodes.get(mod);
+  const owners = {};
+  programPath.traverse({
+    JSXOpeningElement(p) {
+      const n = p.node.name;
+      const name = n.type === 'JSXIdentifier' ? n.name : n.type === 'JSXMemberExpression' ? memberText({ type: 'MemberExpression', object: n.object, property: n.property }) : null;
+      if (!name || !/^[A-Z]/.test(name) || /^(React\.)?Fragment$/.test(name)) return;
+      if (inside && p.findParent((q) => inside.has(q.node))) return;
+      const top = p.findParent((q) => q.parentPath?.isProgram() || q.parentPath?.isExportNamedDeclaration() || q.parentPath?.isExportDefaultDeclaration());
+      const decl = top?.node;
+      const owner = decl?.type === 'VariableDeclaration' ? decl.declarations.find((d) => d.start <= p.node.start && p.node.end <= d.end)?.id.name : decl?.id?.name ?? (top?.parentPath?.isExportDefaultDeclaration() ? 'default' : undefined);
+      if (owner) (owners[owner] ??= []).push({ name, line: p.node.loc?.start.line });
+    },
+  });
+  if (Object.keys(owners).length) mod.moduleRenders = owners;
+}
+
+// Attributes whose literal value an E2E locator can find a component by, grouped the way testmap.js looks them up.
+const TEXT_ATTRS = { 'aria-label': 'label', alt: 'title', 'data-testid': 'testid', 'data-test-id': 'testid', 'data-test': 'testid', 'data-cy': 'testid' };
+const MAX_TEXTS = 40;
+// Other props and config keys that carry visible copy into a child (<EmptyState ctaText="New group">, fields
+// `{ placeholder: 'Email' }`), bucketed by name. `name`/`id`/`key` are identifiers, not copy.
+const textKind = (name) => TEXT_ATTRS[name] ?? (/placeholder/i.test(name) ? 'placeholder' : /label/i.test(name) ? 'label' : /title|heading|header|tooltip/i.test(name) ? 'title' : /text|caption|message|cta|button/i.test(name) ? 'text' : null);
+
+/**
+ * Literal UI text a component renders: JSX text, {'string'} children, and copy-carrying attributes and object keys
+ * (textKind), including both branches of `cond ? 'A' : 'B'`. { text?, label?, placeholder?, title?, testid? } or
+ * undefined. Stays on the parse record (graph.js does not copy it into the catalogue); testmap.js matches
+ * getByText / getByRole({ name }) / getByTestId against it.
+ */
+function staticTexts(fnPath) {
+  const out = {};
+  const add = (kind, raw) => {
+    const v = raw.replace(/\s+/g, ' ').trim();
+    if (!v || v.length > 120 || (kind !== 'testid' && !/\p{L}/u.test(v))) return;
+    const list = (out[kind] ??= []);
+    if (list.length < MAX_TEXTS && !list.includes(v)) list.push(v);
+  };
+  const literals = (n) => {
+    if (n?.type === 'StringLiteral') return [n.value];
+    if (n?.type === 'TemplateLiteral' && !n.expressions.length) return [n.quasis[0].value.cooked];
+    if (n?.type === 'ConditionalExpression') return [...literals(n.consequent), ...literals(n.alternate)];
+    if (n?.type === 'LogicalExpression') return literals(n.right);
+    return [];
+  };
+  fnPath.traverse({
+    JSXText(p) {
+      add('text', p.node.value);
+    },
+    JSXExpressionContainer(p) {
+      if (p.parent.type === 'JSXElement' || p.parent.type === 'JSXFragment') literals(p.node.expression).forEach((v) => add('text', v));
+    },
+    JSXAttribute(p) {
+      const kind = typeof p.node.name.name === 'string' && textKind(p.node.name.name);
+      if (kind) literals(p.node.value?.type === 'JSXExpressionContainer' ? p.node.value.expression : p.node.value).forEach((v) => add(kind, v));
+    },
+    ObjectProperty(p) {
+      const key = p.node.key.type === 'Identifier' ? p.node.key.name : p.node.key.type === 'StringLiteral' ? p.node.key.value : null;
+      const kind = key && !p.node.computed && textKind(key);
+      if (kind) literals(p.node.value).forEach((v) => add(kind, v));
+    },
+  });
+  return Object.keys(out).length ? out : undefined;
+}
+
 function scanComponents(programPath, mod) {
   const add = (fnPath, name, kind, docNode, typeHint, isClass) => {
+    (componentNodes.get(mod) ?? componentNodes.set(mod, new WeakSet()).get(mod)).add(fnPath.node);
     const line = fnPath.node.loc?.start.line;
     const ctx = { mod, name, kind, line, typeHint };
     const record = isClass ? extractClassComponent(fnPath, ctx) : extractFunctionComponent(fnPath, ctx);
@@ -325,6 +411,7 @@ function scanComponents(programPath, mod) {
     // Kept on the parse record only; graph.js turns it into an issue when the project uses an i18n library.
     const text = jsxText(fnPath);
     if (text) record.hardcodedText = text;
+    const texts = staticTexts(fnPath); if (texts) record.texts = texts; // parse record only: E2E locator matching (analyzers/testmap.js)
     const doc = readJSDoc(docNode);
     if (doc.description) record.description = doc.description;
     if (doc.deprecated) record.status = 'deprecated';
@@ -410,50 +497,6 @@ function scanComponents(programPath, mod) {
   }
 }
 
-export function joinRoute(segments) {
-  let out = '';
-  for (const seg of segments) {
-    if (seg == null) continue;
-    out = seg.startsWith('/') ? seg : `${out.replace(/\/$/, '')}/${seg}`;
-  }
-  out = out.replace(/\/+/g, '/');
-  return out === '' ? '/' : out.length > 1 ? out.replace(/\/$/, '') : out;
-}
-
-/**
- * A route path expression as parts, evaluated in graph.js once every module is parsed, because the constants it
- * names (ROUTES.HOME) usually live in another file. Parts are strings, { ref: 'ROUTES.HOME' } and
- * { slice: parts, args } for `.slice(1)`. Anything else becomes a ref that will not resolve and shows as {text}.
- */
-function pathParts(node) {
-  if (typeof node === 'string') return [node];
-  while (node?.type === 'TSAsExpression' || node?.type === 'TSNonNullExpression') node = node.expression;
-  if (node?.type === 'StringLiteral') return [node.value];
-  if (node?.type === 'TemplateLiteral') return node.quasis.flatMap((q, i) => [q.value.cooked, ...(i < node.expressions.length ? pathParts(node.expressions[i]) : [])]);
-  if (node?.type === 'BinaryExpression' && node.operator === '+') return [...pathParts(node.left), ...pathParts(node.right)];
-  const callee = node?.type === 'CallExpression' ? node.callee : null;
-  if (callee?.type === 'MemberExpression' && keyName(callee.property) === 'slice') {
-    const args = node.arguments.map((a) => (a.type === 'NumericLiteral' ? a.value : a.type === 'UnaryExpression' && a.operator === '-' && a.argument.type === 'NumericLiteral' ? -a.argument.value : NaN));
-    if (!args.some(Number.isNaN)) return [{ slice: pathParts(callee.object), args }];
-  }
-  return [{ ref: memberText(node) ?? 'dynamic' }];
-}
-
-function evalParts(parts, lookup) {
-  let out = '';
-  for (const p of parts) {
-    if (typeof p === 'string') out += p;
-    else if (p.slice) out += evalParts(p.slice, lookup).slice(...p.args);
-    else {
-      const value = lookup(p.ref);
-      out += typeof value === 'string' ? value : `{${p.ref}}`;
-    }
-  }
-  return out;
-}
-
-/** Joins a route's segments (outermost first; null for pathless and index routes) into its path. */
-export const routePath = (segments, lookup) => joinRoute(segments.map((s) => (s ? evalParts(s, lookup) : null)));
 
 function jsxAttrs(opening) {
   const attrs = {};
@@ -541,7 +584,7 @@ function jsxRoute(p, mod) {
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);
   }
-  mod.routes.push({ segments, ...pick, layouts, extras, line: p.node.loc?.start.line });
+  mod.routes.push({ segments: withDataSources(segments, p.scope), ...pick, layouts, extras, line: p.node.loc?.start.line });
 }
 
 function objectProps(node) {
@@ -579,6 +622,53 @@ function lowerComponent(value, mod) {
   return undefined;
 }
 
+const ITERATORS = /\.(map|flatMap|forEach|filter)$/;
+
+/**
+ * Where an expression's values come from, as a static path from a module-level name: `item` in
+ * `DOC_NAV.flatMap((g) => g.items.map((item) => …))` is { ref: 'DOC_NAV', path: ['[]', 'items', '[]'] } ('[]' = each
+ * element). Follows callback parameters of map/flatMap/forEach/filter and parameter defaults (`docNav = DOC_NAV`).
+ * Null when the data is not static (props, state, fetched).
+ */
+function sourceOf(exprPath, depth = 0) {
+  const n = exprPath.node;
+  if (depth > 8 || !n) return null;
+  if (n.type === 'MemberExpression' && !n.computed && n.property.type === 'Identifier') {
+    const base = sourceOf(exprPath.get('object'), depth + 1);
+    return base && { ref: base.ref, path: [...base.path, n.property.name] };
+  }
+  if (n.type !== 'Identifier') return null;
+  const binding = exprPath.scope.getBinding(n.name);
+  if (!binding) return null;
+  if (binding.kind === 'module' || binding.scope.block.type === 'Program') return { ref: n.name, path: [] };
+  if (binding.kind !== 'param') return null;
+  let param = binding.path;
+  if (param.parentPath?.isAssignmentPattern()) param = param.parentPath;
+  if (param.isAssignmentPattern()) return sourceOf(param.get('right'), depth + 1);
+  const fn = param.parentPath;
+  const call = fn?.parentPath;
+  if (param.key === 0 && fn?.listKey === 'arguments' && fn.key === 0 && call?.isCallExpression() && ITERATORS.test(memberText(call.node.callee) ?? '')) {
+    const list = sourceOf(call.get('callee.object'), depth + 1);
+    return list && { ref: list.ref, path: [...list.path, '[]'] };
+  }
+  return null;
+}
+
+/** Marks path refs that read static data (`item.route` over a const array or JSON file), so graph.js can expand them. */
+function withDataSources(segments, scope) {
+  for (const seg of segments) {
+    for (const part of seg ?? []) {
+      if (!part?.ref || part.ref === 'dynamic') continue;
+      const [head, ...rest] = part.ref.split('.');
+      const binding = scope.getBinding(head);
+      if (binding?.kind !== 'param') continue;
+      const base = sourceOf(binding.path.parentPath?.isAssignmentPattern() ? binding.path.parentPath.get('left') : binding.path);
+      if (base) part.data = { ref: base.ref, path: [...base.path, ...rest] };
+    }
+  }
+  return segments;
+}
+
 function objectRoute(p, mod) {
   const own = objectProps(p.node);
   if (own.path == null && own.index !== true) return;
@@ -600,5 +690,5 @@ function objectRoute(p, mod) {
     const boundary = componentOf(outer.errorElement) ?? componentOf(outer.ErrorBoundary);
     if (boundary) extras.push(boundary);
   }
-  mod.routes.push({ segments, ...pick, layouts, extras, line: p.node.loc?.start.line });
+  mod.routes.push({ segments: withDataSources(segments, p.scope), ...pick, layouts, extras, line: p.node.loc?.start.line });
 }

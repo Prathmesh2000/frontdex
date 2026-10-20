@@ -7,8 +7,9 @@ import { I18N_LIBS } from './analyzers/i18n.js';
 import { cachedLister, codeownersMatcher, testsAndStories } from './analyzers/ownership.js';
 import { heavyImports } from './analyzers/perf.js';
 import { readStories } from './analyzers/stories.js';
+import { mapTests } from './analyzers/testmap.js';
 import { collectEndpoints } from './endpoints.js';
-import { joinRoute, routePath } from './parse-file.js';
+import { evalParts, joinRoute, pathMatches, routePath } from './paths.js';
 import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
 import { loadMany, loadOne, MAP_FIELDS } from './parse-pool.js';
@@ -195,23 +196,67 @@ export function scanProject(config, { cache, known, previous } = {}) {
     return { external: `${imp.source}#${exported === 'default' || exported === '*' ? head : exported}` };
   };
 
-  /** Value of a constant reference such as ROUTES.HOME.LIST in `file`, following imports (route path constants). */
+  // JSON files imported as data (route manifests, nav configs): read once per scan.
+  const jsonFiles = new Map();
+  const readJsonFile = (file) => {
+    if (!jsonFiles.has(file)) {
+      try {
+        jsonFiles.set(file, JSON.parse(fs.readFileSync(file, 'utf8')));
+      } catch {
+        jsonFiles.set(file, undefined);
+      }
+    }
+    return jsonFiles.get(file);
+  };
+
+  /**
+   * Value of a constant reference such as ROUTES.HOME.LIST in `file`: literal consts, aliases (`const NAV = nav.groups`)
+   * and imports, including imported JSON files (route path constants, route data).
+   */
   const constValue = (file, ref, depth = 0) => {
     const mod = modules.get(file);
-    if (!mod || depth > 4) return undefined;
+    if (!mod || depth > 6) return undefined;
     const [head, ...rest] = ref.split('.');
     let value = mod.consts?.[head];
+    if (value === undefined && mod.constRefs?.[head]) return constValue(file, [mod.constRefs[head], ...rest].join('.'), depth + 1);
     if (value === undefined) {
       const imp = mod.imports.get(head);
       const target = imp && resolveImport(file, imp.source);
-      const tmod = target && modules.get(target);
-      if (!tmod) return undefined;
-      if (imp.imported === '*') return rest.length ? constValue(target, rest.join('.'), depth + 1) : undefined;
-      const local = tmod.exports.get(imp.imported) ?? imp.imported;
-      return constValue(target, [local, ...rest].join('.'), depth + 1);
+      if (target?.endsWith('.json') && !modules.has(target)) {
+        value = readJsonFile(target);
+        if (imp.imported !== 'default' && imp.imported !== '*') value = value?.[imp.imported];
+      } else {
+        const tmod = target && modules.get(target);
+        if (!tmod) return undefined;
+        if (imp.imported === '*') return rest.length ? constValue(target, rest.join('.'), depth + 1) : undefined;
+        const local = tmod.exports.get(imp.imported) ?? imp.imported;
+        return constValue(target, [local, ...rest].join('.'), depth + 1);
+      }
     }
     for (const key of rest) value = value?.[key];
     return value;
+  };
+
+  /** The string values a data path reaches: { ref: 'DOC_NAV', path: ['[]', 'items', '[]', 'route'] } ('[]' = each element). */
+  const dataValues = (file, data) => {
+    let values = [constValue(file, data.ref)];
+    for (const step of data.path) values = step === '[]' ? values.flatMap((v) => (Array.isArray(v) ? v : [])) : values.map((v) => v?.[step]);
+    return [...new Set(values.filter((v) => typeof v === 'string'))];
+  };
+
+  /**
+   * One route per value when a path segment reads static data (`<Route path={item.route}>` over a const array or JSON
+   * file); the segments unchanged when the data cannot be read, so the route keeps its {item.route} placeholder.
+   */
+  const expandSegments = (file, segments) => {
+    for (const [si, seg] of segments.entries()) {
+      const pi = (seg ?? []).findIndex((part) => part?.data);
+      if (pi < 0) continue;
+      const values = dataValues(file, seg[pi].data).slice(0, 200);
+      if (!values.length) return [segments];
+      return values.flatMap((v) => expandSegments(file, segments.map((s, i) => (i === si ? s.map((part, j) => (j === pi ? v : part)) : s))));
+    }
+    return [segments];
   };
 
   const findExportedHook = (file, exported, depth) => {
@@ -278,14 +323,41 @@ export function scanProject(config, { cache, known, previous } = {}) {
     const renders = new Set();
     const externals = new Set();
     const passes = {};
+    // child id → the conditions of each place it is rendered; null marks an unconditional place.
+    const when = new Map();
+    const place = (id, condition) => (when.get(id) ?? when.set(id, []).get(id)).push(condition);
     for (const j of c.jsx) {
       // Custom element tags (<x-card>) are global once defined, so they resolve by tag rather than by import.
       const r = resolveLocal(mod.file, j.name) ?? (j.name.includes('-') ? byTag.get(j.name) : null);
       if (r?.id && r.id !== c.id) {
         renders.add(r.id);
+        place(r.id, j.when?.length ? j.when.join(' && ') : null);
         if (j.props?.length && !j.soft) (passes[r.id] ??= []).push(...j.props.map((p) => ({ ...p, line: j.line })));
       } else if (r?.external && !j.soft) externals.add(r.external);
     }
+    // Children rendered from outside the JSX tree: a registry or column config this component references (its JSX
+    // was collected per binding as moduleRenders), or a component it calls as a function or hands over as a value.
+    for (const name of c.uses ?? []) {
+      const imp = mod.imports.get(name);
+      const target = imp && resolveImport(mod.file, imp.source);
+      const tmod = target && modules.get(target);
+      const [owner, binding] = mod.moduleRenders?.[name] ? [mod, name] : tmod ? [tmod, tmod.exports.get(imp.imported) ?? imp.imported] : [];
+      const viaRegistry = owner?.moduleRenders?.[binding];
+      if (viaRegistry) {
+        for (const child of viaRegistry) {
+          const r = resolveLocal(owner.file, child.name);
+          if (r?.id && r.id !== c.id) renders.add(r.id), place(r.id, `via ${name}`);
+          else if (r?.external) externals.add(r.external);
+        }
+        continue;
+      }
+      const r = resolveLocal(mod.file, name);
+      if (r?.id && r.id !== c.id && !renders.has(r.id)) renders.add(r.id), place(r.id, `via ${name}`);
+    }
+    // Only children that are never rendered unconditionally get conditions; the rest are always there.
+    const rendersWhen = {};
+    for (const [id, list] of when) if (!list.includes(null)) rendersWhen[id] = [...new Set(list)].slice(0, 5);
+    const views = stateViews(rendersWhen);
     const exportNames = [...mod.exports].filter(([, local]) => followAlias(mod, local) === c.name).map(([e]) => e);
     return compact({
       name: c.name,
@@ -313,6 +385,8 @@ export function scanProject(config, { cache, known, previous } = {}) {
       styles: c.styles,
       issues: c.issues,
       renders: [...renders],
+      rendersWhen,
+      views,
       passes,
       externals: [...externals],
       usedBy: [],
@@ -457,7 +531,6 @@ export function scanProject(config, { cache, known, previous } = {}) {
     if (mod.staleRoutes) continue;
     const ids = (names) => (names ?? []).map((l) => idOf(resolveLocal(mod.file, l))).filter(Boolean);
     for (const r of mod.routes) {
-      const route = routePath(r.segments, (ref) => constValue(mod.file, ref));
       const page = {
         router: depsFor(mod.file)?.['vue-router'] ? 'vue-router' : depsFor(mod.file)?.['@angular/router'] ? 'angular-router' : 'react-router',
         file: rel(mod.file),
@@ -467,7 +540,7 @@ export function scanProject(config, { cache, known, previous } = {}) {
         alternates: ids(r.alternates),
         extras: ids(r.extras),
       };
-      routeRecords.push({ file: mod.file, route, page });
+      for (const segments of expandSegments(mod.file, r.segments)) routeRecords.push({ file: mod.file, route: routePath(segments, (ref) => constValue(mod.file, ref)), page });
     }
   }
 
@@ -528,6 +601,27 @@ export function scanProject(config, { cache, known, previous } = {}) {
     page.components = [...seen];
     seen.forEach((id) => (components[id].pages = [...(components[id].pages ?? []), route]));
     pages[route] = compact(page);
+  }
+
+  // Navigation: where each component sends the user (Link/NavLink/Navigate, <a href>, navigate(), router.push),
+  // resolved like route paths (constants, templates) and matched to pages; a page links to wherever its components go.
+  const routeKeys = Object.keys(pages);
+  for (const { mod, c } of entries) {
+    const targets = new Set();
+    for (const n of c.navigates ?? []) {
+      const to = evalParts(n.to, (ref) => constValue(mod.file, ref));
+      // External links and pure expressions ({target}) say nothing about the app's own pages.
+      if (!to.startsWith('/') || /^\/\{[^}]*\}$/.test(to)) continue;
+      const hits = routeKeys.filter((r) => pathMatches(to, r));
+      if (hits.length) hits.forEach((h) => targets.add(h));
+      else targets.add(to.split('?')[0].split('#')[0]);
+    }
+    if (targets.size) components[c.id].navigatesTo = [...targets].sort();
+  }
+  for (const [route, page] of Object.entries(pages)) {
+    const links = new Set((page.components ?? []).flatMap((id) => components[id]?.navigatesTo ?? []));
+    links.delete(route);
+    if (links.size) page.linksTo = [...links].sort();
   }
 
   // React Server Components: in App Router projects, a component is client-rendered when its module says 'use client'
@@ -594,6 +688,8 @@ export function scanProject(config, { cache, known, previous } = {}) {
     roots: [root, ...config.workspaces.map((w) => w.dir)],
   });
   for (const comp of Object.values(components)) if (comp.styles === undefined) delete comp.styles;
+  // Tests section + components' testedBy (analyzers/testmap.js): test files are parsed there, not in `modules`.
+  const tests = mapTests({ config, entries, components, pages, hooks, modules, rel, resolveImport, resolveExport });
 
   lap('insights');
   const routers = [...new Set(Object.values(pages).map((p) => p.router))];
@@ -617,6 +713,7 @@ export function scanProject(config, { cache, known, previous } = {}) {
     ...(Object.keys(tokens.definitions).length && { tokens: { definitions: sortKeys(tokens.definitions), ...(tokens.drift.length && { drift: tokens.drift }) } }),
     ...(duplicates.length && { duplicates }),
     ...(Object.keys(hooks).length && { hooks: sortKeys(Object.fromEntries(Object.entries(hooks).map(([k, h]) => [k, compact(h)]))) }),
+    ...(tests && { tests: { runners: sortKeys(tests.runners), suites: sortKeys(tests.suites) } }),
     health,
   };
   const liveAliases = resolveAliases(aliases, (id) => id in components || id in hooks);
@@ -637,13 +734,35 @@ export function scanProject(config, { cache, known, previous } = {}) {
   };
 }
 
+/**
+ * Screens a component switches between without routes: children shown for different values of one expression
+ * (`tab === 'users'` / `tab === 'roles'`, or switch cases). Needs two values of the same expression to count.
+ * Returns [{ on, cases: { value: [childId] } }] or undefined.
+ */
+function stateViews(rendersWhen) {
+  const byOn = new Map();
+  for (const [id, conditions] of Object.entries(rendersWhen)) {
+    for (const condition of conditions) {
+      for (const part of condition.split(' && ')) {
+        // Only plain `name === literal` parts: `!(a === 'x' || …)` or `(a === b)` are conditions, not screens.
+        const m = part.match(/^([\w$][\w$.?]*) ={2,3} ('[^']*'|"[^"]*"|`[^`$]*`|-?\d+(?:\.\d+)?|true|false|[A-Z][\w$]*(?:\.[\w$]+)+)$/);
+        if (!m) continue;
+        const cases = byOn.get(m[1]) ?? byOn.set(m[1], {}).get(m[1]);
+        if (!(cases[m[2]] ??= []).includes(id)) cases[m[2]].push(id);
+      }
+    }
+  }
+  const views = [...byOn].filter(([, cases]) => Object.keys(cases).length >= 2).map(([on, cases]) => ({ on, cases }));
+  return views.length ? views : undefined;
+}
+
 // What makes a module's components and routes what they are. If it changes, ids or pages may change: full scan.
 const shapeOf = (mod) => JSON.stringify([mod.components.map((c) => [c.name, c.tag ?? null]), mod.routes, mod.fileRoute ?? null, mod.routeConfig ?? null]);
 // What other modules see of it while linking (exports, and the hooks, schemas and constants resolved through them).
 // If it changes, the components of files importing it are re-linked too.
-const interfaceOf = (mod) => JSON.stringify([[...mod.exports], mod.reexports, mod.exportAll, [...mod.aliases], mod.customHooks ?? null, mod.schemas ?? null, mod.consts ?? null]);
+const interfaceOf = (mod) => JSON.stringify([[...mod.exports], mod.reexports, mod.exportAll, [...mod.aliases], mod.customHooks ?? null, mod.schemas ?? null, mod.consts ?? null, mod.moduleRenders ?? null]);
 // Record fields that project-wide passes fill in; a patched record keeps the previous values until the next full scan.
-const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'stories', 'examples'];
+const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'testedBy', 'stories', 'examples', 'navigatesTo'];
 const issueKey = (i) => `${i.type}\0${i.message}\0${i.line ?? ''}`;
 
 /** Files whose linking reads `file`: its importers, and theirs too when they re-export it (barrels). */
