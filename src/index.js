@@ -86,7 +86,7 @@ export function scan(config, { full = false, dryRun = false, message, session, c
     if (patch) {
       lap('patch');
       session.catalogue = patch.catalogue;
-      session.catalogueJson = undefined;
+      session.catalogueHash = undefined;
       session.pending ||= patch.changed;
       const delta = { added: [], changed: [], removed: [], reused: 0, parsed: patch.parsed, relinked: patch.relinked };
       return { catalogue: patch.catalogue, changed: patch.changed, fast: true, file, commit: null, agent: null, warnings: [], delta, timings };
@@ -101,12 +101,13 @@ export function scan(config, { full = false, dryRun = false, message, session, c
   mark = performance.now();
   const { catalogue, delta } = result;
   mergeManual(catalogue, prev);
-  // A session keeps the last catalogue's JSON, so a rescan serialises once (the catalogue is tens of MB at 20k files).
-  const json = stableJson(catalogue);
+  // A session keeps the last catalogue's hash, so a rescan serialises once (the JSON is tens of MB at 20k files, and
+  // holding it between scans cost that much memory for a comparison).
+  const hash = stableHash(catalogue);
   // Only valid while `prev` is the session's own copy; after a hand edit the watcher drops it and prev comes from disk.
-  const prevJson = session?.catalogue && session.catalogueJson;
+  const prevHash = session?.catalogue && session.catalogueHash;
   // After fast patches the session's catalogue already shows the edit, but nothing has been written or committed yet.
-  const changed = !prev || !!session?.pending || (prevJson || stableJson(prev)) !== json;
+  const changed = !prev || !!session?.pending || (prevHash || stableHash(prev)) !== hash;
   if (session) session.pending = false;
   if (!changed) catalogue.info.generatedAt = prev.info.generatedAt;
   lap('compare');
@@ -126,7 +127,7 @@ export function scan(config, { full = false, dryRun = false, message, session, c
     // YAML serialisation is the slowest step of a warm rescan, so it waits for flushSession() with the cache.
     session.dirty = (warm && session.dirty) || result.cacheDirty || changed || relayout;
     session.yamlDirty = (warm && session.yamlDirty) || changed || relayout;
-    Object.assign(session, { cache: result.cache, files: result.files, resolver: result.resolver, lister: result.lister, linker: result.linker, catalogue, catalogueJson: json });
+    Object.assign(session, { cache: result.cache, files: result.files, resolver: result.resolver, lister: result.lister, linker: result.linker, catalogue, catalogueHash: hash });
     if (!warm) flushSession(config, session);
   } else {
     if (changed || relayout) writeCatalogue(file, catalogue, { shard: config.shard });
@@ -228,6 +229,6 @@ export function upgradeCatalogue(config) {
 /** @deprecated use scan(); kept for the 0.1 API. */
 export const generate = (config) => scan(config);
 
-function stableJson(cat) {
-  return JSON.stringify({ ...cat, info: { ...cat.info, generatedAt: undefined } });
+function stableHash(cat) {
+  return createHash('sha1').update(JSON.stringify({ ...cat, info: { ...cat.info, generatedAt: undefined } })).digest('hex');
 }
