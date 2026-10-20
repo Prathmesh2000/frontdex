@@ -16,8 +16,8 @@ export default function catalogue({ root } = {}) {
     configureServer(server) {
       const config = loadConfig(path.resolve(root ?? server.config.root));
       const log = (msg) => server.config.logger.info(`[frontdex] ${msg}`, { timestamp: true });
+      // startWatcher scans once itself; that scan also warms the session the per-save fast path needs.
       watcher = startWatcher(config, { log });
-      watcher.rescan();
       server.httpServer?.once('close', () => watcher?.close());
     },
   };
