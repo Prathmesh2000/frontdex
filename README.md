@@ -90,7 +90,7 @@ import frontdex from 'frontdex/vite';
 export default { plugins: [react(), frontdex()] };
 ```
 
-or `"dev": "frontdex watch & next dev"` in `package.json`. A burst of saves triggers one scan (250 ms debounce). A file that is broken mid-edit keeps its last good version instead of disappearing.
+or `"dev": "frontdex watch & next dev"` in `package.json`. A burst of saves (250 ms debounce) is patched in at once: only the edited files are re-parsed and their components re-linked. Project-wide findings (duplicates, token drift, page lists, dead code) and the YAML, agent cards and history follow with a full scan once edits pause for 1.5 s; the UI shows "analysing…" until then. Renaming a component or adding or removing a file goes straight to the full scan. A file that is broken mid-edit keeps its last good version instead of disappearing.
 
 ## History
 
@@ -193,7 +193,8 @@ Global state · Health (all issues, dead code, API map + server endpoints) · De
 - **Rescan:** the top bar has a Rescan button, and auto-update keeps the open tab live.
 - **Search:** `Ctrl K` searches pages, components, stores, endpoints, folders and hooks.
 - **Component header:** kind, client/server rendering, custom-element tag or styled element, CODEOWNERS, tests; the overview starts with usage examples from stories.
-- **HTTP API** (while `frontdex serve` runs): `/api/components?q=&offset=&limit=` (paged, query language), `/api/component?id=`, `/api/pages`, `/api/diff?base=&head=`, `/api/catalogue`, `/api/history`.
+- **Two UIs:** `frontdex serve` opens the React UI at `/`, which loads everything page by page from the API below. The previous UI, which embeds the whole catalogue, stays at `/classic/`, and it is what `frontdex build` exports as a static site.
+- **HTTP API** (while `frontdex serve` runs, localhost only): `/api/info`, `/api/components?q=&offset=&limit=` (paged, query language), `/api/component?id=` (old ids resolve through `aliases`), `/api/issues?severity=&offset=&limit=`, `/api/folders?path=`, `/api/graph?focus=&depth=&dir=`, `/api/section?name=tokens|duplicates|hooks|stores|endpoints|styles|health`, `/api/pages`, `/api/diff?base=&head=`, `/api/catalogue`, `/api/history`.
 
 Query language (combine freely, prefix `-` to negate):
 
@@ -276,16 +277,17 @@ frontdex.yaml                 human spec: commit it, review it, hand-edit descri
 
 ## Performance
 
-Measured on a synthetic project with 1,800 files and 1,577 components (the full deep analysis):
+Measured with `node bench/scan.js 250`: the Next sample copied 250 times into one repo, 22,500 files and 19,500 components, full deep analysis. Node 24, Windows, 4-core laptop with Defender scanning the fresh copies.
 
 | Operation | Time |
 |---|---|
-| Cold scan | 7.5 s (about 4 ms per file) |
-| No-change rescan | under 1 s, including Node startup |
-| One-file rescan | well under 1 s |
-| UI first load | about 110 ms |
-| Most navigation | under 50 ms |
-| Health and Global state views | 250–350 ms |
+| Cold scan | 80–100 s (3.5–4.5 ms per file; parsing runs on worker threads) |
+| No-change rescan (CLI) | 11–13 s |
+| Save while `watch` / `serve -w` runs | **~130 ms** to show the edit |
+| Project-wide findings after a save | settle ~2.8 s after edits pause |
+| Peak RSS (uncapped) | 1.8–2.6 GB; the scan completes with `--max-old-space-size=1024`, more slowly |
+
+At 1,800 files: cold scan about 7 s, a save shows up in under 20 ms. The UI pages its data from the server, so it stays responsive at 20k components.
 
 ## Samples
 

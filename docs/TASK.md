@@ -319,7 +319,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] ~~Port the JSX scanner from Babel to oxc~~ dropped (see Baseline findings). Done instead: single directory walk, stylesheet cache, watch sessions with deferred YAML, worker-thread parsing; "keep last good parse" kept.
 - [~] Memory: < 1 GB at 20k files. Done: parse workers stream results (no more out-of-heap deaths), deserialize copies only mutated fields, catalogue JSON kept per session, duplicate issues linear. A 22.5k scan completes with the heap capped at 1 GB but slowly; uncapped RSS 1.8–2.0 GB (V8 grows lazily). Open: peak during write/agent stages.
 - [x] Re-measured 2026-10-20, 22.5k files (bench/scan.js 250, 4-core laptop, Defender on): cold 80–100 s (was a crash), no-change 12.8 s (was 20 s), watch one-file **133 ms** via the fast patch (was 8 s; target < 300 ms met), full settle 2.8 s once edits pause. Fast path keeps the linker in the session: RSS 2.6 GB at 22.5k (memory item above still open).
-- [ ] Golden files for both examples match (allowed differences: ID format, new fields).
+- [x] Golden files for both examples match (allowed differences: ID format, new fields). `test/golden.test.js` passes; stable IDs and incremental work kept the output byte-identical.
 - [x] ~~SQLite index + FTS5~~ rejected after measuring (2026-10-20): on 15.6k components SQLite queries were 3–15× slower than the in-memory index (`uses:Button` 95 ms vs 6 ms; no-op open 188 ms vs 0.14 ms), because callers still load the catalogue and the matcher still runs. Revisit only if the CLI/MCP must answer without loading the catalogue. Prototype kept on local branch `worktree-agent-abdb0603d87841735`.
 - [x] Stable IDs; sharded YAML; history keyed by stable IDs; `frontdex upgrade` migrates the examples' 1.x files. Old ids resolve through `aliases` (query `find`, `/api/component`).
 
@@ -361,7 +361,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] Rename in code: package `frontdex`, CLI `frontdex`/`fdx` (+ `rcat`, `react-catalogue` aliases), new file names with legacy detection and `frontdex upgrade`; frontdex-mcp follows.
 - [ ] `react-catalogue` compatibility release prepared (re-export + rename notice), not published.
 - [ ] READMEs for both repos, `docs/SPEC.md`, CHANGELOGs, migration notes from 0.2.
-- [ ] Performance run on a synthetic 20k-file monorepo; record results in the README.
+- [x] Performance run on a synthetic 20k-file monorepo; record results in the README. Recorded in README → Performance (2026-10-20).
 
 ## Acceptance criteria
 
