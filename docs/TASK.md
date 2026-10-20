@@ -360,7 +360,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 **Release readiness (no publishing in this task)**
 - [x] Rename in code: package `frontdex`, CLI `frontdex`/`fdx` (+ `rcat`, `react-catalogue` aliases), new file names with legacy detection and `frontdex upgrade`; frontdex-mcp follows.
 - [x] `react-catalogue` compatibility release prepared, not published: `compat/react-catalogue` 0.3.0 depends on `frontdex`, re-exports `.`, `/next`, `/vite`, `/query`, `/schema.json`; `rcat` runs the frontdex CLI after a stderr notice; importing emits a DeprecationWarning. Verified by installing both packed tarballs into an empty project.
-- [ ] READMEs for both repos, `docs/SPEC.md`, CHANGELOGs, migration notes from 0.2.
+- [x] READMEs for both repos, `docs/SPEC.md` (versioning, page wrappers/alternates), CHANGELOGs (frontdex 0.3.0 since 0.2.0; frontdex-mcp 0.2.0), `docs/MIGRATING.md` (react-catalogue 0.2 → frontdex 0.3).
 - [x] Performance run on a synthetic 20k-file monorepo; record results in the README. Recorded in README → Performance (2026-10-20).
 
 ## Acceptance criteria

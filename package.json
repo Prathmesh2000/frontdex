@@ -1,7 +1,7 @@
 {
   "name": "frontdex",
   "version": "0.3.0",
-  "description": "A living index of your frontend: components, pages, state, APIs and health for developers and coding agents. React and Next.js today.",
+  "description": "A living index of your frontend for developers and coding agents: components, pages, state, APIs, design tokens and health. React, Next.js, Vue, Svelte, Astro, Angular, Web Components and plain HTML.",
   "type": "module",
   "bin": {
     "frontdex": "bin/frontdex.js",
