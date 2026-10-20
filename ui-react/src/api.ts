@@ -8,6 +8,8 @@ export interface Info {
   root: string;
   counts: Record<string, number>;
   issues: Partial<Record<Issue['severity'], number>>;
+  /** True between a watch-mode patch and the full scan that settles project-wide findings. */
+  settling?: boolean;
 }
 // Component details are the catalogue's Component object; only the fields the UI reads are typed.
 export interface Component {

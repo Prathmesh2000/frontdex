@@ -52,6 +52,11 @@ function Shell() {
             </Link>
           ))}
         </nav>
+        {info?.settling && (
+          <span className="badge" title="Components are current; duplicates, tokens, pages and dead code update once edits pause">
+            analysing…
+          </span>
+        )}
         {/* The palette listens for Ctrl+K itself; the button just sends it that shortcut. */}
         <button className="search-trigger" style={{ marginLeft: 'auto' }} onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}>
           <span className="st-text">Search…</span>

@@ -83,4 +83,25 @@ export function updateProjectFiles(config, previous, changed) {
   return { sources: [...sources].sort(), styles: [...styles].sort() };
 }
 
+/**
+ * Whether `dir` still holds exactly the source files `previous` knows directly inside it. Editors that save through a
+ * temp file make the folder itself report a change; this tells such an event from a file being added or removed
+ * without the full walk updateProjectFiles() does for folders.
+ */
+export function sameSourcesIn(config, previous, dir) {
+  const excludes = config.exclude.map(globToRegExp);
+  const included = (abs) => {
+    const rel = path.relative(config.root, abs).split(path.sep).join('/');
+    return !excludes.some((re) => re.test(rel)) && config.include.some((inc) => isInside(path.resolve(config.root, inc), abs));
+  };
+  let now;
+  try {
+    now = fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isFile() && SOURCE_EXT.includes(path.extname(d.name))).map((d) => path.join(dir, d.name)).filter(included);
+  } catch {
+    return false;
+  }
+  const known = new Set(previous.sources.filter((f) => path.dirname(f) === dir));
+  return now.length === known.size && now.every((f) => known.has(f));
+}
+
 const isInside = (dir, file) => file === dir || file.startsWith(dir + path.sep);

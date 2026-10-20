@@ -11,7 +11,7 @@ import { collectEndpoints } from './endpoints.js';
 import { joinRoute, routePath } from './parse-file.js';
 import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
-import { loadMany, MAP_FIELDS } from './parse-pool.js';
+import { loadMany, loadOne, MAP_FIELDS } from './parse-pool.js';
 import { buildProjectInsights } from './project.js';
 
 const PKG = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
@@ -256,8 +256,11 @@ export function scanProject(config, { cache, known, previous } = {}) {
   };
 
   const byTag = new Map(entries.filter(({ c }) => c.tag).map(({ c }) => [c.tag, c]));
-  const components = {};
-  for (const { mod, c } of entries) {
+  /**
+   * The catalogue record of one component before project-wide passes (usedBy, pages, insights) fill in the rest:
+   * resolves its schemas, custom-hook reads and JSX children. Watch sessions call it again via patchProject().
+   */
+  const linkComponent = (mod, c) => {
     for (const v of c.validation ?? []) {
       if (v.via !== 'schema') continue;
       const schema = resolveSchema(mod.file, v.schema);
@@ -284,7 +287,7 @@ export function scanProject(config, { cache, known, previous } = {}) {
       } else if (r?.external && !j.soft) externals.add(r.external);
     }
     const exportNames = [...mod.exports].filter(([, local]) => followAlias(mod, local) === c.name).map(([e]) => e);
-    components[c.id] = compact({
+    return compact({
       name: c.name,
       file: rel(mod.file),
       workspace: workspaceOf(config.workspaces, mod.file)?.name,
@@ -315,9 +318,11 @@ export function scanProject(config, { cache, known, previous } = {}) {
       usedBy: [],
       pages: [],
     });
-  }
+  };
+  const components = {};
+  for (const { mod, c } of entries) components[c.id] = linkComponent(mod, c);
   for (const [id, comp] of Object.entries(components)) {
-    for (const child of comp.renders ?? []) components[child].usedBy = [...(components[child].usedBy ?? []), id];
+    for (const child of comp.renders ?? []) (components[child].usedBy ??= []).push(id);
   }
 
   const pages = {};
@@ -623,11 +628,126 @@ export function scanProject(config, { cache, known, previous } = {}) {
     timings,
     resolver: resolveImport,
     lister: listDir,
+    // What patchProject() needs to re-link a few components without a full scan; kept by watch sessions only.
+    linker: { modules, localIndex, linkComponent, rel, files: nextFiles, resolveImport },
     stats: { files: modules.size, components: entries.length, pages: Object.keys(pages).length },
     delta,
     cache: { version: CACHE_VERSION, files: nextFiles, styles: styleCache },
     cacheDirty: !cache || cache.version !== CACHE_VERSION || delta.parsed > 0 || delta.removed.length > 0 || styleCacheDirty,
   };
+}
+
+// What makes a module's components and routes what they are. If it changes, ids or pages may change: full scan.
+const shapeOf = (mod) => JSON.stringify([mod.components.map((c) => [c.name, c.tag ?? null]), mod.routes, mod.fileRoute ?? null, mod.routeConfig ?? null]);
+// What other modules see of it while linking (exports, and the hooks, schemas and constants resolved through them).
+// If it changes, the components of files importing it are re-linked too.
+const interfaceOf = (mod) => JSON.stringify([[...mod.exports], mod.reexports, mod.exportAll, [...mod.aliases], mod.customHooks ?? null, mod.schemas ?? null, mod.consts ?? null]);
+// Record fields that project-wide passes fill in; a patched record keeps the previous values until the next full scan.
+const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'stories', 'examples'];
+const issueKey = (i) => `${i.type}\0${i.message}\0${i.line ?? ''}`;
+
+/** Files whose linking reads `file`: its importers, and theirs too when they re-export it (barrels). */
+function importersOf(modules, resolveImport, file) {
+  const users = new Map();
+  for (const [f, m] of modules) {
+    const exported = new Set(m.exports.values());
+    const sources = [...[...m.imports].map(([local, i]) => [i.source, exported.has(local)]), ...m.reexports.map((r) => [r.source, true]), ...m.exportAll.map((s) => [s, true])];
+    for (const [source, passesOn] of sources) {
+      const target = resolveImport(f, source);
+      if (target) (users.get(target) ?? users.set(target, []).get(target)).push({ file: f, passesOn });
+    }
+  }
+  const out = new Set();
+  for (const queue = [file]; queue.length; ) {
+    for (const u of users.get(queue.shift()) ?? []) {
+      if (out.has(u.file)) continue;
+      out.add(u.file);
+      if (u.passesOn) queue.push(u.file);
+    }
+  }
+  out.delete(file);
+  return out;
+}
+
+/**
+ * Watch-session fast path: re-parses `changed` files and re-links only their components (plus those of importing files
+ * when a file's interface changed), splicing the records into `catalogue`. Fields from project-wide passes (CARRIED,
+ * and issues that did not come from parsing) keep their previous values; the next full scan recomputes everything.
+ * Returns null when only a full scan is correct: a file was added, removed or broke, or its components or routes changed.
+ * `linker` comes from the last scanProject() and is updated in place, so patches can follow one another.
+ */
+export function patchProject(linker, catalogue, changed) {
+  const { modules, localIndex, linkComponent, rel, files, resolveImport } = linker;
+  const updates = [];
+  for (const file of changed) {
+    const entry = files[rel(file)];
+    const old = modules.get(file);
+    const exists = fs.existsSync(file);
+    // Unknown and gone: a temp file an editor wrote and renamed over the real one (sed -i, vim, many save-via-rename tools).
+    if (!entry && !exists) continue;
+    if (!entry?.mod || !old || !exists) return null;
+    const stat = fs.statSync(file);
+    const { hash, mod: parsed } = loadOne(file, entry.hash);
+    if (!parsed) {
+      files[rel(file)] = { ...entry, mtimeMs: stat.mtimeMs, size: stat.size };
+      continue;
+    }
+    if (parsed.error) return null;
+    const mod = deserialize(parsed, file);
+    if (shapeOf(mod) !== shapeOf(old)) return null;
+    updates.push({ file, entry: { mtimeMs: stat.mtimeMs, size: stat.size, hash, mod: parsed }, before: entry.mod, interfaceChanged: interfaceOf(mod) !== interfaceOf(old) });
+  }
+  if (!updates.length) return { catalogue, changed: false, parsed: 0, relinked: 0 };
+
+  const relink = new Set();
+  const parsedBefore = new Map();
+  for (const u of updates) {
+    files[rel(u.file)] = u.entry;
+    parsedBefore.set(u.file, u.before);
+    relink.add(u.file);
+  }
+  for (const u of updates) if (u.interfaceChanged) for (const f of importersOf(modules, resolveImport, u.file)) relink.add(f);
+
+  // Linking mutates component records, so every re-linked file starts again from its pristine cached parse.
+  const fresh = [...relink].map((file) => {
+    const mod = deserialize(files[rel(file)].mod, file);
+    const ids = new Map([...(localIndex.get(file)?.values() ?? [])].map((c) => [c.name, c.id]));
+    for (const c of mod.components) c.id = ids.get(c.name);
+    modules.set(file, mod);
+    localIndex.set(file, new Map(mod.components.map((c) => [c.name, c])));
+    return mod;
+  });
+
+  const components = { ...catalogue.components };
+  const before = new Map();
+  for (const mod of fresh) {
+    const parseBefore = parsedBefore.get(mod.file) ?? files[rel(mod.file)].mod;
+    for (const c of mod.components) {
+      const prev = catalogue.components[c.id];
+      if (!prev) return null;
+      const record = linkComponent(mod, c);
+      for (const k of CARRIED) {
+        if (prev[k] === undefined) delete record[k];
+        else record[k] = prev[k];
+      }
+      // Issues the parser found are current; the rest came from project-wide passes and are carried over.
+      const fromParse = new Set((parseBefore.components.find((x) => x.name === c.name)?.issues ?? []).map(issueKey));
+      const issues = [...(record.issues ?? []), ...(prev.issues ?? []).filter((i) => !fromParse.has(issueKey(i)))];
+      if (issues.length) record.issues = issues;
+      else delete record.issues;
+      before.set(c.id, prev);
+      components[c.id] = record;
+    }
+  }
+  // usedBy follows the new renders; children are copied before they change (the old catalogue may still be in use).
+  for (const [id, prev] of before) {
+    const was = new Set(prev.renders ?? []);
+    const now = new Set(components[id].renders ?? []);
+    for (const child of now) if (!was.has(child) && components[child]) components[child] = { ...components[child], usedBy: [...(components[child].usedBy ?? []), id] };
+    for (const child of was) if (!now.has(child) && components[child]) components[child] = compact({ ...components[child], usedBy: (components[child].usedBy ?? []).filter((x) => x !== id) });
+  }
+  const changedRecords = [...before].some(([id, prev]) => JSON.stringify(prev) !== JSON.stringify(components[id]));
+  return { catalogue: { ...catalogue, components }, changed: changedRecords, parsed: updates.length, relinked: before.size };
 }
 
 /**

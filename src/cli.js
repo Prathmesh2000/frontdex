@@ -188,9 +188,8 @@ export async function main(argv) {
     }
     case 'watch': {
       const log = values.quiet ? () => {} : (m) => console.log(`[catalogue] ${m}`);
-      const first = scan(config);
+      const { initial: first } = startWatcher(config, { log });
       log(`watching ${rel(root)} · ${first.stats.components} components${first.commit ? ` · ${formatSummary(first.commit.summary)}` : ''}`);
-      startWatcher(config, { log });
       if (values['parent-pid']) {
         const ppid = Number(values['parent-pid']);
         setInterval(() => {

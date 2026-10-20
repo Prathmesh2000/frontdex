@@ -101,10 +101,28 @@ export function buildSite(config, catalogue, outDir) {
 
 export function startServer(config, { port, watch, regenerate = true, log = console.log }) {
   const output = path.resolve(config.root, config.output);
-  let catalogue = regenerate ? scan(config).catalogue : readCatalogue(output);
-  if (!catalogue) throw new Error(`No catalogue at ${output}. Run "frontdex scan" first.`);
   const clients = new Set();
+  let settling = false;
   const broadcast = () => clients.forEach((res) => res.write('data: reload\n\n'));
+  // With watch on, the watcher's own first scan is the catalogue: one scan at start, and a warm session for fast patches.
+  const watcher =
+    watch &&
+    startWatcher(config, {
+      log,
+      onUpdate: (result) => {
+        catalogue = result.catalogue;
+        // A fast patch is current per component; project-wide findings follow with the settling scan (see watch.js).
+        settling = !!result.fast;
+        broadcast();
+      },
+      onSpecEdit: () => {
+        catalogue = readCatalogue(output) ?? catalogue;
+        log(`↻ ${config.output} edited by hand`);
+        broadcast();
+      },
+    });
+  let catalogue = watcher ? watcher.initial.catalogue : regenerate ? scan(config).catalogue : readCatalogue(output);
+  if (!catalogue) throw new Error(`No catalogue at ${output}. Run "frontdex scan" first.`);
 
   const handler = (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -197,6 +215,7 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
         preview: config.preview,
         counts: { components: count(catalogue.components), pages: count(catalogue.pages), stores: count(catalogue.stores), hooks: count(catalogue.hooks), endpoints: count(catalogue.endpoints), tokens: count(catalogue.tokens?.definitions), duplicates: count(catalogue.duplicates) },
         issues: catalogue.health?.issues ?? {},
+        settling,
       });
     }
     // Whole sections that stay small (tokens, hooks, stores …); components and issues are paged instead.
@@ -235,21 +254,6 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
       res.end('Internal error');
     }
   });
-
-  if (watch) {
-    startWatcher(config, {
-      log,
-      onUpdate: (result) => {
-        catalogue = result.catalogue;
-        broadcast();
-      },
-      onSpecEdit: () => {
-        catalogue = readCatalogue(output) ?? catalogue;
-        log(`↻ ${config.output} edited by hand`);
-        broadcast();
-      },
-    });
-  }
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);

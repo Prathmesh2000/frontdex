@@ -40,7 +40,9 @@ const [one, oneResult] = time(() => scan(config));
 const session = {};
 scan(config, { session });
 fs.appendFileSync(edited, '\nexport const benchMarker2 = 2;\n');
-const [watchOne, watchResult] = time(() => scan(config, { session, changed: [edited] }));
+// The save is patched in at once; the full scan that settles project-wide findings runs once edits pause.
+const [watchOne, watchResult] = time(() => scan(config, { session, changed: [edited], fast: true }));
+const [settle, settleResult] = time(() => scan(config, { session, changed: [edited] }));
 
 // Parser share: Babel parse alone over the same files, to show what a faster parser could save at most.
 const { parse } = createRequire(import.meta.url)('@babel/parser');
@@ -54,7 +56,7 @@ console.log(`cold scan        ${(cold / 1000).toFixed(1)} s  (${(cold / files.le
 console.log(`  parse only     ${(parseOnly / 1000).toFixed(1)} s  (${Math.round((100 * parseOnly) / cold)}% of cold scan)`);
 console.log(`no-change scan   ${Math.round(noop)} ms`);
 console.log(`one-file rescan  ${Math.round(one)} ms`);
-console.log(`  watch mode     ${Math.round(watchOne)} ms`);
+console.log(`  watch mode     ${Math.round(watchOne)} ms${watchResult.fast ? ` patched (${watchResult.delta.relinked} component(s)); settles in ${Math.round(settle)} ms once edits pause` : ' (full scan)'}`);
 console.log(`peak-ish RSS     ${rss} MB`);
 const stages = (r) => Object.entries(r.timings).filter(([, ms]) => ms >= 5).map(([k, ms]) => `${k} ${ms}`).join(' · ');
 console.log(`
@@ -62,5 +64,6 @@ stages (ms, >= 5)
   cold      ${stages(coldResult)}
   no-change ${stages(noopResult)}
   one-file  ${stages(oneResult)}
-  watch     ${stages(watchResult)}`);
+  watch     ${stages(watchResult)}
+  settle    ${stages(settleResult)}`);
 fs.rmSync(root, { recursive: true, force: true });

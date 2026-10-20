@@ -8,9 +8,13 @@ import { shardDir } from './spec.js';
 const DEBOUNCE_MS = 250;
 // catalogue.yaml and the parse cache are written once edits pause, not after every save (YAML output is the slow part).
 const FLUSH_MS = 1000;
+// Saves are patched into the catalogue at once (scan's fast path); the full scan that settles project-wide findings
+// (duplicates, tokens, pages, dead code) and writes history runs once edits pause this long.
+const SETTLE_MS = 1500;
 
 /**
- * Keeps the knowledge base in sync with the source tree. Every burst of file events triggers one incremental scan.
+ * Keeps the knowledge base in sync with the source tree. Scans once on start (returned as `initial`), then every burst
+ * of file events triggers one incremental scan.
  * `onUpdate(result)` fires after a scan that changed the catalogue; `onSpecEdit()` fires when someone hand-edits catalogue.yaml.
  */
 export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () => {} } = {}) {
@@ -34,24 +38,45 @@ export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () =
     }
   };
 
-  const run = () => {
-    if (running) return void (again = true);
+  let settleTimer;
+  const settleFiles = new Set();
+  const settleLater = () => {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => run(true), SETTLE_MS);
+    settleTimer.unref?.();
+  };
+
+  /** One scan: a fast patch for fresh edits, or (`settling`) the full scan once they pause. */
+  const run = (settling = false) => {
+    if (running) return void (settling ? settleLater() : (again = true));
     running = true;
-    const files = [...changedFiles];
-    changedFiles.clear();
+    const pending = settling ? settleFiles : changedFiles;
+    const files = [...pending];
+    pending.clear();
     try {
       const result = scan(config, {
         session,
+        fast: !settling,
         changed: files.map((f) => path.resolve(config.root, f)),
         message: files.length ? `auto: ${files.slice(0, 3).join(', ')}${files.length > 3 ? ` +${files.length - 3}` : ''}` : undefined,
       });
       clearTimeout(flushTimer);
-      flushTimer = setTimeout(flush, FLUSH_MS);
-      flushTimer.unref?.();
+      if (result.fast) {
+        // Nothing is written until the settling scan: the patched catalogue is right per component, not yet project-wide.
+        files.forEach((f) => settleFiles.add(f));
+        settleLater();
+      } else {
+        // A full scan (settling, or a change the fast path declined) covers every earlier patch: each one updated the cache.
+        clearTimeout(settleTimer);
+        settleFiles.clear();
+        flushTimer = setTimeout(flush, FLUSH_MS);
+        flushTimer.unref?.();
+      }
       result.warnings.forEach((w) => log(`⚠ ${w}`));
       if (result.changed) {
         lastWrite = Date.now();
-        log(`↻ ${result.delta.parsed} file(s) re-parsed → ${result.commit ? formatSummary(result.commit.summary) : 'catalogue updated'}`);
+        const what = result.fast ? `${result.delta.relinked} component(s) patched` : result.commit ? formatSummary(result.commit.summary) : 'catalogue updated';
+        log(`↻ ${result.delta.parsed} file(s) re-parsed → ${what}`);
         onUpdate?.(result);
       }
     } catch (err) {
@@ -89,6 +114,10 @@ export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () =
     schedule();
   };
 
+  // The first scan runs in the session, so the very first save already takes the fast path (it needs a warm session).
+  const initial = scan(config, { session });
+  if (initial.changed || !fs.existsSync(output)) lastWrite = Date.now();
+
   const watchers = [];
   try {
     watchers.push(fs.watch(config.root, { recursive: true }, (_e, f) => onEvent(f)));
@@ -104,10 +133,16 @@ export function startWatcher(config, { onUpdate, onSpecEdit, onError, log = () =
   }
 
   return {
+    initial,
     rescan: run,
     close() {
       clearTimeout(timer);
       clearTimeout(flushTimer);
+      // Patched edits not yet settled would otherwise be lost: settle them before the final write.
+      if (settleFiles.size) {
+        clearTimeout(settleTimer);
+        run(true);
+      }
       flush();
       watchers.forEach((w) => w.close());
     },
