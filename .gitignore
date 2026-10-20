@@ -6,3 +6,4 @@ catalogue-site/
 ui-react/dist/
 dist-pack/
 .claude/
+compat/react-catalogue/schema.json

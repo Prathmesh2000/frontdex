@@ -33,7 +33,8 @@
     },
     "./overlay": "./src/overlay/overlay.js",
     "./query": "./src/query.cjs",
-    "./schema.json": "./spec/catalogue.schema.json"
+    "./schema.json": "./spec/catalogue.schema.json",
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",

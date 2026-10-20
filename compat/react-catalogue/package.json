@@ -1,0 +1,30 @@
+{
+  "name": "react-catalogue",
+  "version": "0.3.0",
+  "description": "Renamed to frontdex. This package re-exports frontdex so existing setups keep working; switch to `frontdex`.",
+  "type": "module",
+  "bin": {
+    "rcat": "bin/rcat.js",
+    "react-catalogue": "bin/rcat.js"
+  },
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./index.js" },
+    "./next": "./next.cjs",
+    "./vite": "./vite.js",
+    "./query": "./query.cjs",
+    "./schema.json": "./schema.json"
+  },
+  "files": ["bin", "index.js", "index.d.ts", "next.cjs", "vite.js", "query.cjs", "schema.json", "README.md"],
+  "scripts": {
+    "prepack": "node -e \"require('fs').copyFileSync(require.resolve('frontdex/schema.json'), 'schema.json')\""
+  },
+  "dependencies": {
+    "frontdex": "^0.3.0"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "license": "MIT"
+}
