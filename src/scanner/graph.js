@@ -24,9 +24,16 @@ const SCANNER_HASH = createHash('sha1')
   .slice(0, 12);
 export const CACHE_VERSION = `${PKG.version}/${SCANNER_HASH}`;
 
-// Linking and insights mutate component records (ids, resolved schemas, store reads, issues), so those are cloned to keep
-// the cache pristine; every other module field is only read and is shared with the cache entry.
-const deserialize = (data, file) => ({ ...data, components: structuredClone(data.components), file, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, new Map(data[k])])) });
+// Linking and insights mutate component records: they assign ids, resolve schemas into `validation`, add and tag store
+// reads/writes, and push issues. Only those parts are copied, so the cache stays pristine without a deep clone of every
+// component per scan (props, JSX and hooks are large and only read). The session-rescan test guards this list.
+const cloneMutable = (c) => ({
+  ...c,
+  ...(c.validation && { validation: c.validation.map((v) => ({ ...v })) }),
+  ...(c.store && { store: { reads: c.store.reads.map((r) => ({ ...r })), writes: c.store.writes.map((w) => ({ ...w })) } }),
+  ...(c.issues && { issues: c.issues.map((i) => ({ ...i })) }),
+});
+const deserialize = (data, file) => ({ ...data, components: data.components.map(cloneMutable), file, ...Object.fromEntries(MAP_FIELDS.map((k) => [k, new Map(data[k])])) });
 
 /**
  * Parses every source file, reusing cached parse results for files whose mtime/size or content hash is unchanged.
@@ -38,7 +45,9 @@ const deserialize = (data, file) => ({ ...data, components: structuredClone(data
  */
 export function scanProject(config, { cache, known, previous } = {}) {
   const root = config.root;
-  const rel = (f) => path.relative(root, f).split(path.sep).join('/');
+  // Called for every file many times per scan (ids, pages, issues); path.relative is slow enough to show in profiles.
+  const relCache = new Map();
+  const rel = (f) => relCache.get(f) ?? relCache.set(f, path.relative(root, f).split(path.sep).join('/')).get(f);
   const modules = new Map();
   const warnings = [];
   const prevFiles = cache?.version === CACHE_VERSION ? cache.files : {};
@@ -384,7 +393,8 @@ export function scanProject(config, { cache, known, previous } = {}) {
   };
   // Ownership (CODEOWNERS at the repo root) and test/story files next to each component.
   const owners = codeownersMatcher(root);
-  const listDir = cachedLister();
+  const listDir = known?.lister ?? cachedLister();
+  if (known?.lister) for (const f of known.changed) listDir.forget(path.dirname(f));
   for (const { mod, c } of entries) {
     const comp = components[c.id];
     const codeowners = owners?.(comp.file);
@@ -612,6 +622,7 @@ export function scanProject(config, { cache, known, previous } = {}) {
     files: projectFiles,
     timings,
     resolver: resolveImport,
+    lister: listDir,
     stats: { files: modules.size, components: entries.length, pages: Object.keys(pages).length },
     delta,
     cache: { version: CACHE_VERSION, files: nextFiles, styles: styleCache },

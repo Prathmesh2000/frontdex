@@ -78,14 +78,18 @@ export function scan(config, { full = false, dryRun = false, message, session, c
   const warm = !!session?.cache;
   const prev = session?.catalogue ?? readPrevious(file, mirrorFile);
   const cache = full ? null : warm ? session.cache : readJson(cacheFile);
-  const known = warm && !full && changedPaths ? { files: session.files, changed: changedPaths, resolver: session.resolver } : undefined;
+  const known = warm && !full && changedPaths ? { files: session.files, changed: changedPaths, resolver: session.resolver, lister: session.lister } : undefined;
   lap('read');
   const result = scanProject(config, { cache, known, previous: prev });
   Object.assign(timings, result.timings);
   mark = performance.now();
   const { catalogue, delta } = result;
   mergeManual(catalogue, prev);
-  const changed = !prev || stableJson(prev) !== stableJson(catalogue);
+  // A session keeps the last catalogue's JSON, so a rescan serialises once (the catalogue is tens of MB at 20k files).
+  const json = stableJson(catalogue);
+  // Only valid while `prev` is the session's own copy; after a hand edit the watcher drops it and prev comes from disk.
+  const prevJson = session?.catalogue && session.catalogueJson;
+  const changed = !prev || (prevJson || stableJson(prev)) !== json;
   if (!changed) catalogue.info.generatedAt = prev.info.generatedAt;
   lap('compare');
   const out = { ...result, file, changed, commit: null, agent: null, timings };
@@ -93,6 +97,7 @@ export function scan(config, { full = false, dryRun = false, message, session, c
   delete out.cacheDirty;
   delete out.files;
   delete out.resolver;
+  delete out.lister;
   if (dryRun) return out;
 
   ensureKnowledgeDir(kb);
@@ -102,7 +107,7 @@ export function scan(config, { full = false, dryRun = false, message, session, c
     // YAML serialisation is the slowest step of a warm rescan, so it waits for flushSession() with the cache.
     session.dirty = (warm && session.dirty) || result.cacheDirty || changed || relayout;
     session.yamlDirty = (warm && session.yamlDirty) || changed || relayout;
-    Object.assign(session, { cache: result.cache, files: result.files, resolver: result.resolver, catalogue });
+    Object.assign(session, { cache: result.cache, files: result.files, resolver: result.resolver, lister: result.lister, catalogue, catalogueJson: json });
     if (!warm) flushSession(config, session);
   } else {
     if (changed || relayout) writeCatalogue(file, catalogue, { shard: config.shard });

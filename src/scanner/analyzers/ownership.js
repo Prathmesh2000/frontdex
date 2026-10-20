@@ -49,10 +49,13 @@ export function testsAndStories(absFile, listDir) {
   return { tests, stories };
 }
 
-/** Directory listing with a per-scan cache, for testsAndStories. */
+/**
+ * Directory listing with a cache, for testsAndStories. A watch session keeps one across rescans and calls
+ * `forget(dir)` for the folder of each changed path, so a new Button.test.tsx shows up without re-listing every folder.
+ */
 export function cachedLister() {
   const cache = new Map();
-  return (dir) => {
+  const list = (dir) => {
     if (!cache.has(dir)) {
       try {
         cache.set(dir, fs.readdirSync(dir));
@@ -62,4 +65,6 @@ export function cachedLister() {
     }
     return cache.get(dir);
   };
+  list.forget = (dir) => cache.delete(dir);
+  return list;
 }

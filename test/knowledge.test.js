@@ -178,3 +178,18 @@ test('subgraph walks a bounded neighbourhood and caps oversized graphs', async (
   assert.equal(capped.total, 4);
   assert.equal(subgraph(cat, { max: 2, force: true }).truncated, false);
 });
+
+test('watch-session rescans reproduce the cold scan exactly (cached parse records are never mutated)', () => {
+  const dir = tempProject();
+  const config = { ...loadConfig(dir), history: { enabled: false, limit: 0 }, agents: { enabled: false } };
+  const strip = (cat) => JSON.stringify({ ...cat, info: { ...cat.info, generatedAt: undefined } });
+  const cold = strip(scan(config, { dryRun: true }).catalogue);
+  const session = {};
+  scan(config, { session });
+  const file = path.join(dir, 'src/features/cart/CartDrawer.tsx');
+  for (let i = 0; i < 3; i++) {
+    fs.utimesSync(file, new Date(), new Date(Date.now() + i * 1000));
+    scan(config, { session, changed: [file] });
+  }
+  assert.equal(strip(session.catalogue), cold);
+});
