@@ -30,7 +30,9 @@ This project keeps a generated map of every React component and page in \`${kb}/
 4. **Reuse what exists**: check \`catalogue_state\` (Redux/context/zustand), \`catalogue_api\` (endpoints) and \`catalogue_styles\` (CSS classes) before adding new state, API calls or styles.
 5. **Do not ship regressions**: every effect that starts an interval, listener, subscription or observer must release it in its cleanup; avoid unused variables/props/imports. Check \`catalogue_health\` (or \`${CMD} health\`) for the components you touched.
 6. **After editing components or routes**, run \`catalogue_rescan\` or \`${CMD} scan\`, and mention notable catalogue changes in your summary.
-7. Do not hand-edit \`${kb}/\` or \`${config.output}\`, except the human-owned fields (description, tags, owner, x-*).`;
+7. **Run the tests that cover what you changed**: \`catalogue_tests\` (or \`${CMD} tests <Name>\`) lists the unit and E2E tests mapped to a component or page, with the command to run them.
+8. **Keep component docs current**: when you have read a component closely or changed it, save what it is for and how to use it with \`catalogue_enrich_write\` (\`catalogue_enrich_next\` lists components whose docs are missing or stale). Developers see these docs in the frontdex UI, and the next agent reads them.
+9. Do not hand-edit \`${kb}/\` or \`${config.output}\`, except the human-owned fields (description, tags, owner, x-*).`;
 };
 
 function upsertBlock(file, body, { remove = false, create = true } = {}) {

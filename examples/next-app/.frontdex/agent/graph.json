@@ -1,5 +1,5 @@
 {
- "generator": "frontdex 0.3.1",
+ "generator": "frontdex 0.4.0",
  "components": {
   "AccountLayout": {
    "name": "AccountLayout",

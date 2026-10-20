@@ -6,8 +6,8 @@ info:
   framework: react
   routers:
     - react-router
-  generator: frontdex 0.3.1
-  generatedAt: 2026-10-20T13:37:48.602Z
+  generator: frontdex 0.4.0
+  generatedAt: 2026-10-20T14:10:33.650Z
 components:
   AppShell:
     name: AppShell
