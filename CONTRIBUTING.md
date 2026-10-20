@@ -45,7 +45,7 @@ node bin/frontdex.js serve -C examples/next-app -w   # try your change on a samp
 4. Update the README or `docs/` when you change a command, option or output.
 5. A new MCP tool also needs its schema in [frontdex-mcp](https://github.com/Prathmesh2000/frontdex-mcp) (`TOOLS` in `src/server.js`).
 
-CI runs the tests on Node 20, 22 and 24 (Linux) and Node 22 (Windows), plus the UI typecheck and a pack dry run.
+CI runs the tests on Node 20, 22 and 24 (Linux) and Node 22 (Windows), plus the UI typecheck and a pack dry run. `main` is protected: a PR merges once all four test jobs pass and a maintainer approves it.
 
 ## Releases
 
