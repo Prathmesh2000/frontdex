@@ -56,3 +56,42 @@ test('webpack/rspack plugin starts the watcher only in watch mode', () => {
   const off = { hooks: { watchRun: { tap: () => assert.fail('disabled plugin taps nothing') }, watchClose: { tap: () => {} } } };
   new FrontdexPlugin({ enabled: false }).apply(off);
 });
+
+test('the API answers this machine only: a LAN peer is refused even with a localhost Host header', async () => {
+  const { createApp } = await import('../src/server.js');
+  const { loadConfig } = await import('../src/index.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'peer-'));
+  fs.cpSync(path.resolve(import.meta.dirname, '../examples/react-app'), dir, { recursive: true, filter: (src) => !/[\\/]\.frontdex([\\/]|$)|frontdex\.yaml$/.test(src) });
+  const config = { ...loadConfig(dir), history: { enabled: false, limit: 0 }, agents: { enabled: false } };
+  const call = (app, { peer, origin, url = '/api/info' }) => {
+    const res = { status: 200, headers: {}, setHeader: (k, v) => (res.headers[k] = v), writeHead: (s, h) => ((res.status = s), Object.assign(res.headers, h), res), end: () => res, write: () => true, on: () => res, once: () => res, emit: () => true };
+    app.handler({ url, headers: { host: 'localhost:5173', ...(origin && { origin }) }, socket: { remoteAddress: peer } }, res);
+    return res;
+  };
+  const app = createApp(config, { watch: false, log: () => {} });
+  assert.equal(call(app, { peer: '192.168.1.20' }).status, 403);
+  assert.equal(call(app, { peer: '192.168.1.20', url: '/data.js' }).status, 403);
+  assert.equal(call(app, { peer: '::ffff:127.0.0.1' }).status, 200);
+  assert.equal(call(app, { peer: '127.0.0.1', origin: 'http://localhost:3000' }).headers['access-control-allow-origin'], 'http://localhost:3000');
+  assert.equal(call(app, { peer: '127.0.0.1', origin: 'https://evil.example' }).headers['access-control-allow-origin'], undefined);
+  assert.equal(call(createApp(config, { watch: false, log: () => {}, allowLan: true }), { peer: '192.168.1.20' }).status, 200, 'allowLan opts in');
+});
+
+test('vite plugin with overlay: true injects the overlay script, which frontdex serves', async () => {
+  const { createServer } = await import('vite');
+  const { default: frontdex } = await import('../src/plugins/vite.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vite-ov-'));
+  fs.cpSync(path.resolve(import.meta.dirname, '../examples/react-app'), dir, { recursive: true, filter: (src) => !/[\\/]\.frontdex([\\/]|$)|frontdex\.yaml$/.test(src) });
+  fs.writeFileSync(path.join(dir, 'index.html'), '<!doctype html><html><body><div id="root"></div></body></html>');
+  const server = await createServer({ root: dir, configFile: false, logLevel: 'silent', plugins: [frontdex({ overlay: true })], server: { port: 0, host: '127.0.0.1' } });
+  await server.listen();
+  try {
+    const base = `http://127.0.0.1:${server.httpServer.address().port}`;
+    assert.match(await (await fetch(`${base}/`)).text(), /<script type="module" src="\/__frontdex\/overlay\.js"><\/script>/);
+    const script = await fetch(`${base}/__frontdex/overlay.js`);
+    assert.equal(script.status, 200);
+    assert.match(await script.text(), /export function start/);
+  } finally {
+    await server.close();
+  }
+});

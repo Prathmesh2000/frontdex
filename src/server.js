@@ -15,6 +15,9 @@ const { createIndex } = createRequire(import.meta.url)('./query.cjs');
 // One query index per catalogue object, rebuilt only after a rescan replaces the catalogue.
 const indexes = new WeakMap();
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+const OVERLAY_FILE = new URL('./overlay/overlay.js', import.meta.url);
+const isLoopback = (address) => address === '::1' || /^(::ffff:)?127\./.test(address ?? '');
 const indexFor = (cat) => indexes.get(cat) ?? indexes.set(cat, createIndex(cat)).get(cat);
 const QUERY_FILE = new URL('./query.cjs', import.meta.url);
 const UI_FILES = { '/': 'index.html', '/index.html': 'index.html', '/app.js': 'app.js', '/styles.css': 'styles.css' };
@@ -103,7 +106,7 @@ export function buildSite(config, catalogue, outDir) {
  * The UI and HTTP API as a plain (req, res) handler with paths relative to where it is mounted: `frontdex serve` puts it
  * at the root of its own server, the Vite plugin under /__frontdex/ on the dev server. `close()` stops the watcher.
  */
-export function createApp(config, { watch, regenerate = true, log = console.log }) {
+export function createApp(config, { watch, regenerate = true, log = console.log, allowLan = !!process.env.FRONTDEX_HOST }) {
   const output = path.resolve(config.root, config.output);
   const clients = new Set();
   let settling = false;
@@ -137,8 +140,18 @@ export function createApp(config, { watch, regenerate = true, log = console.log 
     const classic = url.pathname.startsWith('/classic/');
     if (classic) url.pathname = url.pathname.slice('/classic'.length);
     // The API reads source files and runs git: answer only requests addressed to this machine (blocks DNS rebinding).
-    // data.js embeds the whole catalogue, so it is guarded too: the app may be mounted on a dev server bound to the LAN.
-    if ((url.pathname.startsWith('/api/') || url.pathname === '/data.js') && !LOCAL_HOST.test(req.headers.host ?? '')) return res.writeHead(403).end('Forbidden');
+    // The API (source, git) and data.js (the whole catalogue) answer this machine only. Two checks: the Host header stops
+    // DNS rebinding from a browser; the socket peer stops another machine, which can send any Host it likes, when the
+    // app is mounted on a dev server bound to the LAN (vite --host). allowLan is the explicit opt-out.
+    if ((url.pathname.startsWith('/api/') || url.pathname === '/data.js') && (!LOCAL_HOST.test(req.headers.host ?? '') || (!allowLan && !isLoopback(req.socket?.remoteAddress)))) {
+      return res.writeHead(403).end('Forbidden');
+    }
+    // The dev overlay runs inside the app (another localhost port) and asks the API where components live.
+    if (url.pathname.startsWith('/api/') && LOCAL_ORIGIN.test(req.headers.origin ?? '')) res.setHeader('access-control-allow-origin', req.headers.origin);
+    if (url.pathname === '/overlay.js') {
+      res.writeHead(200, { 'content-type': MIME['.js'], 'cache-control': 'no-store' });
+      return fs.createReadStream(OVERLAY_FILE).pipe(res);
+    }
     // The React UI is the default at / once built (and stays reachable at /v2/); a checkout without a build gets the classic UI.
     if (!classic && (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/assets/')) && fs.existsSync(new URL('index.html', V2_DIR))) return serveV2(url.pathname, res);
     if (url.pathname === '/v2' || url.pathname.startsWith('/v2/')) return serveV2(url.pathname.slice(3), res);

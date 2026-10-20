@@ -96,6 +96,20 @@ const FrontdexPlugin = require('frontdex/webpack'); // same plugin as 'frontdex/
 module.exports = { plugins: [new FrontdexPlugin()] };
 ```
 
+### Component overlay (React, development only)
+
+Hold **Alt** and hover any element of your running app: frontdex outlines the component that rendered it and shows its name, `file:line` and props. **Alt+click** opens it in the catalogue UI.
+
+```js
+// Vite: injected for you
+frontdex({ overlay: true })
+
+// Next.js / webpack / Rspack: in any client component (keep the NODE_ENV guard, it keeps it out of production)
+if (process.env.NODE_ENV === 'development') import('frontdex/overlay');
+```
+
+Outside Vite the overlay talks to `frontdex serve` on `http://localhost:4400`; set `window.__FRONTDEX_URL__` before it loads to point elsewhere. Names come from React, so they need a development build (minified production names cannot be matched). Render counts are not shown.
+
 None of them add anything to a production build: the Vite plugin applies to `serve` only, the webpack/Rspack plugin acts only in watch mode, and the Next wrapper only in `next dev`.
 
 or `"dev": "frontdex watch & next dev"` in `package.json`. A burst of saves (250 ms debounce) is patched in at once: only the edited files are re-parsed and their components re-linked. Project-wide findings (duplicates, token drift, page lists, dead code) and the YAML, agent cards and history follow with a full scan once edits pause for 1.5 s; the UI shows "analysing…" until then. Renaming a component or adding or removing a file goes straight to the full scan. A file that is broken mid-edit keeps its last good version instead of disappearing.

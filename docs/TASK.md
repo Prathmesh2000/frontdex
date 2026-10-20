@@ -344,7 +344,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 - [x] UI extended (option A): Design, Hooks and Changes views, server endpoints in the API map, component meta and story examples; paged HTTP API (`/api/components`, `/api/component`, `/api/pages`, `/api/diff`).
 - [x] New UI (option B: React + Vite + TanStack Router/Virtual, pre-built on `prepack`), the default UI at `/` (also `/v2/`); classic UI moved to `/classic/`. All classic views ported plus folders, command palette (Ctrl+K) and source panel. `/` falls back to classic in a checkout without `npm run build:ui`.
 - [ ] Preview through the user's dev server (Vite virtual route, Next generated dev-only route), props playground, `screenshot`.
-- [ ] Dev-only overlay.
+- [x] Dev-only overlay (`frontdex/overlay`, React): Alt+hover → component name, file:line (from the catalogue; React 19 has no `_debugSource`), shallow props; Alt+click → catalogue page. Shadow root, no deps. Vite injects it with `overlay: true`; Next/webpack import it behind `NODE_ENV === "development"`. Render count cut, Vue/Svelte/Angular deferred (CTO decision 2026-10-20).
 - [x] Integrations: Next (`withFrontdex`, no webpack plugin), Vite (watcher + UI/API mounted at `/__frontdex/` on the dev server, `apply: serve`), webpack and Rspack (one plugin, `frontdex/webpack` = `frontdex/rspack`, watch mode only). Per CTO decision 2026-10-20.
 - [x] Agent rules updated (duplicate check via `catalogue_find_existing`, tokens). Hook messages unchanged.
 - [x] CI: `diff`, `pr-comment`, GitHub Action (sticky PR comment, job summary, `fail-on`). Not done: commit-keyed parse cache in CI.

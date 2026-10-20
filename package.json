@@ -16,6 +16,7 @@
     "./vite": "./src/plugins/vite.js",
     "./webpack": "./src/plugins/webpack.cjs",
     "./rspack": "./src/plugins/webpack.cjs",
+    "./overlay": "./src/overlay/overlay.js",
     "./query": "./src/query.cjs",
     "./schema.json": "./spec/catalogue.schema.json"
   },
