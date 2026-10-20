@@ -41,8 +41,9 @@
     "src",
     "ui",
     "spec",
-    "docs",
-    "ui-react/dist"
+    "ui-react/dist",
+    "docs/SPEC.md",
+    "docs/MIGRATING.md"
   ],
   "scripts": {
     "test": "node --test test/*.test.js",
