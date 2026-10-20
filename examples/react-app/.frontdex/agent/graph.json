@@ -1,5 +1,5 @@
 {
- "generator": "frontdex 0.3.0",
+ "generator": "frontdex 0.3.1",
  "components": {
   "AppShell": {
    "name": "AppShell",

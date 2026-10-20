@@ -192,7 +192,7 @@ Latest orders table on the dashboard; also reused by the orders page.
 - Props from AdminOrdersPage: key=version, limit=100, onSelect=setSelected
 - Props from AdminDashboard: limit=5
 - API GET `/orders` via http.get in useEffect L20 (line 22)
-- Renders: DataTable(rows, columns, loading, onRowClick, emptyText)
+- Renders: DataTable(rows, columns, loading, onRowClick, emptyText), Badge
 - Used by: AdminOrdersPage, AdminDashboard
 - Pages: /admin/orders, /admin
 - Impact: changing the props/export affects 2 component(s) and 2 page(s); update every caller listed under "Used by".

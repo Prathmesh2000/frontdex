@@ -8,7 +8,7 @@ import { cachedLister, codeownersMatcher, testsAndStories } from './analyzers/ow
 import { heavyImports } from './analyzers/perf.js';
 import { readStories } from './analyzers/stories.js';
 import { collectEndpoints } from './endpoints.js';
-import { joinRoute, routePath } from './parse-file.js';
+import { evalParts, joinRoute, pathMatches, routePath } from './paths.js';
 import { fileSystemRoutes } from './routers.js';
 import { workspaceOf } from './workspace.js';
 import { loadMany, loadOne, MAP_FIELDS } from './parse-pool.js';
@@ -278,14 +278,41 @@ export function scanProject(config, { cache, known, previous } = {}) {
     const renders = new Set();
     const externals = new Set();
     const passes = {};
+    // child id → the conditions of each place it is rendered; null marks an unconditional place.
+    const when = new Map();
+    const place = (id, condition) => (when.get(id) ?? when.set(id, []).get(id)).push(condition);
     for (const j of c.jsx) {
       // Custom element tags (<x-card>) are global once defined, so they resolve by tag rather than by import.
       const r = resolveLocal(mod.file, j.name) ?? (j.name.includes('-') ? byTag.get(j.name) : null);
       if (r?.id && r.id !== c.id) {
         renders.add(r.id);
+        place(r.id, j.when?.length ? j.when.join(' && ') : null);
         if (j.props?.length && !j.soft) (passes[r.id] ??= []).push(...j.props.map((p) => ({ ...p, line: j.line })));
       } else if (r?.external && !j.soft) externals.add(r.external);
     }
+    // Children rendered from outside the JSX tree: a registry or column config this component references (its JSX
+    // was collected per binding as moduleRenders), or a component it calls as a function or hands over as a value.
+    for (const name of c.uses ?? []) {
+      const imp = mod.imports.get(name);
+      const target = imp && resolveImport(mod.file, imp.source);
+      const tmod = target && modules.get(target);
+      const [owner, binding] = mod.moduleRenders?.[name] ? [mod, name] : tmod ? [tmod, tmod.exports.get(imp.imported) ?? imp.imported] : [];
+      const viaRegistry = owner?.moduleRenders?.[binding];
+      if (viaRegistry) {
+        for (const child of viaRegistry) {
+          const r = resolveLocal(owner.file, child.name);
+          if (r?.id && r.id !== c.id) renders.add(r.id), place(r.id, `via ${name}`);
+          else if (r?.external) externals.add(r.external);
+        }
+        continue;
+      }
+      const r = resolveLocal(mod.file, name);
+      if (r?.id && r.id !== c.id && !renders.has(r.id)) renders.add(r.id), place(r.id, `via ${name}`);
+    }
+    // Only children that are never rendered unconditionally get conditions; the rest are always there.
+    const rendersWhen = {};
+    for (const [id, list] of when) if (!list.includes(null)) rendersWhen[id] = [...new Set(list)].slice(0, 5);
+    const views = stateViews(rendersWhen);
     const exportNames = [...mod.exports].filter(([, local]) => followAlias(mod, local) === c.name).map(([e]) => e);
     return compact({
       name: c.name,
@@ -313,6 +340,8 @@ export function scanProject(config, { cache, known, previous } = {}) {
       styles: c.styles,
       issues: c.issues,
       renders: [...renders],
+      rendersWhen,
+      views,
       passes,
       externals: [...externals],
       usedBy: [],
@@ -530,6 +559,27 @@ export function scanProject(config, { cache, known, previous } = {}) {
     pages[route] = compact(page);
   }
 
+  // Navigation: where each component sends the user (Link/NavLink/Navigate, <a href>, navigate(), router.push),
+  // resolved like route paths (constants, templates) and matched to pages; a page links to wherever its components go.
+  const routeKeys = Object.keys(pages);
+  for (const { mod, c } of entries) {
+    const targets = new Set();
+    for (const n of c.navigates ?? []) {
+      const to = evalParts(n.to, (ref) => constValue(mod.file, ref));
+      // External links and pure expressions ({target}) say nothing about the app's own pages.
+      if (!to.startsWith('/') || /^\/\{[^}]*\}$/.test(to)) continue;
+      const hits = routeKeys.filter((r) => pathMatches(to, r));
+      if (hits.length) hits.forEach((h) => targets.add(h));
+      else targets.add(to.split('?')[0].split('#')[0]);
+    }
+    if (targets.size) components[c.id].navigatesTo = [...targets].sort();
+  }
+  for (const [route, page] of Object.entries(pages)) {
+    const links = new Set((page.components ?? []).flatMap((id) => components[id]?.navigatesTo ?? []));
+    links.delete(route);
+    if (links.size) page.linksTo = [...links].sort();
+  }
+
   // React Server Components: in App Router projects, a component is client-rendered when its module says 'use client'
   // or a client component renders it; everything else on an app-router page renders on the server.
   const appRouterIds = new Set(Object.values(pages).filter((p) => p.router === 'next-app').flatMap((p) => p.components ?? []));
@@ -637,13 +687,35 @@ export function scanProject(config, { cache, known, previous } = {}) {
   };
 }
 
+/**
+ * Screens a component switches between without routes: children shown for different values of one expression
+ * (`tab === 'users'` / `tab === 'roles'`, or switch cases). Needs two values of the same expression to count.
+ * Returns [{ on, cases: { value: [childId] } }] or undefined.
+ */
+function stateViews(rendersWhen) {
+  const byOn = new Map();
+  for (const [id, conditions] of Object.entries(rendersWhen)) {
+    for (const condition of conditions) {
+      for (const part of condition.split(' && ')) {
+        // Only plain `name === literal` parts: `!(a === 'x' || …)` or `(a === b)` are conditions, not screens.
+        const m = part.match(/^([\w$][\w$.?]*) ={2,3} ('[^']*'|"[^"]*"|`[^`$]*`|-?\d+(?:\.\d+)?|true|false|[A-Z][\w$]*(?:\.[\w$]+)+)$/);
+        if (!m) continue;
+        const cases = byOn.get(m[1]) ?? byOn.set(m[1], {}).get(m[1]);
+        if (!(cases[m[2]] ??= []).includes(id)) cases[m[2]].push(id);
+      }
+    }
+  }
+  const views = [...byOn].filter(([, cases]) => Object.keys(cases).length >= 2).map(([on, cases]) => ({ on, cases }));
+  return views.length ? views : undefined;
+}
+
 // What makes a module's components and routes what they are. If it changes, ids or pages may change: full scan.
 const shapeOf = (mod) => JSON.stringify([mod.components.map((c) => [c.name, c.tag ?? null]), mod.routes, mod.fileRoute ?? null, mod.routeConfig ?? null]);
 // What other modules see of it while linking (exports, and the hooks, schemas and constants resolved through them).
 // If it changes, the components of files importing it are re-linked too.
-const interfaceOf = (mod) => JSON.stringify([[...mod.exports], mod.reexports, mod.exportAll, [...mod.aliases], mod.customHooks ?? null, mod.schemas ?? null, mod.consts ?? null]);
+const interfaceOf = (mod) => JSON.stringify([[...mod.exports], mod.reexports, mod.exportAll, [...mod.aliases], mod.customHooks ?? null, mod.schemas ?? null, mod.consts ?? null, mod.moduleRenders ?? null]);
 // Record fields that project-wide passes fill in; a patched record keeps the previous values until the next full scan.
-const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'stories', 'examples'];
+const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'stories', 'examples', 'navigatesTo'];
 const issueKey = (i) => `${i.type}\0${i.message}\0${i.line ?? ''}`;
 
 /** Files whose linking reads `file`: its importers, and theirs too when they re-export it (barrels). */

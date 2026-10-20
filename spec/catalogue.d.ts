@@ -128,6 +128,19 @@ export interface Component {
   hooks?: Hook[];
   lifecycle?: LifecycleEvent[];
   renders?: StringList;
+  /** Children rendered only under conditions: child id → the conditions (source text) of each place it is rendered, e.g. "!loading && tab === 'users'", "each of items", "via blockRegistry". */
+  rendersWhen?: {
+    [k: string]: StringList;
+  };
+  /** Screens switched by state rather than routes: children shown for each value of one expression (tabs, steps). */
+  views?: {
+    on: string;
+    cases: {
+      [k: string]: StringList;
+    };
+  }[];
+  /** Pages (route keys) or paths this component links or navigates to: Link/NavLink/Navigate, <a href>, navigate(), router.push. */
+  navigatesTo?: StringList;
   externals?: StringList;
   usedBy?: StringList;
   pages?: StringList;
@@ -191,6 +204,8 @@ export interface Page {
   wrappers?: StringList;
   /** Other components the route can show instead of the page (loaders, redirects, conditional branches). */
   alternates?: StringList;
+  /** Pages (route keys) or paths the components of this page link or navigate to. */
+  linksTo?: StringList;
   /** Next.js metadata export: a metadata object or generateMetadata. */
   metadata?: "static" | "dynamic";
   components?: StringList;

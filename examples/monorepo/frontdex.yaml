@@ -11,8 +11,8 @@ info:
   routers:
     - next-app
     - react-router
-  generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T12:48:49.106Z
+  generator: frontdex 0.3.1
+  generatedAt: 2026-10-20T13:38:00.233Z
 components:
   Badge:
     name: Badge

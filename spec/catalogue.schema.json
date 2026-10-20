@@ -449,6 +449,30 @@
         "renders": {
           "$ref": "#/definitions/StringList"
         },
+        "rendersWhen": {
+          "type": "object",
+          "description": "Children rendered only under conditions: child id → the conditions (source text) of each place it is rendered, e.g. \"!loading && tab === 'users'\", \"each of items\", \"via blockRegistry\".",
+          "additionalProperties": {
+            "$ref": "#/definitions/StringList"
+          }
+        },
+        "views": {
+          "type": "array",
+          "description": "Screens switched by state rather than routes: children shown for each value of one expression (tabs, steps).",
+          "items": {
+            "type": "object",
+            "required": ["on", "cases"],
+            "additionalProperties": false,
+            "properties": {
+              "on": { "type": "string" },
+              "cases": { "type": "object", "additionalProperties": { "$ref": "#/definitions/StringList" } }
+            }
+          }
+        },
+        "navigatesTo": {
+          "$ref": "#/definitions/StringList",
+          "description": "Pages (route keys) or paths this component links or navigates to: Link/NavLink/Navigate, <a href>, navigate(), router.push."
+        },
         "externals": {
           "$ref": "#/definitions/StringList"
         },
@@ -708,6 +732,10 @@
         "alternates": {
           "$ref": "#/definitions/StringList",
           "description": "Other components the route can show instead of the page (loaders, redirects, conditional branches)."
+        },
+        "linksTo": {
+          "$ref": "#/definitions/StringList",
+          "description": "Pages (route keys) or paths the components of this page link or navigate to."
         },
         "metadata": {
           "enum": [

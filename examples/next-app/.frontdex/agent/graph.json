@@ -1,5 +1,5 @@
 {
- "generator": "frontdex 0.3.0",
+ "generator": "frontdex 0.3.1",
  "components": {
   "AccountLayout": {
    "name": "AccountLayout",
@@ -263,6 +263,7 @@
    "usedBy": [
     "OrderTimeline",
     "OrderEditor",
+    "RecentOrders",
     "ProductCard",
     "ProductInfo",
     "ToastItem"
@@ -1379,7 +1380,8 @@
     "loading"
    ],
    "renders": [
-    "DataTable"
+    "DataTable",
+    "Badge"
    ],
    "usedBy": [
     "AdminOrdersPage",
@@ -2086,10 +2088,10 @@
     "Card@src/features/admin/Card.tsx",
     "SalesChart",
     "DataTable",
+    "Badge",
     "Modal",
     "CartItem",
     "OrderSummary",
-    "Badge",
     "Input"
    ]
   },
@@ -2123,10 +2125,10 @@
     "ToastItem",
     "Spinner",
     "DataTable",
+    "Badge",
     "Modal",
     "Card@src/components/ui/Card.tsx",
     "CardHeader",
-    "Badge",
     "CardBody",
     "CartItem",
     "OrderSummary",

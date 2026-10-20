@@ -6,8 +6,8 @@ info:
   framework: react
   routers:
     - react-router
-  generator: frontdex 0.3.0
-  generatedAt: 2026-10-19T13:38:46.730Z
+  generator: frontdex 0.3.1
+  generatedAt: 2026-10-20T13:37:48.602Z
 components:
   AppShell:
     name: AppShell
@@ -37,6 +37,10 @@ components:
       - /settings/profile
       - /settings/billing
       - /settings/security
+    navigatesTo:
+      - /
+      - /settings
+      - /users
   BillingSettings:
     name: BillingSettings
     file: src/pages/settings/BillingSettings.jsx
@@ -203,6 +207,8 @@ components:
       - /settings/profile
       - /settings/billing
       - /settings/security
+    navigatesTo:
+      - /
   LegacyStats:
     name: LegacyStats
     file: src/components/LegacyStats.jsx
@@ -592,6 +598,9 @@ components:
         line: 19
     renders:
       - UserForm
+    rendersWhen:
+      UserForm:
+        - user
     passes:
       UserForm:
         - name: initial
@@ -605,6 +614,8 @@ components:
           line: 23
     pages:
       - /users/:userId/edit
+    navigatesTo:
+      - /users/:userId
   UserForm:
     name: UserForm
     file: src/pages/users/UserForm.jsx
@@ -774,6 +785,8 @@ components:
       - react-router-dom#Link
     pages:
       - /users
+    navigatesTo:
+      - /users/:userId
 pages:
   /:
     router: react-router
@@ -788,6 +801,9 @@ pages:
       - SelectionBar
       - ErrorBoundary
       - MetricTicker
+    linksTo:
+      - /settings
+      - /users
   /settings:
     router: react-router
     file: src/router.jsx
@@ -803,6 +819,9 @@ pages:
       - SelectionBar
       - ErrorBoundary
       - UserForm
+    linksTo:
+      - /
+      - /users
   /settings/billing:
     router: react-router
     file: src/router.jsx
@@ -817,6 +836,10 @@ pages:
       - ErrorScreen
       - SelectionBar
       - ErrorBoundary
+    linksTo:
+      - /
+      - /settings
+      - /users
   /settings/profile:
     router: react-router
     file: src/router.jsx
@@ -832,6 +855,10 @@ pages:
       - SelectionBar
       - ErrorBoundary
       - UserForm
+    linksTo:
+      - /
+      - /settings
+      - /users
   /settings/security:
     router: react-router
     file: src/router.jsx
@@ -846,6 +873,10 @@ pages:
       - ErrorScreen
       - SelectionBar
       - ErrorBoundary
+    linksTo:
+      - /
+      - /settings
+      - /users
   /users:
     router: react-router
     file: src/router.jsx
@@ -858,6 +889,10 @@ pages:
       - ErrorScreen
       - SelectionBar
       - ErrorBoundary
+    linksTo:
+      - /
+      - /settings
+      - /users/:userId
   /users/:userId:
     router: react-router
     file: src/router.jsx
@@ -872,6 +907,10 @@ pages:
       - ErrorScreen
       - SelectionBar
       - ErrorBoundary
+    linksTo:
+      - /
+      - /settings
+      - /users
   /users/:userId/edit:
     router: react-router
     file: src/router.jsx
@@ -887,6 +926,11 @@ pages:
       - SelectionBar
       - ErrorBoundary
       - UserForm
+    linksTo:
+      - /
+      - /settings
+      - /users
+      - /users/:userId
 stores:
   redux:users:
     kind: redux-slice

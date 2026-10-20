@@ -8,6 +8,7 @@ import { extractAngularComponent, isAngularComponent } from './angular.js';
 import { jsxA11y } from './analyzers/a11y.js';
 import { styledLiterals, styledTarget, themeTokens } from './analyzers/cssinjs.js';
 import { jsxText } from './analyzers/i18n.js';
+import { pathParts } from './paths.js';
 import { definedTags, extractCustomElement, isElementClass } from './webcomponents.js';
 
 const traverse = _traverse.default ?? _traverse;
@@ -58,6 +59,7 @@ export function parseFile(file, code = fs.readFileSync(file, 'utf8'), { syntaxFi
         scanDeclarations(p, mod);
         analyzeModule(p, mod);
         scanComponents(p, mod);
+        scanModuleRenders(p, mod);
         scanRouteModule(p, mod);
         const theme = themeTokens(p.node);
         if (Object.keys(theme).length) mod.themeTokens = theme;
@@ -314,8 +316,37 @@ function lazyImport(p) {
   return found;
 }
 
+// Function nodes recognised as components, per parse record: JSX outside them is a module-level render (see below).
+// A WeakMap rather than a field, so nothing extra is cached or posted between worker threads.
+const componentNodes = new WeakMap();
+
+/**
+ * JSX written outside any component, grouped by the top-level binding that holds it: block registries
+ * (`const blocks = { code: (p) => <CodeBlock/> }`), table column definitions with renderCell, helper functions that
+ * return elements. graph.js credits these children to every component that references the binding.
+ * mod.moduleRenders: { [binding]: [{ name, line }] }.
+ */
+function scanModuleRenders(programPath, mod) {
+  const inside = componentNodes.get(mod);
+  const owners = {};
+  programPath.traverse({
+    JSXOpeningElement(p) {
+      const n = p.node.name;
+      const name = n.type === 'JSXIdentifier' ? n.name : n.type === 'JSXMemberExpression' ? memberText({ type: 'MemberExpression', object: n.object, property: n.property }) : null;
+      if (!name || !/^[A-Z]/.test(name) || /^(React\.)?Fragment$/.test(name)) return;
+      if (inside && p.findParent((q) => inside.has(q.node))) return;
+      const top = p.findParent((q) => q.parentPath?.isProgram() || q.parentPath?.isExportNamedDeclaration() || q.parentPath?.isExportDefaultDeclaration());
+      const decl = top?.node;
+      const owner = decl?.type === 'VariableDeclaration' ? decl.declarations.find((d) => d.start <= p.node.start && p.node.end <= d.end)?.id.name : decl?.id?.name ?? (top?.parentPath?.isExportDefaultDeclaration() ? 'default' : undefined);
+      if (owner) (owners[owner] ??= []).push({ name, line: p.node.loc?.start.line });
+    },
+  });
+  if (Object.keys(owners).length) mod.moduleRenders = owners;
+}
+
 function scanComponents(programPath, mod) {
   const add = (fnPath, name, kind, docNode, typeHint, isClass) => {
+    (componentNodes.get(mod) ?? componentNodes.set(mod, new WeakSet()).get(mod)).add(fnPath.node);
     const line = fnPath.node.loc?.start.line;
     const ctx = { mod, name, kind, line, typeHint };
     const record = isClass ? extractClassComponent(fnPath, ctx) : extractFunctionComponent(fnPath, ctx);
@@ -410,50 +441,6 @@ function scanComponents(programPath, mod) {
   }
 }
 
-export function joinRoute(segments) {
-  let out = '';
-  for (const seg of segments) {
-    if (seg == null) continue;
-    out = seg.startsWith('/') ? seg : `${out.replace(/\/$/, '')}/${seg}`;
-  }
-  out = out.replace(/\/+/g, '/');
-  return out === '' ? '/' : out.length > 1 ? out.replace(/\/$/, '') : out;
-}
-
-/**
- * A route path expression as parts, evaluated in graph.js once every module is parsed, because the constants it
- * names (ROUTES.HOME) usually live in another file. Parts are strings, { ref: 'ROUTES.HOME' } and
- * { slice: parts, args } for `.slice(1)`. Anything else becomes a ref that will not resolve and shows as {text}.
- */
-function pathParts(node) {
-  if (typeof node === 'string') return [node];
-  while (node?.type === 'TSAsExpression' || node?.type === 'TSNonNullExpression') node = node.expression;
-  if (node?.type === 'StringLiteral') return [node.value];
-  if (node?.type === 'TemplateLiteral') return node.quasis.flatMap((q, i) => [q.value.cooked, ...(i < node.expressions.length ? pathParts(node.expressions[i]) : [])]);
-  if (node?.type === 'BinaryExpression' && node.operator === '+') return [...pathParts(node.left), ...pathParts(node.right)];
-  const callee = node?.type === 'CallExpression' ? node.callee : null;
-  if (callee?.type === 'MemberExpression' && keyName(callee.property) === 'slice') {
-    const args = node.arguments.map((a) => (a.type === 'NumericLiteral' ? a.value : a.type === 'UnaryExpression' && a.operator === '-' && a.argument.type === 'NumericLiteral' ? -a.argument.value : NaN));
-    if (!args.some(Number.isNaN)) return [{ slice: pathParts(callee.object), args }];
-  }
-  return [{ ref: memberText(node) ?? 'dynamic' }];
-}
-
-function evalParts(parts, lookup) {
-  let out = '';
-  for (const p of parts) {
-    if (typeof p === 'string') out += p;
-    else if (p.slice) out += evalParts(p.slice, lookup).slice(...p.args);
-    else {
-      const value = lookup(p.ref);
-      out += typeof value === 'string' ? value : `{${p.ref}}`;
-    }
-  }
-  return out;
-}
-
-/** Joins a route's segments (outermost first; null for pathless and index routes) into its path. */
-export const routePath = (segments, lookup) => joinRoute(segments.map((s) => (s ? evalParts(s, lookup) : null)));
 
 function jsxAttrs(opening) {
   const attrs = {};

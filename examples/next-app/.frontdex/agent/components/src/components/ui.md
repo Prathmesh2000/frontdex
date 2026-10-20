@@ -45,9 +45,9 @@ Inline loading indicator.
 - Props from ProductInfo: tone=inStock ? 'success' : 'danger'
 - Props from ToastItem: tone=toast.tone === 'error' ? 'danger' : 'success'
 - CSS classes: badge (app/globals.css:22), badge-
-- Used by: OrderTimeline, OrderEditor, ProductCard, ProductInfo, ToastItem
+- Used by: OrderTimeline, OrderEditor, RecentOrders, ProductCard, ProductInfo, ToastItem
 - Pages: /account/orders/[orderId], /account, /admin/orders, /admin, /admin/products/[...slug], /blog/[[...slug]], /cart, /checkout, /checkout/success, /, /products/[id], /products, /search
-- Impact: changing the props/export affects 17 component(s) and 13 page(s); update every caller listed under "Used by".
+- Impact: changing the props/export affects 19 component(s) and 13 page(s); update every caller listed under "Used by".
 
 ## Tooltip
 `src/components/ui/Tooltip.tsx:4` · function · client component · named export · moderate
