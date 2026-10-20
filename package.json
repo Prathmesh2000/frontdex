@@ -11,11 +11,26 @@
   },
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./next": "./src/plugins/next.cjs",
-    "./vite": "./src/plugins/vite.js",
-    "./webpack": "./src/plugins/webpack.cjs",
-    "./rspack": "./src/plugins/webpack.cjs",
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./next": {
+      "types": "./src/plugins/next.d.cts",
+      "default": "./src/plugins/next.cjs"
+    },
+    "./vite": {
+      "types": "./src/plugins/vite.d.ts",
+      "default": "./src/plugins/vite.js"
+    },
+    "./webpack": {
+      "types": "./src/plugins/webpack.d.cts",
+      "default": "./src/plugins/webpack.cjs"
+    },
+    "./rspack": {
+      "types": "./src/plugins/webpack.d.cts",
+      "default": "./src/plugins/webpack.cjs"
+    },
     "./overlay": "./src/overlay/overlay.js",
     "./query": "./src/query.cjs",
     "./schema.json": "./spec/catalogue.schema.json"
@@ -33,7 +48,8 @@
     "build:ui": "vite build --config ui-react/vite.config.mjs",
     "dev:ui": "vite --config ui-react/vite.config.mjs",
     "prepack": "npm run build:ui",
-    "typecheck:ui": "tsc --noEmit --strict --jsx react-jsx --module esnext --moduleResolution bundler --target es2023 --skipLibCheck --types vite/client ui-react/src/main.tsx"
+    "typecheck:ui": "tsc --noEmit --strict --jsx react-jsx --module esnext --moduleResolution bundler --target es2023 --skipLibCheck --types vite/client ui-react/src/main.tsx",
+    "gen:types": "node scripts/schema-types.js"
   },
   "engines": {
     "node": ">=18.17"
@@ -77,5 +93,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vue": "^3.5.44"
-  }
+  },
+  "types": "./src/index.d.ts"
 }

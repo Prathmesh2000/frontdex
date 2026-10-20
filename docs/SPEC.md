@@ -278,3 +278,16 @@ pages:
     layouts: [RootLayout]
     components: [RootLayout, Header, CategoryPage, ProductGrid, ProductCard, Price, AddToCartButton]
 ```
+
+## Versioning and types
+
+`catalogue` is `"1.1"` and `frontdex validate` accepts `"1.0"` and `"1.1"` documents, single file or sharded. From the first published release on:
+
+| Change | Version |
+|---|---|
+| New optional field or enum value | minor: `1.2`, `1.3`, … The schema keeps accepting every older `1.x`. |
+| Field removed or renamed, ID meaning changed | major: `2.0`, with a `frontdex upgrade` migration. |
+
+Readers (the UI, frontdex-mcp) accept any `1.x` document and leave `x-*` keys alone.
+
+TypeScript types ship with the package: `import type { Catalogue, Component, Page } from 'frontdex'`. They are generated from `spec/catalogue.schema.json` into `spec/catalogue.d.ts` by `npm run gen:types`; a test fails when the committed file is stale.

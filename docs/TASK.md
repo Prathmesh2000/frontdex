@@ -104,7 +104,7 @@ Converted to a pnpm workspace internally so code stays organised, but published 
 
 ```
 packages/
-  spec/          CatalogueSpec 2.0 TypeScript types + JSON Schema
+  spec/          CatalogueSpec 1.1 JSON Schema + generated catalogue.d.ts
   core/          config, detection, linker, graph, SQLite index, history, public API
   adapters/      jsx/ vue/ svelte/ astro/ angular/ html/ css/
   routers/       one file per router
@@ -183,13 +183,13 @@ Plain CSS, CSS modules, SCSS/Less (through lightningcss, nesting included), Tail
 
 - `node:sqlite` index is the source of truth for queries. UI, CLI and MCP never load the whole catalogue into memory.
 - Human output: `frontdex.yaml` becomes a small root index plus shards `frontdex/<workspace>/<dir>.yaml`, so two PRs touching different folders never conflict. `"output": { "shard": false }` keeps the single-file mode.
-- Stable component IDs: `<relative/file/path>#<ExportName>`; the display name is a separate field. Renaming a sibling never changes another component's ID.
+- Stable component IDs: readable (`Button`, `Button@src/legacy/Button.tsx` on name clashes) and kept across scans; moved ones resolve through `aliases`. Renaming a sibling never changes another component's ID.
 - Agent output (`.frontdex/agent/`) is kept, sharded the same way.
 - History is kept as is (content-addressed, packed), now keyed by stable IDs.
 
-### CatalogueSpec 2.0
+### CatalogueSpec (stays 1.1)
 
-Breaking bump because of stable IDs. Adds `info.frameworks[]`, `info.packageManager`, `info.workspaces[]`, a `workspace` field on components and pages, `hooks` (custom hooks catalogued in their own right), `tokens`, `stories`, `owners`, `adoption`, `a11y`, and new router and component-kind enum values. `frontdex upgrade` migrates 1.x documents and keeps all hand-written fields (`description`, `tags`, `owner`, `x-*`). Update `docs/SPEC.md` and the JSON Schema.
+Planned as a breaking 2.0 for `file#Export` IDs; what shipped instead keeps readable IDs (bare name, `Name@file` on clashes) made stable across scans, plus an optional `aliases` map, and every other addition is optional. So documents stay `"1.1"` (nothing was published before; a bump would inform no reader). Versioning from first publish: additive → 1.2, breaking → 2.0 + `frontdex upgrade`. See docs/SPEC.md → Versioning. (CTO decision 2026-10-20.)
 
 ### Configuration (`frontdex.config.json`, every key optional)
 
@@ -315,7 +315,7 @@ Dependency order. Tick every box; nothing is released until all are ticked.
 
 **Foundation**
 - [x] ~~Convert repo 1 to a TypeScript pnpm workspace~~ dropped (CTO decision 2026-10-20): a full rewrite of a working, tested JS codebase with no user-facing gain; the package already publishes as one package with subpath exports. Kept: published `.d.ts` types and Schema 2.0 (next item).
-- [ ] `packages/spec`: types + Schema 2.0; `frontdex validate` passes on 1.x and 2.0 documents.
+- [x] Types: `spec/catalogue.d.ts` generated from the schema (`npm run gen:types`), hand-written `src/index.d.ts` + plugin declarations, `types` conditions in exports; spec stays 1.1; `frontdex validate` passes on 1.0 and 1.1 documents (fixture). `test/types.test.js` catches drift.
 - [x] ~~Port the JSX scanner from Babel to oxc~~ dropped (see Baseline findings). Done instead: single directory walk, stylesheet cache, watch sessions with deferred YAML, worker-thread parsing; "keep last good parse" kept.
 - [x] Memory: a 22.5k-file scan runs within a 1 GB heap (`--max-old-space-size=1024`) at full speed: cold 75 s, watch save 152 ms, peak RSS 1,155 MB (heap + 2 parse workers). Uncapped, V8 grows the heap lazily to 1.8–2.6 GB. A watch session retains ~300 MB at 22.5k. Done: streaming parse workers, copy-only-mutated deserialize, catalogue hash instead of JSON in the session, linear duplicate issues.
 - [x] Re-measured 2026-10-20, 22.5k files (bench/scan.js 250, 4-core laptop, Defender on): cold 80–100 s (was a crash), no-change 12.8 s (was 20 s), watch one-file **133 ms** via the fast patch (was 8 s; target < 300 ms met), full settle 2.8 s once edits pause. Fast path keeps the linker in the session: RSS 2.6 GB at 22.5k (memory item above still open).
