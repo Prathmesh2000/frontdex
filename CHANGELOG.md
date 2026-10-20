@@ -4,7 +4,7 @@ All notable changes to frontdex (formerly react-catalogue). The format follows [
 
 ## 0.3.1 (2026-10-20)
 
-First release under the frontdex name. 0.3.0 was never released: a staged publish of it lapsed and npm does not allow a version number to be reused.
+First release under the frontdex name. 0.3.0 contains the same code: its staged publish went live only after 0.3.1 had been prepared, so both are on npm. Use 0.3.1.
 
 Everything after 0.2.0 (`f4e0a9b`). The package is renamed in this release; see [docs/MIGRATING.md](docs/MIGRATING.md) to move a react-catalogue 0.2 project over.
 
