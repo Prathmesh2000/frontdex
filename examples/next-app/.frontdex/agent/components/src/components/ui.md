@@ -125,6 +125,7 @@ Surface container. Compose with <Card.Header> and <Card.Body>.
 Design-system button. Use instead of raw <button> everywhere.
 
 - Owners: @northwind/design-system
+- Covered by tests: `src/components/ui/Button.test.tsx` (MCP `catalogue_tests` gives the run command)
 - Tests: Button.test.tsx · Stories: Button.stories.tsx
 - Examples: Primary(variant="primary", children="Save")
 - Props: `variant?: 'primary' | 'secondary' | 'ghost' | 'danger'` = `'primary'`, `size?: 'sm' | 'md' | 'lg'` = `'md'`, `loading?: boolean` = `false`, `icon?: React.ReactNode`, `children?: unknown`, `disabled?: unknown`

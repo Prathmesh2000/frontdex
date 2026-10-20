@@ -20,7 +20,7 @@ export interface Component {
   examples?: { story: string; args?: Record<string, string> }[];
   props?: Record<string, { type: string; required: boolean; default?: string }>;
   state?: Record<string, { source: string; initial?: string }>;
-  renders?: string[]; usedBy?: string[]; pages?: string[]; issues?: Issue[];
+  renders?: string[]; usedBy?: string[]; pages?: string[]; issues?: Issue[]; testedBy?: string[];
   /** Children rendered only under conditions: child id → the conditions (source text) of each place. */
   rendersWhen?: Record<string, string[]>;
   /** Screens switched by state: children per value of one expression. */
@@ -71,6 +71,14 @@ export interface DiffReport {
 }
 export interface Commit { id: string; time: string; git?: string; message?: string; changes: { kind: string; key: string; change: Change }[] }
 export interface Drift { value: string; at: string; property?: string; token: string; defined?: string; match: 'exact' | 'near'; use: string }
+export interface TestCase { title: string; line?: number; describe?: string[] }
+export interface TestMatch { kind: 'page' | 'component'; target: string; via?: string; line?: number; confidence: 'high' | 'medium' | 'low'; reason?: string }
+export interface TestSuite {
+  kind: 'unit' | 'e2e'; runner?: string; cwd?: string; error?: string; cases: TestCase[];
+  components?: string[]; hooks?: string[]; pages?: string[]; matches?: TestMatch[]; unmatched?: { what: string; line?: number; why?: string }[];
+}
+export interface Tests { runners: Record<string, { cwd: string; config?: string; from?: string[] }>; suites: Record<string, TestSuite>; uncovered: string[]; active: string | null }
+export interface RunRequest { file: string; title?: string; kind: TestSuite['kind']; confirm?: boolean }
 
 /**
  * A server path relative to where the app is mounted: `/` for `frontdex serve`, `/__frontdex/` inside the Vite dev
@@ -107,4 +115,12 @@ export const api = {
   enrichment: (id: string) => get<{ id: string; state: DocState; record: Enrichment | null }>('enrichment', { id }),
   enrichmentOverview: () => get<EnrichmentOverview>('enrichment'),
   hooks: () => get<Record<string, { file: string; line?: number; reads?: string[]; calls?: string[]; usedBy?: string[] }> | null>('section', { name: 'hooks' }),
+  tests: () => get<Tests>('tests'),
+  /** Starts a run; its output streams from api/tests/runs/<id> (Server-Sent Events). */
+  runTest: async (body: RunRequest) => {
+    const res = await fetch(appUrl('api/tests/run'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? res.statusText);
+    return data as { id: string; command: string };
+  },
 };

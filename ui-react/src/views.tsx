@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, appUrl, type Component, type ComponentRow, type Issue } from './api';
 import { ComponentDocs } from './docs';
 import { Card, CompLink, FileRef, Header, Issues, Loading, PageLink, Swatch, useApi } from './lib';
+import { TestsCard } from './tests';
 
 const PAGE = 100;
 
@@ -279,6 +280,7 @@ export function ComponentView({ id }: { id: string }) {
           ))}
         </Card>
       ) : null}
+      <TestsCard component={c.id} />
       <Card title="Issues" count={c.issues?.length ?? 0}>
         <Issues items={c.issues ?? []} />
       </Card>
@@ -540,6 +542,7 @@ export function PageView({ route }: { route: string }) {
       <Card title="Components on this page" count={p.components?.length ?? 0}>
         <div className="chips">{p.components?.map((x) => <CompLink key={x} id={x} />)}</div>
       </Card>
+      <TestsCard route={route} />
     </>
   );
 }

@@ -7,6 +7,7 @@ import { buildReport, catalogueAtRef, formatText } from './ci.js';
 import { similarTo } from './scanner/analyzers/duplicates.js';
 import { formatDetail, formatSummary } from './history.js';
 import { createHistory, knowledgeDir, scan } from './index.js';
+import { caseName, testCommand } from './test-runner.js';
 import { enrichmentDir, enrichmentState, enrichmentSummary, nextToEnrich, readEnrichment, writeEnrichment } from './enrichment.js';
 
 /** Agent-written docs as Markdown, for agents and the CLI. */
@@ -319,6 +320,24 @@ export function createTools(config) {
       if (!list.length) return name ? `No custom hook named ${name}.` : 'No custom hooks found.';
       return list.map(([id, h]) => `- ${id} \`${h.file}${h.line ? `:${h.line}` : ''}\`${h.reads?.length ? ` reads ${h.reads.join(', ')}` : ''}${h.calls?.length ? ` · calls ${h.calls.join(', ')}` : ''} · used by ${h.usedBy?.join(', ') || 'nothing'}`).join('\n');
     },
+    catalogue_tests({ name, route, file } = {}) {
+      const { cat, idx } = refresh().state;
+      if (!cat.tests) return 'No test files found (unit tests next to components, or E2E specs in e2e/, tests/ or config `tests.dirs`).';
+      let found;
+      try {
+        found = data.tests({ name, route, file });
+      } catch (err) {
+        return err.message;
+      }
+      const runner = (k) => `${k} (cwd \`${cat.tests.runners[k]?.cwd ?? '.'}\`${cat.tests.runners[k]?.config ? `, ${cat.tests.runners[k].config}` : ''})`;
+      const head = name || route || file ? `# Tests for ${name ?? route ?? file}` : `# Tests: ${Object.keys(cat.tests.suites).length} file(s); runners: ${Object.keys(cat.tests.runners).map(runner).join(', ') || 'none detected'}`;
+      const lines = found.suites.map((s) => {
+        const how = s.matches?.filter((m) => m.target === found.id || m.target === route).map((m) => `${m.confidence}: ${m.reason}`) ?? [];
+        return [`- \`${s.file}\` ${s.kind}${s.runner ? `/${s.runner}` : ''} · ${s.cases.length} case(s)${s.components?.length ? ` · components ${s.components.join(', ')}` : ''}${s.pages?.length ? ` · pages ${s.pages.join(', ')}` : ''}`, ...(s.command ? [`    run: \`${s.command}\`${s.kind === 'e2e' ? ' (E2E: drives a real app; may create or delete data)' : ''}`] : ['    run: no runner detected']), ...how.slice(0, 5).map((h) => `    matched by ${h}`)].join('\n');
+      });
+      const uncovered = name || route || file ? [] : ['', `Components with no test: ${found.uncovered.length} of ${idx.comps.length}`];
+      return [head, '', ...(lines.length ? lines : ['No test covers it.']), ...uncovered].join('\n');
+    },
     catalogue_diff({ base = 'HEAD', head } = {}) {
       // Working tree vs a git ref (default: the last commit): what the current change does to the frontend.
       try {
@@ -396,6 +415,22 @@ export function createTools(config) {
       return { definitions: Object.fromEntries(Object.entries(t.definitions).filter(([k, v]) => includes(`${k} ${v.value}`, query))), drift: (t.drift ?? []).filter((d) => includes(`${d.token} ${d.at} ${d.value}`, query)) };
     },
     hooks: ({ name } = {}) => Object.fromEntries(Object.entries(refresh().state.cat.hooks ?? {}).filter(([id]) => !name || id === name || id.startsWith(`${name}@`))),
+    /** Suites covering a component (`name`), a page (`route`) or one file; all suites without arguments. */
+    tests: ({ name, route, file } = {}) => {
+      const { cat } = refresh().state;
+      const all = Object.entries(cat.tests?.suites ?? {}).map(([f, s]) => {
+        const cmd = testCommand(cat, config.root, { file: f, confirm: true });
+        return { file: f, ...s, ...(!cmd.error && { command: cmd.display }), caseNames: s.cases.map(caseName) };
+      });
+      let id;
+      let suites = all;
+      if (name) {
+        id = one(name).m.id;
+        suites = all.filter((s) => s.components?.includes(id) || s.hooks?.includes(id));
+      } else if (route) suites = all.filter((s) => s.pages?.includes(route));
+      else if (file) suites = all.filter((s) => s.file === file);
+      return { id, suites, uncovered: Object.entries(cat.components).filter(([, c]) => !c.testedBy?.length).map(([k]) => k) };
+    },
     owners: ({ name }) => {
       const { m } = one(name);
       return { id: m.id, file: m.c.file, codeowners: m.c.codeowners ?? [], tests: m.c.tests ?? [], stories: m.c.stories ?? [], git: gitActivity(config.root, m.c.file) };

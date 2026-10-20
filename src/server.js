@@ -9,6 +9,7 @@ import { enrichmentState, enrichmentSummary, listEnrichment, nextToEnrich, readE
 import { knowledgeDir, scan } from './index.js';
 import { SOURCE_EXT } from './scanner/files.js';
 import { readCatalogue } from './spec.js';
+import { createTestRuns, testCommand } from './test-runner.js';
 import { startWatcher } from './watch.js';
 
 const UI_DIR = new URL('../ui/', import.meta.url);
@@ -110,6 +111,7 @@ export function buildSite(config, catalogue, outDir) {
 export function createApp(config, { watch, regenerate = true, log = console.log, allowLan = !!process.env.FRONTDEX_HOST, livePreview = null }) {
   const output = path.resolve(config.root, config.output);
   const clients = new Set();
+  const testRuns = createTestRuns();
   let settling = false;
   const broadcast = () => clients.forEach((res) => res.write('data: reload\n\n'));
   // With watch on, the watcher's own first scan is the catalogue: one scan at start, and a warm session for fast patches.
@@ -236,6 +238,7 @@ export function createApp(config, { watch, regenerate = true, log = console.log,
       const next = nextToEnrich(config, catalogue, 15).map(({ id, c, state }) => ({ id, name: c.name, file: c.file, state, usedBy: c.usedBy?.length ?? 0, pages: c.pages?.length ?? 0 }));
       return json(res, { summary: enrichmentSummary(config, catalogue), documented, next });
     }
+    if (url.pathname === '/api/tests' || url.pathname.startsWith('/api/tests/')) return handleTests(req, res, url, { catalogue, root: config.root, runs: testRuns });
     if (url.pathname === '/api/graph') {
       const p = url.searchParams;
       return json(res, subgraph(catalogue, { focus: p.get('focus') || undefined, depth: Math.min(8, Math.max(1, Number(p.get('depth')) || 2)), dir: p.get('dir') || undefined, force: p.get('force') === '1' }));
@@ -302,6 +305,72 @@ export function startServer(config, { port, watch, regenerate = true, log = cons
     server.once('error', reject);
     // Loopback only by default: the UI exposes source code. FRONTDEX_HOST=0.0.0.0 opts into LAN access.
     server.listen(port, process.env.FRONTDEX_HOST || '127.0.0.1', () => resolve(server));
+  });
+}
+
+/**
+ * Tests API. GET /api/tests: the tests section plus components no test covers. POST /api/tests/run {file, title?, kind,
+ * confirm?}: starts the project's runner (see test-runner.js). GET /api/tests/runs/<id>: its output as Server-Sent
+ * Events. POST /api/tests/runs/<id>/stop: kills it.
+ */
+function handleTests(req, res, url, { catalogue, root, runs }) {
+  if (url.pathname === '/api/tests' && req.method === 'GET') {
+    const uncovered = Object.entries(catalogue.components).filter(([, c]) => !c.testedBy?.length).map(([id]) => id);
+    return json(res, { runners: catalogue.tests?.runners ?? {}, suites: catalogue.tests?.suites ?? {}, uncovered, active: runs.active });
+  }
+  const runMatch = url.pathname.match(/^\/api\/tests\/runs\/([\w-]+)(\/stop)?$/);
+  if (runMatch && !runMatch[2] && req.method === 'GET') {
+    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
+    // Each chunk is one JSON string per event, so newlines inside the output cannot break the SSE framing.
+    const unsubscribe = runs.subscribe(
+      runMatch[1],
+      (text) => res.write(`data: ${JSON.stringify(text)}\n\n`),
+      (code) => res.end(`event: done\ndata: ${JSON.stringify({ code })}\n\n`),
+    );
+    if (!unsubscribe) return res.end(`event: done\ndata: ${JSON.stringify({ code: null, error: 'unknown run' })}\n\n`);
+    req.on('close', unsubscribe);
+    return;
+  }
+  if (req.method !== 'POST' || !(url.pathname === '/api/tests/run' || runMatch?.[2])) return json(res, { error: 'Not found' }, 404);
+  // Running code is the one state-changing thing the API does: only from this machine (even with allowLan), and only
+  // as a JSON request from a local page. A cross-site form or text/plain POST cannot send that content type without a
+  // CORS preflight, which this server never answers.
+  if (!isLoopback(req.socket?.remoteAddress) || !/^application\/json(;|$)/i.test(req.headers['content-type'] ?? '') || (req.headers.origin && !LOCAL_ORIGIN.test(req.headers.origin))) {
+    return json(res, { error: 'Forbidden' }, 403);
+  }
+  if (runMatch) return json(res, { stopped: runs.stop(runMatch[1]) });
+  readJson(req, (err, body) => {
+    if (err) return json(res, { error: err.message }, 400);
+    try {
+      const cmd = testCommand(catalogue, root, body);
+      if (cmd.error) return json(res, { error: cmd.error, ...(cmd.needsConfirm && { needsConfirm: true }) }, cmd.status);
+      const started = runs.start(cmd);
+      return started.error ? json(res, { error: started.error, ...(started.id && { active: started.id }) }, started.status) : json(res, started, 202);
+    } catch (e) {
+      // Outside the handler's try/catch (the body arrives later), so a failure here must not take the server down.
+      if (!res.headersSent) json(res, { error: e.message }, 500);
+    }
+  });
+}
+
+/** Reads a small JSON request body (10 KB at most). */
+function readJson(req, reply) {
+  let text = '';
+  let answered = false;
+  const done = (err, body) => !answered && ((answered = true), reply(err, body));
+  req.setEncoding('utf8');
+  req.on('data', (chunk) => {
+    text += chunk;
+    if (text.length > 10_000) req.destroy(new Error('Request body too large'));
+  });
+  req.on('error', (err) => done(err));
+  req.on('end', () => {
+    try {
+      const body = JSON.parse(text || '{}');
+      done(body && typeof body === 'object' && !Array.isArray(body) ? null : new Error('Expected a JSON object'), body);
+    } catch {
+      done(new Error('Invalid JSON'));
+    }
   });
 }
 

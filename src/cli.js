@@ -48,6 +48,7 @@ Explore
   dupes [Component]        Components that look like duplicates of each other
   tokens [query]           Design tokens and hard-coded values that should use them
   hooks [name]             Custom hooks: file, what they read and call, which components use them
+  tests [Component|/route|file]  Unit/E2E tests covering a component or page, with the command to run them
   owners <Component>       CODEOWNERS, tests/stories and live git activity for a component
   adoption <Component>     Usage of a component across knowledge-base snapshots
 
@@ -294,6 +295,9 @@ export async function main(argv) {
     }
     case 'hooks':
       return void console.log(createTools(config).tools.catalogue_hooks({ name: arg }));
+    case 'tests':
+      // A route starts with "/", a test file has a path; anything else is a component name.
+      return void console.log(createTools(config).tools.catalogue_tests(arg?.startsWith('/') ? { route: arg } : /[\\/]|\.(test|spec|cy)\./.test(arg ?? '') ? { file: arg } : { name: arg }));
     case 'owners':
     case 'adoption': {
       if (!arg) throw new Error(`Usage: frontdex ${command} <Component>`);

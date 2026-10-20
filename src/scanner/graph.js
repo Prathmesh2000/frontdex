@@ -7,6 +7,7 @@ import { I18N_LIBS } from './analyzers/i18n.js';
 import { cachedLister, codeownersMatcher, testsAndStories } from './analyzers/ownership.js';
 import { heavyImports } from './analyzers/perf.js';
 import { readStories } from './analyzers/stories.js';
+import { mapTests } from './analyzers/testmap.js';
 import { collectEndpoints } from './endpoints.js';
 import { evalParts, joinRoute, pathMatches, routePath } from './paths.js';
 import { fileSystemRoutes } from './routers.js';
@@ -687,6 +688,8 @@ export function scanProject(config, { cache, known, previous } = {}) {
     roots: [root, ...config.workspaces.map((w) => w.dir)],
   });
   for (const comp of Object.values(components)) if (comp.styles === undefined) delete comp.styles;
+  // Tests section + components' testedBy (analyzers/testmap.js): test files are parsed there, not in `modules`.
+  const tests = mapTests({ config, entries, components, pages, hooks, modules, rel, resolveImport, resolveExport });
 
   lap('insights');
   const routers = [...new Set(Object.values(pages).map((p) => p.router))];
@@ -710,6 +713,7 @@ export function scanProject(config, { cache, known, previous } = {}) {
     ...(Object.keys(tokens.definitions).length && { tokens: { definitions: sortKeys(tokens.definitions), ...(tokens.drift.length && { drift: tokens.drift }) } }),
     ...(duplicates.length && { duplicates }),
     ...(Object.keys(hooks).length && { hooks: sortKeys(Object.fromEntries(Object.entries(hooks).map(([k, h]) => [k, compact(h)]))) }),
+    ...(tests && { tests: { runners: sortKeys(tests.runners), suites: sortKeys(tests.suites) } }),
     health,
   };
   const liveAliases = resolveAliases(aliases, (id) => id in components || id in hooks);
@@ -758,7 +762,7 @@ const shapeOf = (mod) => JSON.stringify([mod.components.map((c) => [c.name, c.ta
 // If it changes, the components of files importing it are re-linked too.
 const interfaceOf = (mod) => JSON.stringify([[...mod.exports], mod.reexports, mod.exportAll, [...mod.aliases], mod.customHooks ?? null, mod.schemas ?? null, mod.consts ?? null, mod.moduleRenders ?? null]);
 // Record fields that project-wide passes fill in; a patched record keeps the previous values until the next full scan.
-const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'stories', 'examples', 'navigatesTo'];
+const CARRIED = ['styles', 'usedBy', 'pages', 'rendering', 'codeowners', 'tests', 'testedBy', 'stories', 'examples', 'navigatesTo'];
 const issueKey = (i) => `${i.type}\0${i.message}\0${i.line ?? ''}`;
 
 /** Files whose linking reads `file`: its importers, and theirs too when they re-export it (barrels). */

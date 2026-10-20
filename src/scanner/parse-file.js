@@ -351,6 +351,54 @@ function scanModuleRenders(programPath, mod) {
   if (Object.keys(owners).length) mod.moduleRenders = owners;
 }
 
+// Attributes whose literal value an E2E locator can find a component by, grouped the way testmap.js looks them up.
+const TEXT_ATTRS = { 'aria-label': 'label', alt: 'title', 'data-testid': 'testid', 'data-test-id': 'testid', 'data-test': 'testid', 'data-cy': 'testid' };
+const MAX_TEXTS = 40;
+// Other props and config keys that carry visible copy into a child (<EmptyState ctaText="New group">, fields
+// `{ placeholder: 'Email' }`), bucketed by name. `name`/`id`/`key` are identifiers, not copy.
+const textKind = (name) => TEXT_ATTRS[name] ?? (/placeholder/i.test(name) ? 'placeholder' : /label/i.test(name) ? 'label' : /title|heading|header|tooltip/i.test(name) ? 'title' : /text|caption|message|cta|button/i.test(name) ? 'text' : null);
+
+/**
+ * Literal UI text a component renders: JSX text, {'string'} children, and copy-carrying attributes and object keys
+ * (textKind), including both branches of `cond ? 'A' : 'B'`. { text?, label?, placeholder?, title?, testid? } or
+ * undefined. Stays on the parse record (graph.js does not copy it into the catalogue); testmap.js matches
+ * getByText / getByRole({ name }) / getByTestId against it.
+ */
+function staticTexts(fnPath) {
+  const out = {};
+  const add = (kind, raw) => {
+    const v = raw.replace(/\s+/g, ' ').trim();
+    if (!v || v.length > 120 || (kind !== 'testid' && !/\p{L}/u.test(v))) return;
+    const list = (out[kind] ??= []);
+    if (list.length < MAX_TEXTS && !list.includes(v)) list.push(v);
+  };
+  const literals = (n) => {
+    if (n?.type === 'StringLiteral') return [n.value];
+    if (n?.type === 'TemplateLiteral' && !n.expressions.length) return [n.quasis[0].value.cooked];
+    if (n?.type === 'ConditionalExpression') return [...literals(n.consequent), ...literals(n.alternate)];
+    if (n?.type === 'LogicalExpression') return literals(n.right);
+    return [];
+  };
+  fnPath.traverse({
+    JSXText(p) {
+      add('text', p.node.value);
+    },
+    JSXExpressionContainer(p) {
+      if (p.parent.type === 'JSXElement' || p.parent.type === 'JSXFragment') literals(p.node.expression).forEach((v) => add('text', v));
+    },
+    JSXAttribute(p) {
+      const kind = typeof p.node.name.name === 'string' && textKind(p.node.name.name);
+      if (kind) literals(p.node.value?.type === 'JSXExpressionContainer' ? p.node.value.expression : p.node.value).forEach((v) => add(kind, v));
+    },
+    ObjectProperty(p) {
+      const key = p.node.key.type === 'Identifier' ? p.node.key.name : p.node.key.type === 'StringLiteral' ? p.node.key.value : null;
+      const kind = key && !p.node.computed && textKind(key);
+      if (kind) literals(p.node.value).forEach((v) => add(kind, v));
+    },
+  });
+  return Object.keys(out).length ? out : undefined;
+}
+
 function scanComponents(programPath, mod) {
   const add = (fnPath, name, kind, docNode, typeHint, isClass) => {
     (componentNodes.get(mod) ?? componentNodes.set(mod, new WeakSet()).get(mod)).add(fnPath.node);
@@ -363,6 +411,7 @@ function scanComponents(programPath, mod) {
     // Kept on the parse record only; graph.js turns it into an issue when the project uses an i18n library.
     const text = jsxText(fnPath);
     if (text) record.hardcodedText = text;
+    const texts = staticTexts(fnPath); if (texts) record.texts = texts; // parse record only: E2E locator matching (analyzers/testmap.js)
     const doc = readJSDoc(docNode);
     if (doc.description) record.description = doc.description;
     if (doc.deprecated) record.status = 'deprecated';
