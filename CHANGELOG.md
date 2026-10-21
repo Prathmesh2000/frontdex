@@ -2,6 +2,12 @@
 
 All notable changes to frontdex (formerly react-catalogue). The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Short hashes point at the commit that made the change.
 
+## Unreleased
+
+### Fixed
+
+- Health view selected filter labels and issue counts now meet 4.5:1 contrast in both light and dark themes. (#8)
+
 ## 0.4.0 (2026-10-20)
 
 ### Added
