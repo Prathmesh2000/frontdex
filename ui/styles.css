@@ -9,6 +9,7 @@
   --text-2: #344054;
   --muted: #667085;
   --accent: #4f46e5;
+  --fchip-text: #fff;
   --accent-2: #6366f1;
   --accent-soft: #eef2ff;
   --danger: #d92d20;
@@ -54,6 +55,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
+    --fchip-text: #101828;
     --bg: #0c0e12; --surface: #13161b; --surface-2: #1a1e25; --surface-3: #232831; --border: #262b34; --border-strong: #353b47;
     --text: #f0f2f5; --text-2: #cfd4dc; --muted: #8b94a4; --accent: #8b8cff; --accent-2: #a5a6ff; --accent-soft: #1f2047;
     --danger: #ff6b5f; --danger-soft: #3a1714; --warn: #fdb022; --warn-soft: #33250b; --ok: #47cd89; --ok-soft: #0f2a1d; --info: #6aa9ff; --info-soft: #0f2237;
@@ -69,6 +71,7 @@
   }
 }
 :root[data-theme='dark'] {
+  --fchip-text: #101828;
   --bg: #0c0e12; --surface: #13161b; --surface-2: #1a1e25; --surface-3: #232831; --border: #262b34; --border-strong: #353b47;
   --text: #f0f2f5; --text-2: #cfd4dc; --muted: #8b94a4; --accent: #8b8cff; --accent-2: #a5a6ff; --accent-soft: #1f2047;
   --danger: #ff6b5f; --danger-soft: #3a1714; --warn: #fdb022; --warn-soft: #33250b; --ok: #47cd89; --ok-soft: #0f2a1d; --info: #6aa9ff; --info-soft: #0f2237;
@@ -362,7 +365,8 @@ a.action:hover { border-color: var(--border-strong); box-shadow: var(--shadow); 
 .toolbar .filter-input { flex: 1 1 320px; max-width: 520px; background: var(--surface); }
 .fchip { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 12.5px; font-weight: 550; cursor: pointer; }
 .fchip:hover { border-color: var(--border-strong); }
-.fchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fchip.on { background: var(--accent); border-color: var(--accent); color: var(--fchip-text); }
+.fchip.on .muted { color: inherit; }
 select.sort { height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 12.5px; }
 .result-count { color: var(--muted); font-size: 12.5px; margin-left: auto; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
