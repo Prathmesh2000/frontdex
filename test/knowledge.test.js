@@ -213,3 +213,39 @@ test('watch-session rescans reproduce the cold scan exactly (cached parse record
   }
   assert.equal(strip(session.catalogue), cold);
 });
+
+
+test('windsurf installs rules, requires opt-in for user MCP, and removes only its own entry', () => {
+  const dir = tempProject();
+  const config = loadConfig(dir);
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdex-windsurf-'));
+  const file = path.join(home, '.codeium/windsurf/mcp_config.json');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ mcpServers: { other: { command: 'mine' } } }));
+  const original = fs.readFileSync(file, 'utf8');
+  const options = { targets: ['windsurf'], home };
+  const first = installAgents(config, options);
+  assert.match(first.notes.join(''), /--user-config/);
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+  const rule = path.join(dir, '.windsurf/rules/frontdex.md');
+  assert.match(fs.readFileSync(rule, 'utf8'), /^---\ntrigger: always_on\n/);
+  installAgents(config, { ...options, userConfig: true });
+  assert.equal(fs.readFileSync(`${file}.bak`, 'utf8'), original);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).mcpServers.frontdex.args, ['frontdex', 'mcp', '-C', dir]);
+  assert.ok(installAgents(config, { ...options, userConfig: true }).results.every((r) => r.status === 'unchanged'));
+  installAgents(config, { ...options, userConfig: true, remove: true });
+  assert.equal(fs.existsSync(rule), false);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).mcpServers, { other: { command: 'mine' } });
+});
+
+test('windsurf uses the current Cascade config when no legacy config exists', () => {
+  const dir = tempProject();
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdex-cascade-'));
+  const configHome = process.platform === 'win32' ? path.join(home, 'AppData', 'Roaming') : path.join(home, '.config');
+  const file = path.join(configHome, 'devin', 'mcp_config.json');
+  const options = { targets: ['windsurf'], home, userConfig: true };
+  installAgents(loadConfig(dir), { ...options, mcp: false });
+  assert.equal(fs.existsSync(file), false);
+  installAgents(loadConfig(dir), options);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).mcpServers.frontdex.command, 'npx');
+});

@@ -4,6 +4,10 @@ All notable changes to frontdex (formerly react-catalogue). The format follows [
 
 ## Unreleased
 
+### Added
+
+- Windsurf/Cascade agent target with workspace rules and opt-in user MCP configuration. (#11)
+
 ### Fixed
 
 - Health view selected filter labels and issue counts now meet 4.5:1 contrast in both light and dark themes. (#8)

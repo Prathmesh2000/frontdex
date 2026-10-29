@@ -17,7 +17,7 @@ const CMD = 'npx frontdex';
 const SERVER_NAME = 'frontdex';
 const LEGACY_SERVER_NAME = 'react-catalogue';
 const HOOK_RE = /(?:react-catalogue|frontdex) hook/;
-export const TARGETS = ['agents-md', 'claude', 'cursor', 'opencode', 'copilot', 'hermes', 'antigravity'];
+export const TARGETS = ['agents-md', 'claude', 'cursor', 'opencode', 'copilot', 'hermes', 'antigravity', 'windsurf'];
 
 /** Always-on agent rules, pointing at this project's knowledge folder and catalogue file. */
 export const rulesFor = (config) => {
@@ -190,6 +190,10 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
       );
     }
   }
+  if (want('windsurf')) {
+    const rule = at('.windsurf', 'rules', 'frontdex.md');
+    record(rule, writeOwnFile(rule, `---\ntrigger: always_on\n---\n\n${RULES}\n`, { remove }));
+  }
   if (want('antigravity')) {
     // Antigravity reads workspace rules from .agents/ (current) or .agent/ (legacy); follow whichever the project already uses.
     const dir = !fs.existsSync(at('.agents')) && fs.existsSync(at('.agent')) ? '.agent' : '.agents';
@@ -214,6 +218,21 @@ export function installAgents(config, { targets = TARGETS, remove = false, hooks
   if (want('copilot')) record(at('.github', 'copilot-instructions.md'), upsertBlock(at('.github', 'copilot-instructions.md'), RULES, { remove }));
 
   const notes = [];
+  if (want('windsurf') && mcp) {
+    // Cascade's current user config; keep an existing legacy Windsurf config in use.
+    const legacy = path.join(home, '.codeium', 'windsurf', 'mcp_config.json');
+    const configHome = process.platform === 'win32'
+      ? (home === os.homedir() ? process.env.APPDATA : null) || path.join(home, 'AppData', 'Roaming')
+      : (home === os.homedir() ? process.env.XDG_CONFIG_HOME : null) || path.join(home, '.config');
+    const file = fs.existsSync(legacy) ? legacy : path.join(configHome, 'devin', 'mcp_config.json');
+    const entry = { command: 'npx', args: ['frontdex', 'mcp', '-C', root] };
+    if (userConfig) {
+      if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.bak`);
+      record(file, updateJson(file, (d) => setServer((d.mcpServers ??= {}), remove, entry), { remove }));
+    } else if (!remove) {
+      notes.push(`Windsurf/Cascade: add to ${file} (or rerun with --user-config):\n${JSON.stringify({ mcpServers: { [SERVER_NAME]: entry } }, null, 2)}`);
+    }
+  }
   if (want('hermes') && mcp && userConfig) {
     const file = path.join(home, '.hermes', 'config.yaml');
     record(file, updateHermesConfig(file, remove));

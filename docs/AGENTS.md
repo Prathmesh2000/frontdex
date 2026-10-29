@@ -31,6 +31,7 @@ npx frontdex scan
 | Cursor | `cursor` | `.cursor/rules/frontdex.mdc` | `.cursor/mcp.json` | `.cursor/hooks.json` |
 | OpenCode | `opencode` | `AGENTS.md` | `opencode.json` (or `opencode.jsonc`) | – |
 | Antigravity | `antigravity` | `.agents/rules/frontdex.md` (`.agent/rules/` in projects that already use it) | `.agents/mcp_config.json` | – |
+| Windsurf/Cascade | `windsurf` | `.windsurf/rules/frontdex.md` | user config, only with `--user-config`; see below | – |
 | Hermes | `hermes` | `AGENTS.md`, or an existing `.hermes.md` / `HERMES.md` | `~/.hermes/config.yaml`, only with `--user-config` | – |
 | GitHub Copilot | `copilot` | `.github/copilot-instructions.md` | – | – |
 | Codex, Gemini CLI, Zed, others | `agents-md` | `AGENTS.md` | their own MCP config, see [Any other agent](#any-other-agent) | – |
@@ -182,7 +183,7 @@ Automatic: `npx frontdex agents --targets copilot`. By hand: paste the rules int
 
 ## Any other agent
 
-Codex, Gemini CLI, Zed, Windsurf, Aider and most other agents read `AGENTS.md`: run `npx frontdex agents --targets agents-md` or paste the rules there. For MCP, register a stdio server named `frontdex` with command `npx` and args `["frontdex", "mcp"]` in that agent's MCP config.
+Codex, Gemini CLI, Zed, Aider and most other agents read `AGENTS.md`: run `npx frontdex agents --targets agents-md` or paste the rules there. For MCP, register a stdio server named `frontdex` with command `npx` and args `["frontdex", "mcp"]` in that agent's MCP config.
 
 ## Let your agent do the setup
 
@@ -196,3 +197,14 @@ project's package manager, run `npx frontdex init --auto-update`, `npx frontdex 
 ```
 
 Agents that read [llms.txt](../llms.txt) can find the same instructions there.
+
+
+## Windsurf / Cascade (`windsurf`)
+
+Run `npx frontdex agents --targets windsurf` to install always-on workspace rules in `.windsurf/rules/frontdex.md`.
+This legacy workspace folder remains supported by [Cascade rules](https://docs.devin.ai/desktop/cascade/memories).
+The command prints a user-level MCP snippet. Add `--user-config` to write it, preserving other servers and saving a `.bak` copy.
+An existing `~/.codeium/windsurf/mcp_config.json` is reused; otherwise the current [Cascade MCP config](https://docs.devin.ai/desktop/cascade/mcp) is used:
+`%APPDATA%/devin/mcp_config.json` on Windows, `$XDG_CONFIG_HOME/devin/mcp_config.json` (default `~/.config/devin/mcp_config.json`) elsewhere.
+The server receives the absolute project path via `-C`, because the config is shared across projects.
+Use `--remove --user-config` to remove frontdex's rules and MCP entry. This target configures Cascade, not the separate Devin Local agent.
